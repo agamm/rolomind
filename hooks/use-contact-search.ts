@@ -23,6 +23,7 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
     isActive: false,
   })
   const [isSearching, setIsSearching] = useState(false)
+  const [isStreamComplete, setIsStreamComplete] = useState(true)
   const [displayedMatches, setDisplayedMatches] = useState<string[]>([])
 
   // Ref to track abort controller for fetch request
@@ -39,6 +40,7 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
       }
 
       setIsSearching(true)
+      setIsStreamComplete(false)
       setDisplayedMatches([])
 
       setAiSearchState({
@@ -51,6 +53,8 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
       try {
         const controller = new AbortController()
         abortControllerRef.current = controller
+
+        debugLog?.("state", `Sending ${contacts.length} contacts to API`, "handleAiSearch")
 
         const response = await fetch("/api/query-contacts", {
           method: "POST",
@@ -72,10 +76,17 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
         const decoder = new TextDecoder()
         let buffer = ""
         const allMatches: AIMatch[] = []
+        let chunksReceived = 0
+
+        debugLog?.("state", "Starting to read stream...", "search")
 
         while (true) {
           const { done, value } = await reader.read()
-          if (done) break
+          if (done) {
+            debugLog?.("state", "Stream reading complete", "search")
+            setIsStreamComplete(true)
+            break
+          }
 
           const rawChunk = decoder.decode(value, { stream: true })
           buffer += rawChunk
@@ -91,7 +102,18 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
                 const data = JSON.parse(rawData)
                 debugLog?.("parsed", data, "search")
 
+                if (data.type === "error") {
+                  debugLog?.("error", `Server error: ${data.error}`, "search")
+                  console.error(`AI Search Error: ${data.error}`)
+                  
+                  // Continue processing other chunks even if one fails
+                  continue
+                }
+
                 if (data.type === "matches" && data.matches) {
+                  chunksReceived++
+                  debugLog?.("state", `Received chunk ${data.chunkIndex + 1}/${data.totalChunks} with ${data.matches.length} matches`, "search")
+
                   // Add new matches
                   data.matches.forEach((match: AIMatch) => {
                     if (!allMatches.some((m) => m.contactId === match.contactId)) {
@@ -99,10 +121,17 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
                     }
                   })
 
-                  // Find matching contacts
+                  // Find matching contacts - use case-insensitive comparison
                   const matchingContacts = contacts.filter((contact) =>
-                    allMatches.some((match) => match.contactId === contact.id),
+                    allMatches.some((match) => match.contactId.toLowerCase() === contact.id.toLowerCase()),
                   )
+
+                  debugLog?.("state", `Total unique matches so far: ${allMatches.length}`, "search")
+                  
+                  // Debug: Log sample IDs to check for mismatches
+                  if (allMatches.length > 0 && matchingContacts.length === 0) {
+                    debugLog?.("error", `No contacts found for matches! Sample match ID: ${allMatches[0].contactId}, Sample contact ID: ${contacts[0]?.id}`, "search")
+                  }
 
                   // Update state
                   setAiSearchState((prev) => ({
@@ -121,10 +150,12 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
           }
         }
 
-        debugLog?.("state", `Search completed with ${allMatches.length} total matches`, "search")
+        debugLog?.("state", `Search completed with ${allMatches.length} total matches from ${chunksReceived} chunks`, "search")
+        setIsStreamComplete(true)
       } catch (error) {
         if (error instanceof Error && error.name === "AbortError") {
           debugLog?.("state", "Search aborted", "search")
+          setIsStreamComplete(true)
           return
         }
         debugLog?.("error", error, "search")
@@ -135,6 +166,7 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
           matches: [],
           isActive: true,
         })
+        setIsStreamComplete(true)
       } finally {
         setIsSearching(false)
       }
@@ -160,6 +192,7 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
 
     setDisplayedMatches([])
     setIsSearching(false)
+    setIsStreamComplete(true)
   }, [debugLog])
 
   // Clear AI search only
@@ -179,14 +212,17 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
     })
     setDisplayedMatches([])
     setIsSearching(false)
+    setIsStreamComplete(true)
   }, [debugLog])
 
   // Get AI reason for a contact
   const getAiReason = useCallback(
     (contactId: string) => {
       if (!aiSearchState.isActive) return undefined
-      const match = aiSearchState.matches.find((m) => m.contactId === contactId)
-      return match?.reason
+      const match = aiSearchState.matches.find((m) => m.contactId.toLowerCase() === contactId.toLowerCase())
+      const reason = match?.reason
+      
+      return reason
     },
     [aiSearchState.isActive, aiSearchState.matches],
   )
@@ -200,14 +236,14 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
     }
   }, [])
 
-  // Get filtered contacts based on AI search
+  // Get filtered contacts based on AI search - use case-insensitive comparison
   const aiFilteredContacts = aiSearchState.isActive
-    ? contacts.filter((contact) => displayedMatches.includes(contact.id))
+    ? contacts.filter((contact) => displayedMatches.some(matchId => matchId.toLowerCase() === contact.id.toLowerCase()))
     : contacts
 
   return {
     aiSearchState,
-    isSearching,
+    isSearching: isSearching || !isStreamComplete,
     isProcessingChunks: false, // No longer used but keeping for compatibility
     displayedMatches,
     aiFilteredContacts,

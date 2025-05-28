@@ -20,6 +20,16 @@ const loadContacts = async () => {
   try {
     const response = await fetch("/api/contacts")
     const result = await response.json()
+    
+    if (result.success && result.contacts) {
+      // Convert date strings back to Date objects
+      result.contacts = result.contacts.map((contact: { createdAt: string | Date; updatedAt: string | Date }) => ({
+        ...contact,
+        createdAt: new Date(contact.createdAt),
+        updatedAt: new Date(contact.updatedAt),
+      }))
+    }
+    
     return result
   } catch (error) {
     console.error("Error loading contacts:", error)
@@ -59,45 +69,12 @@ export function NativeAIContactManager() {
   const {
     aiSearchState,
     isSearching,
-    isProcessingChunks,
-    displayedMatches,
     aiFilteredContacts,
     handleAiSearch,
     handleReset,
     handleClearAiSearch,
     getAiReason,
   } = useContactSearch(contacts, addEntry)
-
-  // Manual state logging function
-  const logCurrentState = useCallback(() => {
-    addEntry(
-      "state",
-      {
-        aiSearchState,
-        displayedMatches,
-        contactsCount: contacts.length,
-        aiFilteredContactsCount: aiFilteredContacts.length,
-        isSearching,
-        isProcessingChunks,
-        // Sample reasons for first few contacts
-        sampleReasons: aiFilteredContacts.slice(0, 3).map((contact) => ({
-          id: contact.id,
-          name: contact.name,
-          reason: getAiReason(contact.id),
-        })),
-      },
-      "manual-log",
-    )
-  }, [
-    aiSearchState,
-    displayedMatches,
-    contacts.length,
-    aiFilteredContacts,
-    isSearching,
-    isProcessingChunks,
-    getAiReason,
-    addEntry,
-  ])
 
   // Load contacts on initial render
   useEffect(() => {
@@ -178,10 +155,13 @@ export function NativeAIContactManager() {
   // Handle AI search with input ref
   const handleSearch = useCallback(
     (query: string) => {
+      if (contacts.length === 0) {
+        console.error("No contacts loaded for AI search!")
+      }
       handleAiSearch(query)
       searchInputRef.current?.clear()
     },
-    [handleAiSearch],
+    [handleAiSearch, contacts.length],
   )
 
   // Handle full reset
@@ -283,9 +263,7 @@ export function NativeAIContactManager() {
           aiFilteredContacts={aiFilteredContacts}
           isAiSearch={aiSearchState.isActive}
           isSearching={isSearching}
-          isProcessingChunks={isProcessingChunks}
           query={aiSearchState.query}
-          displayedMatches={displayedMatches}
           totalResults={aiSearchState.results.length}
           onRegularSearch={() => {}}
           onReset={handleFullReset}
@@ -299,7 +277,6 @@ export function NativeAIContactManager() {
           onToggle={toggleVisibility}
           entries={entries}
           onClear={clearEntries}
-          onLogCurrentState={logCurrentState}
         />
       </div>
     </div>

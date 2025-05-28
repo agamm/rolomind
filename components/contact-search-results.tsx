@@ -15,9 +15,7 @@ interface ContactSearchResultsProps {
   aiFilteredContacts: Contact[]
   isAiSearch: boolean
   isSearching: boolean
-  isProcessingChunks: boolean
   query: string
-  displayedMatches: string[]
   totalResults: number
   onRegularSearch: (query: string) => void
   onReset: () => void
@@ -30,9 +28,7 @@ export function ContactSearchResults({
   aiFilteredContacts,
   isAiSearch,
   isSearching,
-  isProcessingChunks,
   query,
-  displayedMatches,
   totalResults,
   onRegularSearch,
   onReset,
@@ -126,19 +122,19 @@ export function ContactSearchResults({
             </div>
           )}
 
-          {/* Loading indicator in results pane */}
-          {isProcessingChunks && (
+          {/* Loading indicator while searching */}
+          {isSearching && (
             <div className="bg-purple-50 p-3 rounded-lg flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
               <div className="text-sm text-purple-800">
-                Searching contacts...
-                {displayedMatches.length > 0 && " More results may appear soon."}
+                Searching contacts... Found {displayedResultsCount} matches so far.
               </div>
             </div>
           )}
 
           {/* Contact Grid or Empty State */}
-          {isSearching || isProcessingChunks ? (
+          {isSearching && paginatedContacts.length === 0 ? (
+            // Only show loading state if no results yet
             <div className="text-center py-12">
               <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -168,17 +164,19 @@ export function ContactSearchResults({
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {paginatedContacts.map((contact) => (
-                <SimplifiedContactCard
-                  key={contact.id}
-                  contact={contact}
-                  onDelete={onDeleteContact}
-                  isAiResult={isAiSearch}
-                  aiReason={getAiReason(contact.id)}
-                />
-              ))}
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {paginatedContacts.map((contact) => (
+                  <SimplifiedContactCard
+                    key={contact.id}
+                    contact={contact}
+                    onDelete={onDeleteContact}
+                    isAiResult={isAiSearch}
+                    aiReason={getAiReason(contact.id)}
+                  />
+                ))}
+              </div>
+            </>
           )}
 
           {/* Pagination Controls */}

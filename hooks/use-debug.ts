@@ -20,7 +20,14 @@ export function useDebug() {
       data,
       source,
     }
-    setEntries((prev) => [...prev, entry])
+    setEntries(prev => {
+      // Keep only the last 100 entries to prevent memory issues
+      const newEntries = [...prev, entry]
+      if (newEntries.length > 100) {
+        return newEntries.slice(-100)
+      }
+      return newEntries
+    })
   }, [])
 
   const clearEntries = useCallback(() => {
