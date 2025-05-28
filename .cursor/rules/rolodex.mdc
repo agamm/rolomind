@@ -1,0 +1,12 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+The Rolodex project is a modern contact management system that leverages AI to provide intelligent search capabilities across a user's contact database. Built with Next.js and React, it allows users to import contacts from CSV files (particularly LinkedIn exports), organize them, and perform natural language queries using Claude AI. The system processes contacts in chunks to handle large datasets efficiently, with features like streaming results as they're found, parallel processing for performance optimization, and detailed reasoning for why each contact matches a query. The UI includes a clean card-based layout, filtering capabilities, pagination, and debugging tools. Technical highlights include server actions for data persistence, custom hooks for search logic, SSE (Server-Sent Events) for real-time streaming, and careful state management to handle asynchronous operations. The project demonstrates how AI can transform traditional contact management by enabling users to find relevant connections through natural language rather than exact field matching.
+
+- Make sure the code is as simple as possible, clean and beautiful.
+- Split large components into smaller, focused components and custom hooks
+- Keep state management logic in dedicated hooks (e.g., `useContactSearch`, `useDebug`)
+- Think hard about adding new code, always try to use less code.
+- Think hard about potential bugs, and how new code should not break old funcitonality unless directed to by the user.
