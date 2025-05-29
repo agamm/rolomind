@@ -3,7 +3,7 @@ import { streamObject } from "ai"
 import { z } from "zod"
 import type { NextRequest } from "next/server"
 
-// Define the simplified schema for our AI response
+// Simplified schema - only contacts
 const contactMatchSchema = z.object({
   contactId: z.string().min(1),
   reason: z.string().min(1),
@@ -11,7 +11,6 @@ const contactMatchSchema = z.object({
 
 const searchResponseSchema = z.object({
   matches: z.array(contactMatchSchema),
-  summary: z.string().min(1).optional(),
 })
 
 // Process contacts in chunks to avoid token limits
@@ -64,13 +63,12 @@ export async function POST(request: NextRequest) {
                 const { partialObjectStream } = streamObject({
                   model: anthropic("claude-3-5-sonnet-20241022"),
                   schema: searchResponseSchema,
-                  prompt: createDetailedPrompt(query, chunk),
+                  prompt: createSearchPrompt(query, chunk),
                 })
 
                 const sentMatches = new Set<string>()
 
-                // Stream the data from this chunk
-                let chunkSummary = ""
+                // Stream the matches from this chunk
                 for await (const partialObject of partialObjectStream) {
                   if (partialObject.matches && partialObject.matches.length > 0) {
                     // Filter out matches that have already been sent
@@ -90,32 +88,11 @@ export async function POST(request: NextRequest) {
                           `data: ${JSON.stringify({
                             type: "matches",
                             matches: newMatches,
-                            chunkIndex: i,
-                            totalChunks: chunks.length,
                           })}\n\n`,
                         ),
                       )
                     }
                   }
-                  
-                  // Capture the summary when available
-                  if (partialObject.summary) {
-                    chunkSummary = partialObject.summary
-                  }
-                }
-
-                // Send the summary for this chunk if we have one
-                if (chunkSummary) {
-                  controller.enqueue(
-                    encoder.encode(
-                      `data: ${JSON.stringify({
-                        type: "summary",
-                        summary: chunkSummary,
-                        chunkIndex: i,
-                        totalChunks: chunks.length,
-                      })}\n\n`,
-                    ),
-                  )
                 }
 
               } catch (chunkError) {
@@ -127,8 +104,6 @@ export async function POST(request: NextRequest) {
                     `data: ${JSON.stringify({
                       type: "error",
                       error: `Failed to process chunk ${i + 1}: ${chunkError instanceof Error ? chunkError.message : 'Unknown error'}`,
-                      chunkIndex: i,
-                      totalChunks: chunks.length,
                     })}\n\n`,
                   ),
                 )
@@ -159,7 +134,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-function createDetailedPrompt(query: string, contacts: Record<string, unknown>[]) {
+function createSearchPrompt(query: string, contacts: Record<string, unknown>[]) {
   return `You are a smart contact search assistant. Your job is to find contacts that match the user's query and explain why each contact is relevant.
 
 USER QUERY: "${query}"
@@ -170,32 +145,24 @@ ${JSON.stringify(contacts, null, 2)}
 ###
 
 Instructions:
-1. Think carefully about what the user is looking for in their query
+1. Think carefully about what the user is looking for
 2. For each matching contact, provide a SPECIFIC and DETAILED reason why they match
-3. IMPORTANT: NEVER use generic phrases like "This contact matches your search criteria" - always be specific about WHY they match
-4. Include exact matching information in your reason, such as:
-   - "Their position as 'Software Engineer at Google' matches your search for tech professionals."
-   - "Their location in 'San Francisco' matches your search for Bay Area contacts."
-   - "Their email domain 'microsoft.com' indicates they work at Microsoft."
-   - "Their notes mention 'blockchain experience' which matches your query."
-5. Don't invent contacts, only return contacts from the contacts above
-6. Don't include contacts that don't match the query in a strong way
-7. After listing matches, provide a brief summary (1-2 sentences) about this chunk:
-   - Count of matches found (e.g., "Found 3 CEOs")
-   - Any other relevant information about the matches in this chunk that can be aggreated for the final summary
-   - Key pattern if any (e.g., "All from tech companies")
-   - Only include facts from the actual matches
+3. Be specific about WHY they match, including exact information like:
+   - Job titles, company names, locations
+   - Email domains, skills mentioned
+   - Any other relevant matching details
+4. Only return contacts from the provided list above
+5. Only include contacts that strongly match the query
 
 Respond with JSON in this exact format:
 {
   "matches": [
     {
       "contactId": "contact-id-here",
-      "reason": "Specific explanation of why this contact matches the query, citing exact matching information"
+      "reason": "Specific explanation citing exact matching information"
     }
-  ],
-  "summary": "Brief factual summary about the matches in this chunk. 1-2 sentences max."
+  ]
 }
 
-Think carefully about the query and find the most relevant contacts. Respond ONLY with valid JSON.`
+Respond ONLY with valid JSON.`
 }
