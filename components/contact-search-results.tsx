@@ -41,18 +41,21 @@ export function ContactSearchResults({
 
   // Apply regular search filter
   const displayContacts = useMemo(() => {
+    // If there's no AI search active, show all contacts
+    const baseContacts = isAiSearch ? aiFilteredContacts : contacts
+    
     if (!regularSearchQuery.trim()) {
-      return aiFilteredContacts
+      return baseContacts
     }
 
     const query = regularSearchQuery.toLowerCase()
-    return aiFilteredContacts.filter(
+    return baseContacts.filter(
       (contact) =>
         contact.name.toLowerCase().includes(query) ||
         contact.contactInfo.emails.some((email) => email.toLowerCase().includes(query)) ||
         contact.notes.toLowerCase().includes(query),
     )
-  }, [aiFilteredContacts, regularSearchQuery])
+  }, [isAiSearch, aiFilteredContacts, contacts, regularSearchQuery])
 
   // Paginate the display contacts
   const {
