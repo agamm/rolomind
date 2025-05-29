@@ -67,13 +67,15 @@ export function NativeAIContactManager() {
 
   // Use the custom hook for contact search with debug logging
   const {
-    aiSearchState,
+    searchState,
     isSearching,
-    aiFilteredContacts,
+    filteredContacts,
     handleAiSearch,
     handleReset,
     handleClearAiSearch,
     getAiReason,
+    getFinalSummary,
+    hasSummary,
   } = useContactSearch(contacts, addEntry)
 
   // Load contacts on initial render
@@ -145,16 +147,17 @@ export function NativeAIContactManager() {
       await saveContacts(updatedContacts)
 
       // Also remove from AI search results if active
-      if (aiSearchState.isActive) {
+      if (searchState.isActive) {
         handleReset()
       }
     },
-    [contacts, aiSearchState.isActive, handleReset],
+    [contacts, searchState.isActive, handleReset],
   )
 
   // Handle AI search with input ref
   const handleSearch = useCallback(
     (query: string) => {
+      console.log("Starting search with contacts:", contacts.length)
       if (contacts.length === 0) {
         console.error("No contacts loaded for AI search!")
       }
@@ -163,6 +166,16 @@ export function NativeAIContactManager() {
     },
     [handleAiSearch, contacts.length],
   )
+
+  // Debug effect to log when filtered contacts change
+  useEffect(() => {
+    console.log("Filtered contacts changed:", {
+      searchActive: searchState.isActive,
+      matchCount: searchState.matches.length,
+      filteredCount: filteredContacts.length,
+      totalContacts: contacts.length
+    })
+  }, [searchState.isActive, searchState.matches.length, filteredContacts.length, contacts.length])
 
   // Handle full reset
   const handleFullReset = useCallback(async () => {
@@ -177,6 +190,27 @@ export function NativeAIContactManager() {
     }
     setIsLoading(false)
   }, [handleReset])
+
+  // Download debug data
+  const downloadDebugData = useCallback(() => {
+    const debugData = {
+      timestamp: new Date().toISOString(),
+      contacts: contacts.length,
+      searchState,
+      displayedContacts: filteredContacts.length,
+      debugEntries: entries
+    }
+    
+    const blob = new Blob([JSON.stringify(debugData, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `rolodex-debug-${Date.now()}.json`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [contacts.length, searchState, filteredContacts.length, entries])
 
   // Stats
   const stats = React.useMemo(() => {
@@ -260,15 +294,16 @@ export function NativeAIContactManager() {
         {/* Contact Search Results */}
         <ContactSearchResults
           contacts={contacts}
-          aiFilteredContacts={aiFilteredContacts}
-          isAiSearch={aiSearchState.isActive}
+          aiFilteredContacts={filteredContacts}
+          isAiSearch={searchState.isActive}
           isSearching={isSearching}
-          query={aiSearchState.query}
-          totalResults={aiSearchState.results.length}
+          query={searchState.query}
           onRegularSearch={() => {}}
           onReset={handleFullReset}
           onDeleteContact={handleDeleteContact}
           getAiReason={getAiReason}
+          getFinalSummary={getFinalSummary}
+          hasSummary={hasSummary}
         />
 
         {/* Debug Pane */}
@@ -278,6 +313,16 @@ export function NativeAIContactManager() {
           entries={entries}
           onClear={clearEntries}
         />
+        
+        {/* Debug Download Link */}
+        <div className="text-center mt-4 pb-4">
+          <button
+            onClick={downloadDebugData}
+            className="text-xs text-gray-500 hover:text-gray-700 underline"
+          >
+            Download Debug Data
+          </button>
+        </div>
       </div>
     </div>
   )

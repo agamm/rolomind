@@ -84,7 +84,7 @@ export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
               {contact.contactInfo.linkedinUrls.length > 0 && (
                 <button
                   onClick={handleLinkedInClick}
-                  className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                  className="inline-flex items-center text-blue-600 hover:text-blue-800 cursor-pointer"
                   title="Open LinkedIn Profile"
                 >
                   <Linkedin className="w-4 h-4" />
@@ -114,17 +114,14 @@ export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
         {/* Professional Info */}
         {(extractedInfo.company || extractedInfo.position || extractedInfo.location || extractedInfo.connectedOn) && (
           <div className="mb-3 space-y-1.5">
-            {extractedInfo.position && (
+            {(extractedInfo.position || extractedInfo.company) && (
               <div className="flex items-center gap-2 text-xs text-gray-700">
                 <Briefcase className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span>{extractedInfo.position}</span>
-              </div>
-            )}
-
-            {extractedInfo.company && (
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <div className="w-3 h-3 flex-shrink-0" /> {/* Spacer for alignment */}
-                <span className="font-medium">{extractedInfo.company}</span>
+                <span>
+                  {extractedInfo.position && <span>{extractedInfo.position}</span>}
+                  {extractedInfo.position && extractedInfo.company && <span> at </span>}
+                  {extractedInfo.company && <span className="font-medium">{extractedInfo.company}</span>}
+                </span>
               </div>
             )}
 

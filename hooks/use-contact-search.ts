@@ -10,51 +10,79 @@ interface AIMatch {
 
 interface SearchState {
   query: string
-  results: Contact[]
   matches: AIMatch[]
   isActive: boolean
+  summaries: string[]
+  finalSummary: string | null
 }
 
 export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | "parsed" | "error" | "state", data: unknown, source?: string) => void) {
-  const [aiSearchState, setAiSearchState] = useState<SearchState>({
+  const [searchState, setSearchState] = useState<SearchState>({
     query: "",
-    results: [],
     matches: [],
     isActive: false,
+    summaries: [],
+    finalSummary: null,
   })
   const [isSearching, setIsSearching] = useState(false)
-  const [isStreamComplete, setIsStreamComplete] = useState(true)
-  const [displayedMatches, setDisplayedMatches] = useState<string[]>([])
 
   // Ref to track abort controller for fetch request
   const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Simple AI search - no chunking
+  // Get filtered contacts based on current matches
+  const getFilteredContacts = useCallback(() => {
+    if (!searchState.isActive) {
+      return contacts
+    }
+    
+    if (searchState.matches.length === 0) {
+      return []
+    }
+
+    // Debug: Check if contacts is empty
+    if (contacts.length === 0) {
+      console.error("getFilteredContacts: No contacts available to filter!")
+      return []
+    }
+
+    const filtered = contacts.filter(contact => 
+      searchState.matches.some(match => 
+        match.contactId.toLowerCase() === contact.id.toLowerCase()
+      )
+    )
+
+    // Temporary debug logging
+    if (searchState.matches.length > 0 && filtered.length === 0) {
+      console.log("DEBUG: No contacts matched!")
+      console.log("Sample match ID:", searchState.matches[0]?.contactId)
+      console.log("Sample contact ID:", contacts[0]?.id)
+      console.log("Total matches:", searchState.matches.length)
+      console.log("Total contacts:", contacts.length)
+    }
+
+    return filtered
+  }, [contacts, searchState.isActive, searchState.matches])
+
+  // Handle AI search
   const handleAiSearch = useCallback(
     async (query: string) => {
-      debugLog?.("state", `Starting AI search for: "${query}"`, "handleAiSearch")
-
       // Cancel any ongoing search
-      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
 
       setIsSearching(true)
-      setIsStreamComplete(false)
-      setDisplayedMatches([])
-
-      setAiSearchState({
+      setSearchState({
         query,
         isActive: true,
-        results: [],
         matches: [],
+        summaries: [],
+        finalSummary: null,
       })
 
       try {
         const controller = new AbortController()
         abortControllerRef.current = controller
-
-        debugLog?.("state", `Sending ${contacts.length} contacts to API`, "handleAiSearch")
 
         const response = await fetch("/api/query-contacts", {
           method: "POST",
@@ -76,97 +104,83 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
         const decoder = new TextDecoder()
         let buffer = ""
         const allMatches: AIMatch[] = []
-        let chunksReceived = 0
-
-        debugLog?.("state", "Starting to read stream...", "search")
+        const allSummaries: string[] = []
 
         while (true) {
           const { done, value } = await reader.read()
-          if (done) {
-            debugLog?.("state", "Stream reading complete", "search")
-            setIsStreamComplete(true)
-            break
-          }
+          if (done) break
 
-          const rawChunk = decoder.decode(value, { stream: true })
-          buffer += rawChunk
+          buffer += decoder.decode(value, { stream: true })
           const messages = buffer.split("\n\n")
           buffer = messages.pop() || ""
 
           for (const message of messages) {
-            if (message.startsWith("data: ")) {
-              const rawData = message.slice(6)
-              debugLog?.("raw", `SSE message: ${rawData}`, "search")
-
-              try {
-                const data = JSON.parse(rawData)
-                debugLog?.("parsed", data, "search")
-
-                if (data.type === "error") {
-                  debugLog?.("error", `Server error: ${data.error}`, "search")
-                  console.error(`AI Search Error: ${data.error}`)
-                  
-                  // Continue processing other chunks even if one fails
-                  continue
-                }
-
-                if (data.type === "matches" && data.matches) {
-                  chunksReceived++
-                  debugLog?.("state", `Received chunk ${data.chunkIndex + 1}/${data.totalChunks} with ${data.matches.length} matches`, "search")
-
-                  // Add new matches
-                  data.matches.forEach((match: AIMatch) => {
-                    if (!allMatches.some((m) => m.contactId === match.contactId)) {
-                      allMatches.push(match)
-                    }
-                  })
-
-                  // Find matching contacts - use case-insensitive comparison
-                  const matchingContacts = contacts.filter((contact) =>
-                    allMatches.some((match) => match.contactId.toLowerCase() === contact.id.toLowerCase()),
-                  )
-
-                  debugLog?.("state", `Total unique matches so far: ${allMatches.length}`, "search")
-                  
-                  // Debug: Log sample IDs to check for mismatches
-                  if (allMatches.length > 0 && matchingContacts.length === 0) {
-                    debugLog?.("error", `No contacts found for matches! Sample match ID: ${allMatches[0].contactId}, Sample contact ID: ${contacts[0]?.id}`, "search")
+            if (!message.startsWith("data: ")) continue
+            
+            // Log raw SSE message
+            debugLog?.("raw", message, "server")
+            
+            try {
+              const data = JSON.parse(message.slice(6))
+              
+              if (data.type === "matches" && data.matches) {
+                // Add new matches
+                data.matches.forEach((match: AIMatch) => {
+                  if (!allMatches.some(m => m.contactId === match.contactId)) {
+                    allMatches.push(match)
+                    console.log("Added match:", match.contactId, "Reason:", match.reason)
                   }
+                })
 
-                  // Update state
-                  setAiSearchState((prev) => ({
+                // Update state with new matches
+                setSearchState(prev => {
+                  console.log("Updating search state with", allMatches.length, "matches")
+                  return {
                     ...prev,
-                    results: matchingContacts,
-                    matches: allMatches,
-                  }))
-
-                  // Update displayed matches for streaming effect
-                  setDisplayedMatches(allMatches.map(m => m.contactId))
-                }
-              } catch (e) {
-                debugLog?.("error", `Error parsing SSE message: ${e}`, "search")
+                    matches: [...allMatches],
+                  }
+                })
               }
+
+              if (data.type === "summary" && data.summary) {
+                allSummaries.push(data.summary)
+                setSearchState(prev => ({
+                  ...prev,
+                  summaries: [...allSummaries],
+                }))
+              }
+            } catch (e) {
+              console.error("Error parsing message:", e)
             }
           }
         }
 
-        debugLog?.("state", `Search completed with ${allMatches.length} total matches from ${chunksReceived} chunks`, "search")
-        setIsStreamComplete(true)
-      } catch (error) {
-        if (error instanceof Error && error.name === "AbortError") {
-          debugLog?.("state", "Search aborted", "search")
-          setIsStreamComplete(true)
-          return
+        // Merge summaries if we have any
+        if (allSummaries.length > 0) {
+          try {
+            const mergeResponse = await fetch("/api/merge-summaries", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ query, summaries: allSummaries }),
+            })
+            
+            if (mergeResponse.ok) {
+              const result = await mergeResponse.json()
+              if (result.success && result.summary) {
+                setSearchState(prev => ({
+                  ...prev,
+                  finalSummary: result.summary,
+                }))
+              }
+            }
+          } catch (error) {
+            console.error("Error merging summaries:", error)
+          }
         }
-        debugLog?.("error", error, "search")
-
-        setAiSearchState({
-          query,
-          results: [],
-          matches: [],
-          isActive: true,
-        })
-        setIsStreamComplete(true)
+      } catch (error) {
+        if (error instanceof Error && error.name !== "AbortError") {
+          console.error("Search error:", error)
+        }
       } finally {
         setIsSearching(false)
       }
@@ -176,80 +190,49 @@ export function useContactSearch(contacts: Contact[], debugLog?: (type: "raw" | 
 
   // Handle reset
   const handleReset = useCallback(() => {
-    debugLog?.("state", "Resetting search", "handleReset")
-
-    // Cancel any ongoing search
-    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+    if (abortControllerRef.current) {
       abortControllerRef.current.abort()
     }
 
-    setAiSearchState({
+    setSearchState({
       query: "",
-      results: [],
       matches: [],
       isActive: false,
+      summaries: [],
+      finalSummary: null,
     })
-
-    setDisplayedMatches([])
     setIsSearching(false)
-    setIsStreamComplete(true)
-  }, [debugLog])
-
-  // Clear AI search only
-  const handleClearAiSearch = useCallback(() => {
-    debugLog?.("state", "Clearing AI search", "handleClearAiSearch")
-
-    // Cancel any ongoing search
-    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
-      abortControllerRef.current.abort()
-    }
-
-    setAiSearchState({
-      query: "",
-      results: [],
-      matches: [],
-      isActive: false,
-    })
-    setDisplayedMatches([])
-    setIsSearching(false)
-    setIsStreamComplete(true)
-  }, [debugLog])
+  }, [])
 
   // Get AI reason for a contact
   const getAiReason = useCallback(
     (contactId: string) => {
-      if (!aiSearchState.isActive) return undefined
-      const match = aiSearchState.matches.find((m) => m.contactId.toLowerCase() === contactId.toLowerCase())
-      const reason = match?.reason
-      
-      return reason
+      const match = searchState.matches.find(m => 
+        m.contactId.toLowerCase() === contactId.toLowerCase()
+      )
+      return match?.reason
     },
-    [aiSearchState.isActive, aiSearchState.matches],
+    [searchState.matches],
   )
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      if (abortControllerRef.current) {
         abortControllerRef.current.abort()
       }
     }
   }, [])
 
-  // Get filtered contacts based on AI search - use case-insensitive comparison
-  const aiFilteredContacts = aiSearchState.isActive
-    ? contacts.filter((contact) => displayedMatches.some(matchId => matchId.toLowerCase() === contact.id.toLowerCase()))
-    : contacts
-
   return {
-    aiSearchState,
-    isSearching: isSearching || !isStreamComplete,
-    isProcessingChunks: false, // No longer used but keeping for compatibility
-    displayedMatches,
-    aiFilteredContacts,
+    searchState,
+    isSearching,
+    filteredContacts: getFilteredContacts(),
     handleAiSearch,
     handleReset,
-    handleClearAiSearch,
+    handleClearAiSearch: handleReset,
     getAiReason,
+    getFinalSummary: () => searchState.finalSummary,
+    hasSummary: () => searchState.isActive && (searchState.summaries.length > 0 || searchState.finalSummary !== null),
   }
 }

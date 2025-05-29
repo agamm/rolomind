@@ -11,6 +11,7 @@ const contactMatchSchema = z.object({
 
 const searchResponseSchema = z.object({
   matches: z.array(contactMatchSchema),
+  summary: z.string().min(1).optional(),
 })
 
 // Process contacts in chunks to avoid token limits
@@ -69,41 +70,52 @@ export async function POST(request: NextRequest) {
                 const sentMatches = new Set<string>()
 
                 // Stream the data from this chunk
+                let chunkSummary = ""
                 for await (const partialObject of partialObjectStream) {
                   if (partialObject.matches && partialObject.matches.length > 0) {
-                    // Send complete matches (ensure reason is a complete sentence)
-                    const completeMatches = partialObject.matches.filter(match => {
-                      if (!match || !match.contactId || !match.reason) return false
-                      // Only send if reason ends with punctuation (complete sentence)
-                      return match.reason.match(/[.!?]$/)
-                    })
+                    // Filter out matches that have already been sent
+                    const newMatches = partialObject.matches.filter(match => 
+                      match && match.contactId && match.reason && !sentMatches.has(match.contactId)
+                    )
                     
-                    if (completeMatches.length > 0) {
-                      // Remove already sent matches
-                      const newMatches = completeMatches.filter(match => 
-                        match && match.contactId && !sentMatches.has(match.contactId)
-                      )
+                    if (newMatches.length > 0) {
+                      newMatches.forEach(match => {
+                        if (match && match.contactId) {
+                          sentMatches.add(match.contactId)
+                        }
+                      })
                       
-                      if (newMatches.length > 0) {
-                        newMatches.forEach(match => {
-                          if (match && match.contactId) {
-                            sentMatches.add(match.contactId)
-                          }
-                        })
-                        
-                        controller.enqueue(
-                          encoder.encode(
-                            `data: ${JSON.stringify({
-                              type: "matches",
-                              matches: newMatches,
-                              chunkIndex: i,
-                              totalChunks: chunks.length,
-                            })}\n\n`,
-                          ),
-                        )
-                      }
+                      controller.enqueue(
+                        encoder.encode(
+                          `data: ${JSON.stringify({
+                            type: "matches",
+                            matches: newMatches,
+                            chunkIndex: i,
+                            totalChunks: chunks.length,
+                          })}\n\n`,
+                        ),
+                      )
                     }
                   }
+                  
+                  // Capture the summary when available
+                  if (partialObject.summary) {
+                    chunkSummary = partialObject.summary
+                  }
+                }
+
+                // Send the summary for this chunk if we have one
+                if (chunkSummary) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({
+                        type: "summary",
+                        summary: chunkSummary,
+                        chunkIndex: i,
+                        totalChunks: chunks.length,
+                      })}\n\n`,
+                    ),
+                  )
                 }
 
               } catch (chunkError) {
@@ -162,12 +174,17 @@ Instructions:
 2. For each matching contact, provide a SPECIFIC and DETAILED reason why they match
 3. IMPORTANT: NEVER use generic phrases like "This contact matches your search criteria" - always be specific about WHY they match
 4. Include exact matching information in your reason, such as:
-   - "Their position as 'Software Engineer at Google' matches your search for tech professionals"
-   - "Their location in 'San Francisco' matches your search for Bay Area contacts"
-   - "Their email domain 'microsoft.com' indicates they work at Microsoft"
-   - "Their notes mention 'blockchain experience' which matches your query"
-5. Don't invent contacts, only return contacts from the contacts above.
-6. Don't include contacts that don't match the query in a strong way.
+   - "Their position as 'Software Engineer at Google' matches your search for tech professionals."
+   - "Their location in 'San Francisco' matches your search for Bay Area contacts."
+   - "Their email domain 'microsoft.com' indicates they work at Microsoft."
+   - "Their notes mention 'blockchain experience' which matches your query."
+5. Don't invent contacts, only return contacts from the contacts above
+6. Don't include contacts that don't match the query in a strong way
+7. After listing matches, provide a brief summary (1-2 sentences) about this chunk:
+   - Count of matches found (e.g., "Found 3 CEOs")
+   - Any other relevant information about the matches in this chunk that can be aggreated for the final summary
+   - Key pattern if any (e.g., "All from tech companies")
+   - Only include facts from the actual matches
 
 Respond with JSON in this exact format:
 {
@@ -176,7 +193,8 @@ Respond with JSON in this exact format:
       "contactId": "contact-id-here",
       "reason": "Specific explanation of why this contact matches the query, citing exact matching information"
     }
-  ]
+  ],
+  "summary": "Brief factual summary about the matches in this chunk. 1-2 sentences max."
 }
 
 Think carefully about the query and find the most relevant contacts. Respond ONLY with valid JSON.`

@@ -16,11 +16,12 @@ interface ContactSearchResultsProps {
   isAiSearch: boolean
   isSearching: boolean
   query: string
-  totalResults: number
   onRegularSearch: (query: string) => void
   onReset: () => void
   onDeleteContact: (id: string) => void
   getAiReason: (id: string) => string | undefined
+  getFinalSummary: () => string | null
+  hasSummary: () => boolean
 }
 
 export function ContactSearchResults({
@@ -29,11 +30,12 @@ export function ContactSearchResults({
   isAiSearch,
   isSearching,
   query,
-  totalResults,
   onRegularSearch,
   onReset,
   onDeleteContact,
   getAiReason,
+  getFinalSummary,
+  hasSummary,
 }: ContactSearchResultsProps) {
   const [regularSearchQuery, setRegularSearchQuery] = React.useState("")
 
@@ -62,14 +64,6 @@ export function ContactSearchResults({
     prevPage,
   } = usePagination(displayContacts, 24)
 
-  // Get actual count of displayed AI results
-  const displayedResultsCount = useMemo(() => {
-    if (!isAiSearch) return contacts.length
-
-    // Count unique contact IDs that are actually displayed
-    return new Set(aiFilteredContacts.map((contact) => contact.id)).size
-  }, [isAiSearch, contacts.length, aiFilteredContacts])
-
   const handleRegularSearch = React.useCallback(
     (query: string) => {
       setRegularSearchQuery(query)
@@ -78,20 +72,33 @@ export function ContactSearchResults({
     [onRegularSearch],
   )
 
+  // Determine what to show
+  const showLoading = isSearching && displayContacts.length === 0
+  const showEmpty = !isSearching && displayContacts.length === 0
+  const showContacts = displayContacts.length > 0
+
+  // Debug info
+  console.log("ContactSearchResults render:", {
+    isAiSearch,
+    isSearching,
+    aiFilteredContactsCount: aiFilteredContacts.length,
+    displayContactsCount: displayContacts.length,
+    showLoading,
+    showEmpty,
+    showContacts
+  })
+
   return (
     <Card>
       <CardContent className="p-4">
         <div className="flex flex-col gap-4">
-          {/* Header with title, filter, and reset button */}
+          {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <h3 className="font-medium text-gray-900">
                 {isAiSearch ? (
                   <>
-                    AI Search Results ({displayedResultsCount})
-                    {totalResults > displayedResultsCount && (
-                      <span className="text-xs text-purple-600 ml-2">(Found {totalResults} total matches)</span>
-                    )}
+                    AI Search Results ({aiFilteredContacts.length})
                   </>
                 ) : (
                   <>All Contacts ({contacts.length})</>
@@ -99,7 +106,6 @@ export function ContactSearchResults({
               </h3>
             </div>
 
-            {/* Filter input moved to top right */}
             <div className="flex items-center gap-3">
               <div className="w-64">
                 <RegularSearchInput onSearch={handleRegularSearch} />
@@ -114,7 +120,7 @@ export function ContactSearchResults({
             </div>
           </div>
 
-          {/* Query Display - Only show when AI search is active */}
+          {/* Query Display */}
           {isAiSearch && query && (
             <div className="bg-gray-50 p-3 rounded-lg">
               <div className="text-sm text-gray-600 mb-1">Query:</div>
@@ -122,19 +128,36 @@ export function ContactSearchResults({
             </div>
           )}
 
-          {/* Loading indicator while searching */}
+          {/* Progress indicator */}
           {isSearching && (
             <div className="bg-purple-50 p-3 rounded-lg flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-purple-600" />
               <div className="text-sm text-purple-800">
-                Searching contacts... Found {displayedResultsCount} matches so far.
+                Searching contacts... {displayContacts.length > 0 && `Found ${displayContacts.length} matches so far.`}
               </div>
             </div>
           )}
 
-          {/* Contact Grid or Empty State */}
-          {isSearching && paginatedContacts.length === 0 ? (
-            // Only show loading state if no results yet
+          {/* AI Summary */}
+          {isAiSearch && hasSummary() && (
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                <h3 className="font-medium text-blue-900">AI Summary</h3>
+              </div>
+              {getFinalSummary() ? (
+                <p className="text-sm text-blue-800 leading-relaxed whitespace-pre-line">{getFinalSummary()}</p>
+              ) : (
+                <div className="flex items-center gap-2 text-sm text-blue-700">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Generating summary...</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main content area */}
+          {showLoading && (
             <div className="text-center py-12">
               <div className="flex flex-col items-center gap-4">
                 <div className="flex items-center gap-3">
@@ -144,7 +167,9 @@ export function ContactSearchResults({
                 <div className="text-lg font-medium text-gray-900">Searching contacts...</div>
               </div>
             </div>
-          ) : paginatedContacts.length === 0 ? (
+          )}
+
+          {showEmpty && (
             <div className="text-center py-12">
               {isAiSearch ? (
                 <div className="text-gray-500">
@@ -163,7 +188,9 @@ export function ContactSearchResults({
                 </div>
               )}
             </div>
-          ) : (
+          )}
+
+          {showContacts && (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedContacts.map((contact) => (
@@ -176,18 +203,18 @@ export function ContactSearchResults({
                   />
                 ))}
               </div>
-            </>
-          )}
 
-          {/* Pagination Controls */}
-          {paginatedContacts.length > 0 && (
-            <PaginationControls
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={goToPage}
-              onPrevPage={prevPage}
-              onNextPage={nextPage}
-            />
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <PaginationControls
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={goToPage}
+                  onPrevPage={prevPage}
+                  onNextPage={nextPage}
+                />
+              )}
+            </>
           )}
         </div>
       </CardContent>
