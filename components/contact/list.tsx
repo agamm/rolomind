@@ -12,12 +12,18 @@ import { usePagination } from "@/hooks/use-pagination"
 interface ContactListProps {
   contacts: Contact[]
   onSearch: (query: string) => void
+  aiResults?: Array<{ contact: Contact; reason: string }>
 }
 
-export function ContactList({ contacts, onSearch }: ContactListProps) {
+export function ContactList({ contacts, onSearch, aiResults }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const filteredContacts = React.useMemo(() => {
+    // If we have AI results, show those instead of all contacts
+    if (aiResults && aiResults.length > 0) {
+      return aiResults.map(result => result.contact)
+    }
+    
     if (!searchQuery.trim()) return contacts
     
     const query = searchQuery.toLowerCase()
@@ -26,7 +32,7 @@ export function ContactList({ contacts, onSearch }: ContactListProps) {
       contact.contactInfo.emails.some(email => email.toLowerCase().includes(query)) ||
       contact.notes.toLowerCase().includes(query)
     )
-  }, [contacts, searchQuery])
+  }, [contacts, searchQuery, aiResults])
 
   const {
     paginatedItems: paginatedContacts,
@@ -49,10 +55,10 @@ export function ContactList({ contacts, onSearch }: ContactListProps) {
           {/* Header */}
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-gray-900">
-              All Contacts ({filteredContacts.length})
+              {aiResults && aiResults.length > 0 ? 'AI Search Results' : 'All Contacts'} ({filteredContacts.length})
             </h3>
             <div className="w-64">
-              <SearchInput onSearch={handleSearch} />
+              <SearchInput onSearch={handleSearch} disabled={aiResults && aiResults.length > 0} />
             </div>
           </div>
 
@@ -72,12 +78,16 @@ export function ContactList({ contacts, onSearch }: ContactListProps) {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {paginatedContacts.map((contact) => (
-                  <ContactCard
-                    key={contact.id}
-                    contact={contact}
-                  />
-                ))}
+                {paginatedContacts.map((contact) => {
+                  const aiResult = aiResults?.find(result => result.contact.id === contact.id)
+                  return (
+                    <ContactCard
+                      key={contact.id}
+                      contact={contact}
+                      aiReason={aiResult?.reason}
+                    />
+                  )
+                })}
               </div>
 
               {/* Pagination */}

@@ -7,11 +7,13 @@ import { Search, X } from "lucide-react"
 interface SearchInputProps {
   onSearch: (query: string) => void
   placeholder?: string
+  disabled?: boolean
 }
 
 export function SearchInput({
   onSearch,
   placeholder = "Filter results by name, email, or notes...",
+  disabled = false,
 }: SearchInputProps) {
   const [query, setQuery] = useState("")
 
@@ -32,7 +34,13 @@ export function SearchInput({
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-      <Input value={query} onChange={handleChange} placeholder={placeholder} className="pl-10 pr-8 text-sm" />
+      <Input 
+        value={query} 
+        onChange={handleChange} 
+        placeholder={disabled ? "Clear AI results to use search" : placeholder} 
+        className="pl-10 pr-8 text-sm" 
+        disabled={disabled}
+      />
       {query && (
         <button
           type="button"

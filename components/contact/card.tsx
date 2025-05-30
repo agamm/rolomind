@@ -4,13 +4,14 @@ import React from "react"
 import type { Contact } from "@/types/contact"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin } from "lucide-react"
+import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin, Sparkles } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
+  aiReason?: string
 }
 
-export function ContactCard({ contact }: ContactCardProps) {
+export function ContactCard({ contact, aiReason }: ContactCardProps) {
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrls.length > 0) {
       const url = contact.contactInfo.linkedinUrls[0]
@@ -143,6 +144,18 @@ export function ContactCard({ contact }: ContactCardProps) {
               </div>
             )}
         </div>
+
+        {aiReason && (
+          <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <div className="flex items-start gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-medium text-blue-900 mb-1">AI Match</p>
+                <p className="text-xs text-blue-800">{aiReason}</p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="mt-3 pt-3 border-t text-xs text-gray-500">
           Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}

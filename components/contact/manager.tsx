@@ -11,6 +11,11 @@ export function ContactManager() {
   const { data: contacts = [], isLoading, error } = useContacts()
   const importMutation = useImportContacts()
   const deleteAllMutation = useDeleteAllContacts()
+  const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
+
+  const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
+    setAiResults(results)
+  }, [])
 
   const handleFileSelect = async (file: File) => {
     try {
@@ -66,10 +71,14 @@ export function ContactManager() {
             </div>
           ) : (
             <>
-              <AIQuery contacts={contacts} />
+              <AIQuery 
+                contacts={contacts} 
+                onResults={handleAiResults}
+              />
               <ContactList
                 contacts={contacts}
                 onSearch={handleSearch}
+                aiResults={aiResults}
               />
             </>
           )}

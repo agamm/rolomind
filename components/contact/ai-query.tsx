@@ -15,9 +15,10 @@ interface ContactMatch {
 
 interface AIQueryProps {
   contacts: Contact[]
+  onResults?: (results: Array<{ contact: Contact; reason: string }>) => void
 }
 
-export function AIQuery({ contacts }: AIQueryProps) {
+export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
   
   const { data: matches, isLoading, error, start, reset } = useJsonStream<ContactMatch>()
@@ -25,6 +26,8 @@ export function AIQuery({ contacts }: AIQueryProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim() && contacts.length > 0) {
+      // Clear previous results when starting new search
+      onResults?.([])
       start('/api/query-contacts', {
         method: 'POST',
         headers: {
@@ -39,6 +42,20 @@ export function AIQuery({ contacts }: AIQueryProps) {
     const contact = contacts.find(c => c.id === match.id)
     return contact ? { contact, reason: match.reason } : null
   }).filter(Boolean)
+
+  // Call onResults whenever matches change
+  React.useEffect(() => {
+    if (matches.length > 0) {
+      const results = matches.map(match => {
+        const contact = contacts.find(c => c.id === match.id)
+        return contact ? { contact, reason: match.reason } : null
+      }).filter(Boolean)
+      
+      if (results.length > 0) {
+        onResults?.(results)
+      }
+    }
+  }, [matches, contacts, onResults])
 
   return (
     <div className="space-y-6">
@@ -106,43 +123,15 @@ export function AIQuery({ contacts }: AIQueryProps) {
       )}
 
       {matchedContacts.length > 0 && (
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold text-gray-900">
-            AI Search Results ({matchedContacts.length} matches)
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {matchedContacts.map(({ contact, reason }, index) => (
-              <div 
-                key={contact.id} 
-                className="animate-fade-in opacity-0"
-                style={{
-                  animation: `fadeIn 0.5s ease-in-out ${index * 0.1}s forwards`
-                }}
-              >
-                <div className="relative">
-                  <ContactCard contact={contact} />
-                  <div className="mt-2 p-2 bg-blue-50 rounded text-sm text-blue-800 border border-blue-200">
-                    <span className="font-medium">AI Match:</span> {reason}
-                  </div>
-                </div>
-              </div>
-            ))}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-blue-600" />
+            <p className="font-medium text-blue-900">
+              Found {matchedContacts.length} AI matches - results shown in contact list below
+            </p>
           </div>
         </div>
       )}
-
-      <style jsx>{`
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }
