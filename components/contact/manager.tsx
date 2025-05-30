@@ -4,6 +4,7 @@ import React from "react"
 import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
+import { AIQuery } from "./ai-query"
 import { useContacts, useImportContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
 
 export function ContactManager() {
@@ -64,10 +65,13 @@ export function ContactManager() {
               <div className="text-lg text-gray-600">Loading contacts...</div>
             </div>
           ) : (
-            <ContactList
-              contacts={contacts}
-              onSearch={handleSearch}
-            />
+            <>
+              <AIQuery contacts={contacts} />
+              <ContactList
+                contacts={contacts}
+                onSearch={handleSearch}
+              />
+            </>
           )}
         </div>
       </div>

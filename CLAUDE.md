@@ -3,6 +3,7 @@
 - Keep files to less than 200 lines, split to hooks/functions to make everything readable.
 - Put components in the right folder or create one for a group of them.
 - components/ui is a special dir, don't change it, it is used for shadcn
+- NEVER say something works if you didn't check via the browser that it really worked!
 
 App functionality:
 - Searching "CEOs in Israel" then submitting should show loading (this should always return N>20 results).
