@@ -2,22 +2,19 @@
 
 import React from "react"
 import type { Contact } from "@/types/contact"
-import { SimplifiedContactCard } from "@/components/simplified-contact-card"
+import { ContactCard } from "./contact-card"
+import { SearchInput } from "./search-input"
 import { PaginationControls } from "@/components/pagination-controls"
-import { RegularSearchInput } from "@/components/regular-search-input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload } from "lucide-react"
 import { usePagination } from "@/hooks/use-pagination"
 
-interface ContactSearchResultsProps {
+interface ContactListProps {
   contacts: Contact[]
   onSearch: (query: string) => void
 }
 
-export function ContactSearchResults({
-  contacts,
-  onSearch,
-}: ContactSearchResultsProps) {
+export function ContactList({ contacts, onSearch }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
 
   const filteredContacts = React.useMemo(() => {
@@ -55,7 +52,7 @@ export function ContactSearchResults({
               All Contacts ({filteredContacts.length})
             </h3>
             <div className="w-64">
-              <RegularSearchInput onSearch={handleSearch} />
+              <SearchInput onSearch={handleSearch} />
             </div>
           </div>
 
@@ -76,7 +73,7 @@ export function ContactSearchResults({
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedContacts.map((contact) => (
-                  <SimplifiedContactCard
+                  <ContactCard
                     key={contact.id}
                     contact={contact}
                   />

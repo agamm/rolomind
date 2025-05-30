@@ -85,11 +85,32 @@ export function useImportContacts() {
       
       return data
     },
-    onSuccess: (data) => {
-      // Update the contacts cache with new contacts
-      queryClient.setQueryData(['contacts'], (oldContacts: Contact[] = []) => {
-        return [...oldContacts, ...data.contacts]
+    onSuccess: () => {
+      // Just invalidate to refetch fresh data from the API
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+    },
+  })
+}
+
+// Delete all contacts mutation
+export function useDeleteAllContacts() {
+  const queryClient = useQueryClient()
+  
+  return useMutation({
+    mutationFn: async (): Promise<void> => {
+      const response = await fetch('/api/contacts', {
+        method: 'DELETE'
       })
+      
+      const data = await response.json()
+      
+      if (!data.success) {
+        throw new Error(data.error || 'Failed to delete all contacts')
+      }
+    },
+    onSuccess: () => {
+      // Clear the contacts cache
+      queryClient.setQueryData(['contacts'], [])
       
       // Also invalidate to ensure fresh data
       queryClient.invalidateQueries({ queryKey: ['contacts'] })

@@ -4,15 +4,15 @@ import React, { useState, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Search, X } from "lucide-react"
 
-interface RegularSearchInputProps {
+interface SearchInputProps {
   onSearch: (query: string) => void
   placeholder?: string
 }
 
-export const RegularSearchInput = React.memo(function RegularSearchInput({
+export function SearchInput({
   onSearch,
   placeholder = "Filter results by name, email, or notes...",
-}: RegularSearchInputProps) {
+}: SearchInputProps) {
   const [query, setQuery] = useState("")
 
   const handleChange = useCallback(
@@ -44,4 +44,4 @@ export const RegularSearchInput = React.memo(function RegularSearchInput({
       )}
     </div>
   )
-})
+}

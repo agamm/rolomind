@@ -1,5 +1,32 @@
 import { NextRequest } from "next/server"
+import { promises as fs } from "fs"
+import path from "path"
 import { CSVParserFactory } from "@/lib/csv-parsers/parser-factory"
+import type { Contact } from "@/types/contact"
+
+const dataFilePath = path.join(process.cwd(), "data", "contacts.json")
+
+async function ensureDataDirectory() {
+  const dataDir = path.join(process.cwd(), "data")
+  try {
+    await fs.access(dataDir)
+  } catch {
+    await fs.mkdir(dataDir, { recursive: true })
+  }
+}
+
+async function loadExistingContacts(): Promise<Contact[]> {
+  try {
+    await ensureDataDirectory()
+    const data = await fs.readFile(dataFilePath, "utf-8")
+    return JSON.parse(data) as Contact[]
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+      return []
+    }
+    throw error
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -23,6 +50,14 @@ export async function POST(request: NextRequest) {
     const parserFactory = new CSVParserFactory()
     const result = parserFactory.detectAndParse(content)
 
+    // Load existing contacts and merge with new ones
+    const existingContacts = await loadExistingContacts()
+    const allContacts = [...existingContacts, ...result.contacts]
+
+    // Save merged contacts back to file
+    await ensureDataDirectory()
+    await fs.writeFile(dataFilePath, JSON.stringify(allContacts, null, 2))
+
     return Response.json({ 
       success: true, 
       contacts: result.contacts,
@@ -30,10 +65,10 @@ export async function POST(request: NextRequest) {
       totalImported: result.contacts.length
     })
   } catch (error) {
-    console.error("Error parsing CSV:", error)
+    console.error("Error importing CSV:", error)
     return Response.json({ 
       success: false, 
-      error: error instanceof Error ? error.message : "Failed to parse CSV" 
+      error: error instanceof Error ? error.message : "Failed to import CSV" 
     }, { status: 500 })
   }
 }

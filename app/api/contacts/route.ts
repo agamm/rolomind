@@ -60,4 +60,18 @@ export async function POST(request: NextRequest) {
     console.error("Error saving contacts:", error)
     return Response.json({ success: false, error: "Failed to save contacts" }, { status: 500 })
   }
+}
+
+export async function DELETE() {
+  try {
+    await ensureDataDirectory()
+    
+    // Write empty array to the file
+    await fs.writeFile(dataFilePath, JSON.stringify([], null, 2))
+    
+    return Response.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting all contacts:", error)
+    return Response.json({ success: false, error: "Failed to delete all contacts" }, { status: 500 })
+  }
 } 

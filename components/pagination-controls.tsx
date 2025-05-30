@@ -12,66 +12,85 @@ interface PaginationControlsProps {
   onNextPage: () => void
 }
 
-export const PaginationControls = React.memo(function PaginationControls({
+export function PaginationControls({
   currentPage,
   totalPages,
   onPageChange,
   onPrevPage,
   onNextPage,
 }: PaginationControlsProps) {
-  // Generate page numbers to show (current page, 2 before and 2 after if available)
-  const pageNumbers = React.useMemo(() => {
-    const pages = []
-    const startPage = Math.max(1, currentPage - 2)
-    const endPage = Math.min(totalPages, currentPage + 2)
-
-    for (let i = startPage; i <= endPage; i++) {
-      pages.push(i)
-    }
-
-    return pages
-  }, [currentPage, totalPages])
-
   if (totalPages <= 1) return null
 
+  const getVisiblePages = () => {
+    const delta = 2
+    const range = []
+    const rangeWithDots = []
+
+    for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+      range.push(i)
+    }
+
+    if (currentPage - delta > 2) {
+      rangeWithDots.push(1, "...")
+    } else {
+      rangeWithDots.push(1)
+    }
+
+    rangeWithDots.push(...range)
+
+    if (currentPage + delta < totalPages - 1) {
+      rangeWithDots.push("...", totalPages)
+    } else {
+      rangeWithDots.push(totalPages)
+    }
+
+    return rangeWithDots
+  }
+
+  const visiblePages = getVisiblePages()
+
   return (
-    <div className="flex items-center justify-center gap-2 mt-6">
-      <Button variant="outline" size="sm" onClick={onPrevPage} disabled={currentPage === 1}>
+    <div className="flex items-center justify-center gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onPrevPage}
+        disabled={currentPage === 1}
+        className="flex items-center gap-1"
+      >
         <ChevronLeft className="w-4 h-4" />
+        Previous
       </Button>
 
-      {pageNumbers[0] > 1 && (
-        <>
-          <Button variant="outline" size="sm" onClick={() => onPageChange(1)}>
-            1
-          </Button>
-          {pageNumbers[0] > 2 && <span className="text-gray-500">...</span>}
-        </>
-      )}
+      <div className="flex items-center gap-1">
+        {visiblePages.map((page, index) => (
+          <React.Fragment key={index}>
+            {page === "..." ? (
+              <span className="px-3 py-2 text-gray-500">...</span>
+            ) : (
+              <Button
+                variant={currentPage === page ? "default" : "outline"}
+                size="sm"
+                onClick={() => onPageChange(page as number)}
+                className="min-w-[40px]"
+              >
+                {page}
+              </Button>
+            )}
+          </React.Fragment>
+        ))}
+      </div>
 
-      {pageNumbers.map((page) => (
-        <Button
-          key={page}
-          variant={page === currentPage ? "default" : "outline"}
-          size="sm"
-          onClick={() => onPageChange(page)}
-        >
-          {page}
-        </Button>
-      ))}
-
-      {pageNumbers[pageNumbers.length - 1] < totalPages && (
-        <>
-          {pageNumbers[pageNumbers.length - 1] < totalPages - 1 && <span className="text-gray-500">...</span>}
-          <Button variant="outline" size="sm" onClick={() => onPageChange(totalPages)}>
-            {totalPages}
-          </Button>
-        </>
-      )}
-
-      <Button variant="outline" size="sm" onClick={onNextPage} disabled={currentPage === totalPages}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onNextPage}
+        disabled={currentPage === totalPages}
+        className="flex items-center gap-1"
+      >
+        Next
         <ChevronRight className="w-4 h-4" />
       </Button>
     </div>
   )
-})
+}

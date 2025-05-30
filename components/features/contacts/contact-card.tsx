@@ -6,14 +6,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin } from "lucide-react"
 
-interface SimplifiedContactCardProps {
+interface ContactCardProps {
   contact: Contact
 }
 
-export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
-  contact,
-}: SimplifiedContactCardProps) {
-
+export function ContactCard({ contact }: ContactCardProps) {
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrls.length > 0) {
       const url = contact.contactInfo.linkedinUrls[0]
@@ -147,8 +144,10 @@ export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
             )}
         </div>
 
-        <div className="mt-3 pt-3 border-t text-xs text-gray-500">Added {contact.createdAt.toLocaleDateString()}</div>
+        <div className="mt-3 pt-3 border-t text-xs text-gray-500">
+          Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}
+        </div>
       </CardContent>
     </Card>
   )
-})
+}

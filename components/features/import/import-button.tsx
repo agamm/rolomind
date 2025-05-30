@@ -10,7 +10,7 @@ interface ImportButtonProps {
   disabled?: boolean
 }
 
-export const ImportButton = React.memo(function ImportButton({
+export function ImportButton({
   onFileSelect,
   isImporting,
   disabled = false,
@@ -52,4 +52,4 @@ export const ImportButton = React.memo(function ImportButton({
       </Button>
     </>
   )
-})
+}
