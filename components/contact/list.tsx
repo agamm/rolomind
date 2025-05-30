@@ -2,7 +2,7 @@
 
 import React from "react"
 import type { Contact } from "@/types/contact"
-import { ContactCard } from "./contact-card"
+import { ContactCard } from "./card"
 import { SearchInput } from "./search-input"
 import { PaginationControls } from "@/components/pagination-controls"
 import { Card, CardContent } from "@/components/ui/card"

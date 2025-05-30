@@ -2,6 +2,7 @@
 - Always test the functionality of the app in the browser before concluding the changes worked and continueing to the next todo.
 - Keep files to less than 200 lines, split to hooks/functions to make everything readable.
 - Put components in the right folder or create one for a group of them.
+- components/ui is a special dir, don't change it, it is used for shadcn
 
 App functionality:
 - Searching "CEOs in Israel" then submitting should show loading (this should always return N>20 results).

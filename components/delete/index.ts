@@ -1,2 +1,2 @@
-export { DeleteAllButton } from './delete-all-button'
+export { DeleteAllButton } from './button'
 export { ConfirmationDialog } from './confirmation-dialog'

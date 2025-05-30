@@ -3,7 +3,7 @@
 import React from "react"
 import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
-import { ContactList } from "./contact-list"
+import { ContactList } from "./list"
 import { useContacts, useImportContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
 
 export function ContactManager() {

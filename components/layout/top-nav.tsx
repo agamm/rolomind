@@ -1,8 +1,8 @@
 "use client"
 
 import React from "react"
-import { ImportButton } from "@/components/features/import"
-import { DeleteAllButton } from "@/components/features/delete"
+import { ImportButton } from "@/components/import"
+import { DeleteAllButton } from "@/components/delete"
 
 interface TopNavProps {
   contactCount: number

@@ -1,4 +1,4 @@
-import { ContactManager } from "@/components/features/contacts"
+import { ContactManager } from "@/components/contact"
 
 export default function Home() {
   return <ContactManager />
