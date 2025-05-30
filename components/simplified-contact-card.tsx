@@ -2,27 +2,17 @@
 
 import React from "react"
 import type { Contact } from "@/types/contact"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Trash2, Mail, Phone, Linkedin, Sparkles, Briefcase, Calendar, MapPin } from "lucide-react"
+import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin } from "lucide-react"
 
 interface SimplifiedContactCardProps {
   contact: Contact
-  onDelete: (id: string) => void
-  isAiResult?: boolean
-  aiReason?: string
 }
 
 export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
   contact,
-  onDelete,
-  isAiResult = false,
-  aiReason,
 }: SimplifiedContactCardProps) {
-  const handleDelete = React.useCallback(() => {
-    onDelete(contact.id)
-  }, [contact.id, onDelete])
 
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrls.length > 0) {
@@ -71,7 +61,7 @@ export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
   }, [contact.notes])
 
   return (
-    <Card className={`hover:shadow-md transition-shadow ${isAiResult ? "border-purple-200 bg-purple-50" : ""}`}>
+    <Card className="hover:shadow-md transition-shadow">
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
@@ -87,29 +77,12 @@ export const SimplifiedContactCard = React.memo(function SimplifiedContactCard({
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 cursor-pointer"
                   title="Open LinkedIn Profile"
                 >
-                  <Linkedin className="w-4 h-4" />
+                  <ExternalLink className="w-4 h-4" />
                 </button>
               )}
             </div>
           </div>
-          {!isAiResult && (
-            <Button variant="ghost" size="sm" onClick={handleDelete} className="text-gray-400 hover:text-red-600">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
         </div>
-
-        {/* AI Reasoning - Always show when it's an AI result */}
-        {isAiResult && (
-          <div className="mb-3 p-2 bg-purple-100 rounded-md border border-purple-200">
-            <div className="flex items-start gap-2">
-              <Sparkles className="w-3 h-3 text-purple-600 mt-0.5 flex-shrink-0" />
-              <p className="text-xs text-purple-800 leading-relaxed">
-                {aiReason || "Matched based on your search criteria"}
-              </p>
-            </div>
-          </div>
-        )}
 
         {/* Professional Info */}
         {(extractedInfo.company || extractedInfo.position || extractedInfo.location || extractedInfo.connectedOn) && (

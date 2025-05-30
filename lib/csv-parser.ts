@@ -1,4 +1,4 @@
-import type { RawContactData } from "@/types/contact"
+import type { RawContactData, Contact } from "@/types/contact"
 
 export function parseCSV(csvContent: string): RawContactData[] {
   const lines = csvContent.trim().split("\n")
@@ -57,4 +57,26 @@ function parseCSVLine(line: string): string[] {
 
   result.push(current)
   return result
+}
+
+export async function parseCsvFile(file: File): Promise<Contact[]> {
+  const content = await file.text()
+  const rawData = parseCSV(content)
+  
+  return rawData.map((row, index) => {
+    const contact: Contact = {
+      id: `imported-${Date.now()}-${index}`,
+      name: row["First Name"] + " " + row["Last Name"] || row["Name"] || `Contact ${index + 1}`,
+      contactInfo: {
+        emails: row["Email Address"] ? [row["Email Address"]] : [],
+        phones: row["Phone Number"] ? [row["Phone Number"]] : [],
+        linkedinUrls: row["LinkedIn URL"] ? [row["LinkedIn URL"]] : []
+      },
+      notes: row["Notes"] || "",
+      source: "manual" as const,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+    return contact
+  })
 }

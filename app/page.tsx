@@ -1,5 +1,5 @@
-import { NativeAIContactManager } from "@/components/native-ai-contact-manager"
+import { ContactManager } from "@/components/contact-manager"
 
 export default function Home() {
-  return <NativeAIContactManager />
+  return <ContactManager />
 }

@@ -1,5 +1,6 @@
 - I already run npm run dev, never run it yourself
 - Always test the functionality of the app in the browser before concluding the changes worked and continueing to the next todo.
+- Keep files to less than 200 lines, split to hooks/functions to make everything readable.
 
 
 App functionality:
