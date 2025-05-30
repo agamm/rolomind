@@ -1,22 +1,17 @@
 "use client"
 
 import React, { useState } from "react"
-import { experimental_useObject as useObject } from '@ai-sdk/react'
-import { z } from 'zod'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { ContactCard } from "./card"
 import { Contact } from "@/types/contact"
-import { Loader2, Sparkles, StopCircle } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
+import { useJsonStream } from "@/hooks/use-json-stream"
 
-const contactMatchSchema = z.object({
-  matches: z.array(
-    z.object({
-      id: z.string(),
-      reason: z.string()
-    })
-  )
-})
+interface ContactMatch {
+  id: string
+  reason: string
+}
 
 interface AIQueryProps {
   contacts: Contact[]
@@ -24,23 +19,26 @@ interface AIQueryProps {
 
 export function AIQuery({ contacts }: AIQueryProps) {
   const [query, setQuery] = useState("")
-
-  const { object, submit, isLoading, stop } = useObject({
-    api: '/api/query-contacts',
-    schema: contactMatchSchema,
-  })
+  
+  const { data: matches, isLoading, error, start, reset } = useJsonStream<ContactMatch>()
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim() && contacts.length > 0) {
-      submit({ query: query.trim(), contacts })
+      start('/api/query-contacts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ query: query.trim(), contacts })
+      })
     }
   }
 
-  const matchedContacts = object?.matches?.map(match => {
+  const matchedContacts = matches.map(match => {
     const contact = contacts.find(c => c.id === match.id)
     return contact ? { contact, reason: match.reason } : null
-  }).filter(Boolean) || []
+  }).filter(Boolean)
 
   return (
     <div className="space-y-6">
@@ -73,17 +71,6 @@ export function AIQuery({ contacts }: AIQueryProps) {
                 'Search'
               )}
             </Button>
-            {isLoading && (
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={stop}
-                className="min-w-[80px]"
-              >
-                <StopCircle className="h-4 w-4 mr-2" />
-                Stop
-              </Button>
-            )}
           </div>
           
           {contacts.length === 0 && (
@@ -100,13 +87,19 @@ export function AIQuery({ contacts }: AIQueryProps) {
         </form>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <p className="text-red-700">{error.message}</p>
+        </div>
+      )}
+
       {isLoading && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
           <div className="flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
             <div>
               <p className="font-medium text-blue-900">AI is analyzing your contacts...</p>
-              <p className="text-sm text-blue-700">This may take a few moments</p>
+              <p className="text-sm text-blue-700">Results will stream in as they're found</p>
             </div>
           </div>
         </div>

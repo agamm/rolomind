@@ -1,14 +1,26 @@
+import { anthropic } from '@ai-sdk/anthropic';
+import { streamObject } from 'ai';
+import { z } from 'zod';
 import { createJsonStream } from '@/lib/stream-utils';
 
-export const maxDuration = 30;
+const greetingSchema = z.string().describe('A greeting in a different language');
+
 
 export async function POST() {
   return createJsonStream(async function* () {
-    const numbers = Array.from({ length: 10 }, (_, i) => i + 1);
-    
-    for (const number of numbers) {
-      yield { number };
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    const result = streamObject({
+      model: anthropic('claude-3-haiku-20240307'),
+      output: 'array',
+      schema: greetingSchema,
+      prompt: 'Generate a 20 different ways to say hello in different languages. Only return the greeting text itself.',
+      onFinish: (result) => {
+        console.log("Finished", result);
+      }
+    });
+
+    for await (const greeting of result.elementStream) {
+      yield greeting;
+      console.log("Greeting", greeting);
     }
   });
 }

@@ -2,16 +2,13 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { streamObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
+import { createJsonStream } from '@/lib/stream-utils';
 
 export const maxDuration = 30;
 
 const contactMatchSchema = z.object({
-  matches: z.array(
-    z.object({
-      id: z.string().describe('The contact ID that matches the query'),
-      reason: z.string().describe('Brief explanation of why this contact matches the query')
-    })
-  )
+  id: z.string().describe('The contact ID that matches the query'),
+  reason: z.string().describe('Brief explanation of why this contact matches the query')
 });
 
 export async function POST(req: Request) {
@@ -35,11 +32,13 @@ export async function POST(req: Request) {
       source: contact.source
     }));
 
-    const result = streamObject({
-      model: anthropic('claude-3-7-sonnet-20250219'),
-      schema: contactMatchSchema,
-      prompt: `You are helping to search through a contact database. 
-      
+    return createJsonStream(async function* () {
+      const { elementStream } = streamObject({
+        model: anthropic('claude-3-7-sonnet-20250219'),
+        output: 'array',
+        schema: contactMatchSchema,
+        prompt: `You are helping to search through a contact database. 
+        
 Given this query: "${query}"
 
 Analyze these contacts and return the ones that best match the query. Consider:
@@ -54,9 +53,12 @@ Here are the contacts to search through:
 ${JSON.stringify(contactsContext, null, 2)}
 
 Return an array of matches with the contact ID and a brief reason why each contact matches the query. Order by relevance (most relevant first). Only include contacts that are actually relevant to the query.`,
-    });
+      });
 
-    return result.toTextStreamResponse();
+      for await (const match of elementStream) {
+        yield match;
+      }
+    });
   } catch (error) {
     console.error('Error in query-contacts API:', error);
     return new Response('Internal server error', { status: 500 });
