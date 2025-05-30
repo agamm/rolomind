@@ -1,65 +1,25 @@
 "use client"
 
-import React, { useState } from "react"
+import React from "react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { Loader2, TestTube, CheckCircle, XCircle } from "lucide-react"
+import { useJsonStream } from "@/hooks/use-json-stream"
+
+interface NumberData {
+  number: number
+}
 
 export default function DebugPage() {
-  const [numbers, setNumbers] = useState<number[]>([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const { data: numbers, isLoading, error, start } = useJsonStream<NumberData>()
 
-  const handleTest = async () => {
-    setIsLoading(true)
-    setError(null)
-    setNumbers([])
-    
-    try {
-      const response = await fetch('/api/debug-stream', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
-      }
-      
-      const reader = response.body?.getReader()
-      if (!reader) {
-        throw new Error('No reader available')
-      }
-      
-      const decoder = new TextDecoder()
-      
-      while (true) {
-        const { done, value } = await reader.read()
-        
-        if (done) {
-          break
-        }
-        
-        const chunk = decoder.decode(value, { stream: true })
-        const lines = chunk.split('\n').filter(line => line.trim())
-        
-        for (const line of lines) {
-          try {
-            const data = JSON.parse(line)
-            if (data.number) {
-              setNumbers(prev => [...prev, data.number])
-            }
-          } catch (parseError) {
-            console.warn('Failed to parse line:', line)
-          }
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Unknown error')
-    } finally {
-      setIsLoading(false)
-    }
+  const handleTest = () => {
+    start('/api/debug-stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
   }
 
   return (
@@ -102,7 +62,7 @@ export default function DebugPage() {
                 <XCircle className="h-5 w-5" />
                 <span className="font-medium">Error occurred:</span>
               </div>
-              <p className="text-red-700 mt-1">{error}</p>
+              <p className="text-red-700 mt-1">{error.message}</p>
             </div>
           )}
 
@@ -127,12 +87,12 @@ export default function DebugPage() {
             </div>
             
             <div className="grid grid-cols-5 gap-3">
-              {numbers.map((number, index) => (
+              {numbers.map((item, index) => (
                 <div 
                   key={index}
                   className="p-4 bg-gray-50 border border-gray-200 rounded-lg text-center"
                 >
-                  <span className="text-2xl font-bold text-blue-600">{number}</span>
+                  <span className="text-2xl font-bold text-blue-600">{item.number}</span>
                 </div>
               ))}
             </div>
