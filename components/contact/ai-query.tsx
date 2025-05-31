@@ -3,59 +3,148 @@
 import React, { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { ContactCard } from "./card"
+import { Progress } from "@/components/ui/progress"
 import { Contact } from "@/types/contact"
 import { Loader2, Sparkles } from "lucide-react"
-import { useJsonStream } from "@/hooks/use-json-stream"
+import { useMutation } from "@tanstack/react-query"
 
 interface ContactMatch {
-  id: string
+  contact: Contact
   reason: string
 }
 
 interface AIQueryProps {
   contacts: Contact[]
-  onResults?: (results: Array<{ contact: Contact; reason: string }>) => void
+  onResults?: (results: ContactMatch[]) => void
+}
+
+const BATCH_SIZE = 100
+const PARALLEL_LIMIT = 10 // Start with 10 parallel requests
+
+async function queryBatch(contacts: Contact[], query: string, retries = 3): Promise<ContactMatch[]> {
+  try {
+    const response = await fetch('/api/query-contacts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ contacts, query })
+    })
+    
+    if (response.status === 429 && retries > 0) {
+      // Rate limited - wait and retry
+      const retryAfter = parseInt(response.headers.get('retry-after') || '5')
+      await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
+      return queryBatch(contacts, query, retries - 1)
+    }
+    
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Query failed')
+    }
+    
+    const { matches } = await response.json()
+    
+    if (!matches || !Array.isArray(matches)) {
+      return []
+    }
+    
+    return matches.map((m: any) => ({
+      contact: contacts.find(c => c.id === m.id)!,
+      reason: m.reason
+    })).filter(m => m.contact)
+  } catch (error) {
+    if (retries > 0) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      return queryBatch(contacts, query, retries - 1)
+    }
+    throw error
+  }
+}
+
+async function processInParallel(
+  batches: Contact[][], 
+  query: string, 
+  onProgress: (completed: number, total: number, results: ContactMatch[]) => void
+) {
+  const allResults: ContactMatch[] = []
+  let completed = 0
+  let parallelLimit = PARALLEL_LIMIT
+  let hitRateLimit = false
+  
+  for (let i = 0; i < batches.length; i += parallelLimit) {
+    const chunk = batches.slice(i, i + parallelLimit)
+    
+    try {
+      const promises = chunk.map(batch => queryBatch(batch, query))
+      const results = await Promise.all(promises)
+      
+      results.forEach(matches => allResults.push(...matches))
+      completed += chunk.length
+      
+      onProgress(completed, batches.length, allResults)
+      
+      // If successful, try increasing parallelism
+      if (!hitRateLimit && parallelLimit < 20) {
+        parallelLimit = Math.min(parallelLimit + 2, 20)
+      }
+    } catch (error: any) {
+      // Hit rate limit, reduce parallelism
+      if (error.message?.includes('429') || error.message?.includes('rate')) {
+        hitRateLimit = true
+        parallelLimit = Math.max(Math.floor(parallelLimit / 2), 2)
+        i -= parallelLimit // Retry this chunk
+      } else {
+        throw error
+      }
+    }
+  }
+  
+  return allResults
 }
 
 export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
+  const [progress, setProgress] = useState({ completed: 0, total: 0 })
+  const [results, setResults] = useState<ContactMatch[]>([])
   
-  const { data: matches, isLoading, error, start, reset } = useJsonStream<ContactMatch>()
+  const mutation = useMutation({
+    mutationFn: async (searchQuery: string) => {
+      setResults([])
+      setProgress({ completed: 0, total: 0 })
+      onResults?.([])
+      
+      // Create batches
+      const batches: Contact[][] = []
+      for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
+        batches.push(contacts.slice(i, i + BATCH_SIZE))
+      }
+      
+      setProgress({ completed: 0, total: batches.length })
+      
+      // Process with adaptive parallelism
+      const allResults = await processInParallel(
+        batches,
+        searchQuery,
+        (completed, total, results) => {
+          setProgress({ completed, total })
+          setResults([...results])
+          onResults?.([...results])
+        }
+      )
+      
+      return allResults
+    }
+  })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (query.trim() && contacts.length > 0) {
-      // Clear previous results when starting new search
-      onResults?.([])
-      start('/api/query-contacts', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ query: query.trim(), contacts })
-      })
+      mutation.mutate(query.trim())
     }
   }
 
-  const matchedContacts = matches.map(match => {
-    const contact = contacts.find(c => c.id === match.id)
-    return contact ? { contact, reason: match.reason } : null
-  }).filter(Boolean)
-
-  // Call onResults whenever matches change
-  React.useEffect(() => {
-    if (matches.length > 0) {
-      const results = matches.map(match => {
-        const contact = contacts.find(c => c.id === match.id)
-        return contact ? { contact, reason: match.reason } : null
-      }).filter(Boolean)
-      
-      if (results.length > 0) {
-        onResults?.(results)
-      }
-    }
-  }, [matches, contacts, onResults])
+  const progressPercent = progress.total > 0 
+    ? Math.round((progress.completed / progress.total) * 100) 
+    : 0
 
   return (
     <div className="space-y-6">
@@ -68,21 +157,20 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="e.g., 'CEOs in Israel', 'software engineers at startups', 'VCs in fintech'"
+              placeholder="e.g., 'CEOs in Israel', 'software engineers at startups'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              disabled={isLoading}
+              disabled={mutation.isPending}
               className="flex-1"
             />
             <Button 
               type="submit" 
-              disabled={isLoading || !query.trim() || contacts.length === 0}
-              className="min-w-[100px]"
+              disabled={mutation.isPending || !query.trim() || contacts.length === 0}
             >
-              {isLoading ? (
+              {mutation.isPending ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  Searching...
+                  Searching
                 </>
               ) : (
                 'Search'
@@ -92,44 +180,42 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
           
           {contacts.length === 0 && (
             <p className="text-sm text-gray-500">
-              No contacts available. Import some contacts first to use AI search.
-            </p>
-          )}
-          
-          {contacts.length > 500 && (
-            <p className="text-sm text-amber-600">
-              Note: Only the first 500 contacts will be searched to stay within AI limits.
+              Import contacts to use AI search.
             </p>
           )}
         </form>
       </div>
 
-      {error && (
+      {mutation.error && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">{error.message}</p>
+          <p className="text-red-700">{mutation.error.message}</p>
         </div>
       )}
 
-      {isLoading && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-3">
-            <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-            <div>
-              <p className="font-medium text-blue-900">AI is analyzing your contacts...</p>
-              <p className="text-sm text-blue-700">Results will stream in as they're found</p>
-            </div>
+      {mutation.isPending && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium text-blue-900">
+              Processing {progress.total} batches (up to 10-20 in parallel)
+            </span>
+            <span className="text-sm text-blue-700">
+              {progressPercent}% ({progress.completed} of {progress.total} complete)
+            </span>
           </div>
-        </div>
-      )}
-
-      {matchedContacts.length > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-blue-600" />
-            <p className="font-medium text-blue-900">
-              Found {matchedContacts.length} AI matches - results shown in contact list below
+          <Progress value={progressPercent} className="h-2" />
+          {results.length > 0 && (
+            <p className="text-sm text-blue-700">
+              Found {results.length} matches so far...
             </p>
-          </div>
+          )}
+        </div>
+      )}
+
+      {mutation.isSuccess && results.length > 0 && (
+        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <p className="text-green-800">
+            ✓ Found {results.length} matches
+          </p>
         </div>
       )}
     </div>

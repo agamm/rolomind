@@ -1,14 +1,16 @@
 import { anthropic } from '@ai-sdk/anthropic';
-import { streamObject } from 'ai';
+import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
-import { createJsonStream } from '@/lib/stream-utils';
+import { handleAIError } from '@/lib/ai-error-handler';
 
 export const maxDuration = 30;
 
-const contactMatchSchema = z.object({
-  id: z.string().describe('The contact ID that matches the query'),
-  reason: z.string().describe('Brief explanation of why this contact matches the query')
+const matchSchema = z.object({
+  matches: z.array(z.object({
+    id: z.string(),
+    reason: z.string()
+  }))
 });
 
 export async function POST(req: Request) {
@@ -16,51 +18,54 @@ export async function POST(req: Request) {
     const { query, contacts } = await req.json();
 
     if (!query || !contacts || !Array.isArray(contacts)) {
-      return new Response('Invalid request body', { status: 400 });
+      return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    // Limit contacts to first 500 to avoid AI limits
-    const limitedContacts = contacts.slice(0, 500);
-
-    const contactsContext = limitedContacts.map((contact: Contact) => ({
-      id: contact.id,
-      name: contact.name,
-      phones: contact.contactInfo.phones,
-      emails: contact.contactInfo.emails,
-      linkedinUrls: contact.contactInfo.linkedinUrls,
-      notes: contact.notes,
-      source: contact.source
+    // Process up to 100 contacts per request
+    const batch = contacts.slice(0, 100).map((c: Contact) => ({
+      id: c.id,
+      name: c.name,
+      phones: c.contactInfo.phones,
+      emails: c.contactInfo.emails,
+      linkedinUrls: c.contactInfo.linkedinUrls,
+      notes: c.notes,
+      source: c.source
     }));
 
-    return createJsonStream(async function* () {
-      const { elementStream } = streamObject({
-        model: anthropic('claude-3-7-sonnet-20250219'),
-        output: 'array',
-        schema: contactMatchSchema,
-        prompt: `You are helping to search through a contact database. 
-        
-Given this query: "${query}"
+    const { object } = await generateObject({
+      model: anthropic('claude-3-5-sonnet-20241022'),
+      schema: matchSchema,
+      prompt: `You are a contact search system that MUST match ALL conditions in compound queries.
 
-Analyze these contacts and return the ones that best match the query. Consider:
-- Name matches (partial or full)
-- Company/organization in notes or LinkedIn URLs
-- Job titles or roles in notes
-- Industry keywords in notes or LinkedIn
-- Location information in notes
-- Any other relevant context
+QUERY: "${query}"
 
-Here are the contacts to search through:
-${JSON.stringify(contactsContext, null, 2)}
+TASK: Analyze each contact and return ONLY those matching EVERY part of the query.
 
-Return an array of matches with the contact ID and a brief reason why each contact matches the query. Order by relevance (most relevant first). Only include contacts that are actually relevant to the query.`,
-      });
+MATCHING RULES:
+---
+For compound queries like "CEOs in Israel":
+✓ MUST be CEO/C-level executive (check: title, role, position)
+✓ MUST be in Israel (check: location, country, city, company HQ)
+✗ Do NOT return CEOs not in Israel
+✗ Do NOT return non-CEOs in Israel
+✗ Do NOT return contacts you aren't sure about
+---
 
-      for await (const match of elementStream) {
-        yield match;
-      }
+SEARCH FIELDS:
+1. Job titles/roles in notes
+2. LinkedIn profile data
+3. Location mentions
+4. Company locations
+5. Geographic indicators
+
+CONTACTS TO ANALYZE:
+${JSON.stringify(batch)}
+
+OUTPUT: Return empty array if no COMPLETE matches found.`
     });
+
+    return Response.json(object);
   } catch (error) {
-    console.error('Error in query-contacts API:', error);
-    return new Response('Internal server error', { status: 500 });
+    return handleAIError(error);
   }
 }
