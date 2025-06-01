@@ -5,14 +5,15 @@ import type { Contact } from "@/types/contact"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin } from "lucide-react"
+import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin, Edit2 } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
   aiReason?: string
+  onEdit?: (contact: Contact) => void
 }
 
-export function ContactCard({ contact, aiReason }: ContactCardProps) {
+export function ContactCard({ contact, aiReason, onEdit }: ContactCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrls.length > 0) {
@@ -58,6 +59,18 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
               )}
             </div>
           </div>
+          
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(contact)}
+              className="h-8 w-8 p-0"
+              title="Edit contact"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
         </div>
 
         {/* Professional Info - Each property on new line */}

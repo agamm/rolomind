@@ -1,13 +1,16 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import type { Contact } from "@/types/contact"
 import { ContactCard } from "./card"
 import { SearchInput } from "./search-input"
+import { EditContactModal } from "./edit-modal"
 import { PaginationControls } from "@/components/pagination-controls"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload } from "lucide-react"
 import { usePagination } from "@/hooks/use-pagination"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { toast } from "sonner"
 
 interface ContactListProps {
   contacts: Contact[]
@@ -17,6 +20,33 @@ interface ContactListProps {
 
 export function ContactList({ contacts, onSearch, aiResults }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const queryClient = useQueryClient()
+
+  const updateContactMutation = useMutation({
+    mutationFn: async (updatedContact: Contact) => {
+      const response = await fetch('/api/contacts', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedContact)
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to update contact')
+      }
+      
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+      toast.success('Contact updated successfully')
+      setEditingContact(null)
+    },
+    onError: (error) => {
+      toast.error('Failed to update contact')
+      console.error('Update error:', error)
+    }
+  })
 
   const filteredContacts = React.useMemo(() => {
     // If we have AI results, show those instead of all contacts
@@ -85,6 +115,7 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
                       key={contact.id}
                       contact={contact}
                       aiReason={aiResult?.reason}
+                      onEdit={setEditingContact}
                     />
                   )
                 })}
@@ -104,6 +135,13 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
           )}
         </div>
       </CardContent>
+      
+      <EditContactModal
+        contact={editingContact}
+        isOpen={!!editingContact}
+        onClose={() => setEditingContact(null)}
+        onSave={updateContactMutation.mutate}
+      />
     </Card>
   )
 }

@@ -74,4 +74,59 @@ export async function DELETE() {
     console.error("Error deleting all contacts:", error)
     return Response.json({ success: false, error: "Failed to delete all contacts" }, { status: 500 })
   }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const updatedContact: Contact = await request.json()
+    
+    if (!updatedContact.id) {
+      return Response.json(
+        { success: false, error: "Contact ID is required" },
+        { status: 400 }
+      )
+    }
+
+    await ensureDataDirectory()
+    
+    // Read existing contacts
+    let contacts: Contact[] = []
+    try {
+      const data = await fs.readFile(dataFilePath, "utf-8")
+      contacts = JSON.parse(data)
+    } catch (readError) {
+      if ((readError as NodeJS.ErrnoException).code !== "ENOENT") {
+        throw readError
+      }
+    }
+
+    const index = contacts.findIndex(c => c.id === updatedContact.id)
+    
+    if (index === -1) {
+      return Response.json(
+        { success: false, error: "Contact not found" },
+        { status: 404 }
+      )
+    }
+
+    // Update the contact
+    contacts[index] = {
+      ...contacts[index],
+      ...updatedContact,
+      updatedAt: new Date()
+    }
+
+    await fs.writeFile(dataFilePath, JSON.stringify(contacts, null, 2))
+
+    return Response.json({
+      success: true,
+      contact: contacts[index]
+    })
+  } catch (error) {
+    console.error("Error updating contact:", error)
+    return Response.json(
+      { success: false, error: "Failed to update contact" },
+      { status: 500 }
+    )
+  }
 } 
