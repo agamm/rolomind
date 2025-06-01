@@ -17,7 +17,7 @@ const contactUpdateSchema = z.object({
     platform: z.string(),
     url: z.string()
   })).optional().describe('Other social media or website URLs mentioned (e.g., Twitter, personal website)'),
-  notesToAdd: z.string().optional().describe('Additional notes to append to existing notes'),
+  notesComplete: z.string().optional().describe('Complete notes field after merging new information - include both existing notes and any new information mentioned'),
   fieldsToRemove: z.array(z.string()).optional().describe('Fields to clear/remove if explicitly mentioned')
 })
 
@@ -53,7 +53,11 @@ Instructions:
 1. Extract any new or updated information mentioned in the transcription
 2. Only include fields that are explicitly mentioned or updated
 3. For emails, phones, and LinkedIn URLs, only include NEW ones not already in the contact
-4. For notes, provide additional information to be appended to existing notes
+4. For notes:
+   - If any note content is mentioned, provide the COMPLETE notes field in notesComplete
+   - Merge existing notes with new information mentioned in the transcription
+   - Preserve all existing notes and add new information
+   - Avoid duplicating information that already exists
 5. If the speaker explicitly says to remove or clear something, include it in fieldsToRemove
 6. Be conservative - only extract clear, explicit information
 
@@ -62,11 +66,19 @@ Examples of what to extract:
 - "They moved to San Francisco" → location: "San Francisco"
 - "They're now the CTO" → role: "CTO"
 - "Remove their phone number" → fieldsToRemove: ["phones"]
-- "They mentioned they love hiking" → notesToAdd: "Loves hiking"
+- "They mentioned they love hiking" → notesComplete: "[existing notes]\n\nLoves hiking"
 `
     })
 
     // Merge the extracted information with the current contact
+    let mergedNotes = currentContact.notes || ''
+    
+    // Handle notes updates
+    if (object.notesComplete) {
+      // AI provided complete updated notes
+      mergedNotes = object.notesComplete
+    }
+    
     const updatedContact: Contact = {
       ...currentContact,
       name: object.name || currentContact.name,
@@ -82,7 +94,7 @@ Examples of what to extract:
           ...(object.otherUrls || [])
         ]
       },
-      notes: currentContact.notes + (object.notesToAdd ? `\n\n${object.notesToAdd}` : ''),
+      notes: mergedNotes,
       updatedAt: new Date()
     }
 

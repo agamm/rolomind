@@ -133,7 +133,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
             newUpdatedFields.add(`otherUrl-${updatedContact.contactInfo.otherUrls.length - changes.otherUrls.length + index}`)
           })
         }
-        if (changes.notesToAdd) newUpdatedFields.add('notes')
+        if (changes.notesComplete) newUpdatedFields.add('notes')
         
         setUpdatedFields(newUpdatedFields)
         
@@ -164,7 +164,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
           if (changes.location) extractedFields.push('location')
           if (changes.emails?.length) extractedFields.push(`${changes.emails.length} email(s)`)
           if (changes.phones?.length) extractedFields.push(`${changes.phones.length} phone(s)`)
-          if (changes.notesToAdd) extractedFields.push('notes')
+          if (changes.notesComplete) extractedFields.push('notes')
           
           if (extractedFields.length > 0) {
             toast.info(`Updated: ${extractedFields.join(', ')}`)

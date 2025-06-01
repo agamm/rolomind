@@ -61,7 +61,10 @@ export function ImportProgressModal({
         const isLLM = parserType === 'llm-normalizer'
         return {
           icon: isLLM ? (
-            <Sparkles className="h-8 w-8 text-purple-500 animate-pulse" />
+            <div className="relative">
+              <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600" />
+              <Sparkles className="h-8 w-8 text-purple-500 animate-pulse absolute top-4 left-4" />
+            </div>
           ) : (
             <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
           ),
@@ -146,6 +149,12 @@ export function ImportProgressModal({
               </span>
             </div>
             <Progress value={progressPercent} className="h-2" />
+            {parserType === 'llm-normalizer' && status === 'normalizing' && progressPercent > 0 && (
+              <div className="flex items-center justify-center gap-2 text-xs text-purple-600">
+                <Sparkles className="h-3 w-3 animate-pulse" />
+                <span>AI is extracting names, emails, phones, and other contact details...</span>
+              </div>
+            )}
           </div>
         )}
         
@@ -169,7 +178,7 @@ export function ImportProgressModal({
         )}
         
         {parserType && ['processing', 'normalizing', 'saving'].includes(status) && (
-          <div className="mt-4 flex justify-center">
+          <div className="mt-4 flex flex-col items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-1 text-xs">
               {parserType === 'linkedin' ? (
                 <>
@@ -183,6 +192,11 @@ export function ImportProgressModal({
                 </>
               )}
             </span>
+            {parserType === 'llm-normalizer' && status === 'normalizing' && (
+              <div className="text-xs text-gray-500 animate-pulse">
+                AI is analyzing field patterns and data structure...
+              </div>
+            )}
           </div>
         )}
       </DialogContent>
