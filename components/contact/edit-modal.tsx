@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Plus, X } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
 import { VoiceRecorder } from '@/components/ui/voice-recorder'
 import { toast } from 'sonner'
@@ -29,6 +29,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
   const [formData, setFormData] = useState<Partial<Contact>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
+  const [updatedFields, setUpdatedFields] = useState<Set<string>>(new Set())
   
   const {
     isRecording,
@@ -53,7 +54,8 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
         contactInfo: {
           emails: [...contact.contactInfo.emails],
           phones: [...contact.contactInfo.phones],
-          linkedinUrls: [...contact.contactInfo.linkedinUrls]
+          linkedinUrl: contact.contactInfo.linkedinUrl || '',
+          otherUrls: [...(contact.contactInfo.otherUrls || [])]
         }
       })
     }
@@ -105,7 +107,19 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
         const { updatedContact, changes, transcription } = await response.json()
         
         // Update form data with the voice-extracted information
-        setFormData(updatedContact)
+        setFormData({
+          name: updatedContact.name,
+          company: updatedContact.company || '',
+          role: updatedContact.role || '',
+          location: updatedContact.location || '',
+          notes: updatedContact.notes || '',
+          contactInfo: {
+            emails: [...updatedContact.contactInfo.emails],
+            phones: [...updatedContact.contactInfo.phones],
+            linkedinUrl: updatedContact.contactInfo.linkedinUrl || '',
+            otherUrls: [...(updatedContact.contactInfo.otherUrls || [])]
+          }
+        })
         
         // Show transcription if available
         if (transcription && !transcription.includes('not configured')) {
@@ -142,7 +156,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
     }
   }
 
-  const handleContactInfoChange = (field: 'emails' | 'phones' | 'linkedinUrls', index: number, value: string) => {
+  const handleArrayFieldChange = (field: 'emails' | 'phones', index: number, value: string) => {
     setFormData(prev => ({
       ...prev,
       contactInfo: {
@@ -152,7 +166,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
     }))
   }
 
-  const addContactInfoField = (field: 'emails' | 'phones' | 'linkedinUrls') => {
+  const addArrayField = (field: 'emails' | 'phones') => {
     setFormData(prev => ({
       ...prev,
       contactInfo: {
@@ -162,12 +176,44 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
     }))
   }
 
-  const removeContactInfoField = (field: 'emails' | 'phones' | 'linkedinUrls', index: number) => {
+  const removeArrayField = (field: 'emails' | 'phones', index: number) => {
     setFormData(prev => ({
       ...prev,
       contactInfo: {
         ...prev.contactInfo!,
         [field]: prev.contactInfo![field].filter((_, i) => i !== index)
+      }
+    }))
+  }
+
+  const handleOtherUrlChange = (index: number, field: 'platform' | 'url', value: string) => {
+    setFormData(prev => ({
+      ...prev,
+      contactInfo: {
+        ...prev.contactInfo!,
+        otherUrls: prev.contactInfo!.otherUrls.map((item, i) => 
+          i === index ? { ...item, [field]: value } : item
+        )
+      }
+    }))
+  }
+
+  const addOtherUrl = () => {
+    setFormData(prev => ({
+      ...prev,
+      contactInfo: {
+        ...prev.contactInfo!,
+        otherUrls: [...prev.contactInfo!.otherUrls, { platform: '', url: '' }]
+      }
+    }))
+  }
+
+  const removeOtherUrl = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      contactInfo: {
+        ...prev.contactInfo!,
+        otherUrls: prev.contactInfo!.otherUrls.filter((_, i) => i !== index)
       }
     }))
   }
@@ -240,16 +286,17 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               <div key={index} className="flex gap-2">
                 <Input
                   value={email}
-                  onChange={(e) => handleContactInfoChange('emails', index, e.target.value)}
+                  onChange={(e) => handleArrayFieldChange('emails', index, e.target.value)}
                   placeholder="email@example.com"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => removeContactInfoField('emails', index)}
+                  size="icon"
+                  onClick={() => removeArrayField('emails', index)}
                   disabled={formData.contactInfo!.emails.length === 1}
                 >
-                  Remove
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             ))}
@@ -257,8 +304,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => addContactInfoField('emails')}
+              onClick={() => addArrayField('emails')}
             >
+              <Plus className="mr-2 h-4 w-4" />
               Add Email
             </Button>
           </div>
@@ -270,16 +318,17 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               <div key={index} className="flex gap-2">
                 <Input
                   value={phone}
-                  onChange={(e) => handleContactInfoChange('phones', index, e.target.value)}
+                  onChange={(e) => handleArrayFieldChange('phones', index, e.target.value)}
                   placeholder="+1 (555) 123-4567"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => removeContactInfoField('phones', index)}
+                  size="icon"
+                  onClick={() => removeArrayField('phones', index)}
                   disabled={formData.contactInfo!.phones.length === 1}
                 >
-                  Remove
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             ))}
@@ -287,29 +336,54 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => addContactInfoField('phones')}
+              onClick={() => addArrayField('phones')}
             >
+              <Plus className="mr-2 h-4 w-4" />
               Add Phone
             </Button>
           </div>
 
-          {/* LinkedIn URLs */}
+          {/* LinkedIn URL */}
           <div className="space-y-2">
-            <Label>LinkedIn URLs</Label>
-            {formData.contactInfo?.linkedinUrls.map((url, index) => (
+            <Label htmlFor="linkedinUrl">LinkedIn URL</Label>
+            <Input
+              id="linkedinUrl"
+              value={formData.contactInfo?.linkedinUrl || ''}
+              onChange={(e) => setFormData(prev => ({
+                ...prev,
+                contactInfo: {
+                  ...prev.contactInfo!,
+                  linkedinUrl: e.target.value
+                }
+              }))}
+              placeholder="https://linkedin.com/in/username"
+            />
+          </div>
+
+          {/* Other URLs */}
+          <div className="space-y-2">
+            <Label>Other Social Media / Websites</Label>
+            {formData.contactInfo?.otherUrls.map((item, index) => (
               <div key={index} className="flex gap-2">
                 <Input
-                  value={url}
-                  onChange={(e) => handleContactInfoChange('linkedinUrls', index, e.target.value)}
-                  placeholder="https://linkedin.com/in/username"
+                  value={item.platform}
+                  onChange={(e) => handleOtherUrlChange(index, 'platform', e.target.value)}
+                  placeholder="Platform (e.g., Twitter)"
+                  className="w-1/3"
+                />
+                <Input
+                  value={item.url}
+                  onChange={(e) => handleOtherUrlChange(index, 'url', e.target.value)}
+                  placeholder="URL"
+                  className="flex-1"
                 />
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => removeContactInfoField('linkedinUrls', index)}
-                  disabled={formData.contactInfo!.linkedinUrls.length === 1}
+                  size="icon"
+                  onClick={() => removeOtherUrl(index)}
                 >
-                  Remove
+                  <X className="h-4 w-4" />
                 </Button>
               </div>
             ))}
@@ -317,9 +391,10 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               type="button"
               variant="outline"
               size="sm"
-              onClick={() => addContactInfoField('linkedinUrls')}
+              onClick={addOtherUrl}
             >
-              Add LinkedIn URL
+              <Plus className="mr-2 h-4 w-4" />
+              Add URL
             </Button>
           </div>
 

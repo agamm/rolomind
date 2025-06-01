@@ -12,7 +12,11 @@ const contactUpdateSchema = z.object({
   location: z.string().optional().describe('Location if mentioned'),
   emails: z.array(z.string()).optional().describe('New email addresses mentioned'),
   phones: z.array(z.string()).optional().describe('New phone numbers mentioned'),
-  linkedinUrls: z.array(z.string()).optional().describe('New LinkedIn URLs mentioned'),
+  linkedinUrl: z.string().optional().describe('LinkedIn URL if mentioned'),
+  otherUrls: z.array(z.object({
+    platform: z.string(),
+    url: z.string()
+  })).optional().describe('Other social media or website URLs mentioned (e.g., Twitter, personal website)'),
   notesToAdd: z.string().optional().describe('Additional notes to append to existing notes'),
   fieldsToRemove: z.array(z.string()).optional().describe('Fields to clear/remove if explicitly mentioned')
 })
@@ -72,7 +76,11 @@ Examples of what to extract:
       contactInfo: {
         emails: [...new Set([...currentContact.contactInfo.emails, ...(object.emails || [])])],
         phones: [...new Set([...currentContact.contactInfo.phones, ...(object.phones || [])])],
-        linkedinUrls: [...new Set([...currentContact.contactInfo.linkedinUrls, ...(object.linkedinUrls || [])])]
+        linkedinUrl: object.linkedinUrl || currentContact.contactInfo.linkedinUrl,
+        otherUrls: [
+          ...(currentContact.contactInfo.otherUrls || []),
+          ...(object.otherUrls || [])
+        ]
       },
       notes: currentContact.notes + (object.notesToAdd ? `\n\n${object.notesToAdd}` : ''),
       updatedAt: new Date()
@@ -97,8 +105,11 @@ Examples of what to extract:
           case 'phones':
             updatedContact.contactInfo.phones = []
             break
-          case 'linkedinUrls':
-            updatedContact.contactInfo.linkedinUrls = []
+          case 'linkedinUrl':
+            updatedContact.contactInfo.linkedinUrl = undefined
+            break
+          case 'otherUrls':
+            updatedContact.contactInfo.otherUrls = []
             break
         }
       })
@@ -128,7 +139,7 @@ async function transcribeAudio(audioFile: File): Promise<string> {
     
     const result = await experimental_transcribe({
       model: openai.transcription('whisper-1'),
-      audioData: uint8Array,
+      audio: uint8Array,
     })
     
     return result.text
