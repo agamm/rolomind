@@ -76,7 +76,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
         updatedAt: new Date()
       }
       
-      await onSave(updatedContact)
+      onSave(updatedContact)
       onClose()
     } catch (error) {
       console.error('Failed to save contact:', error)
@@ -129,7 +129,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
           })
         }
         if (changes.otherUrls?.length) {
-          changes.otherUrls.forEach((_: any, index: number) => {
+          changes.otherUrls.forEach((_: { platform: string; url: string }, index: number) => {
             newUpdatedFields.add(`otherUrl-${updatedContact.contactInfo.otherUrls.length - changes.otherUrls.length + index}`)
           })
         }

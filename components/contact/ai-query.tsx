@@ -9,6 +9,8 @@ import { Loader2, Sparkles } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
 import { useSummaryGeneration } from "@/hooks/use-summary-generation"
 import { SummaryDisplay } from "./summary-display"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
 
 interface ContactMatch {
   contact: Contact
@@ -108,6 +110,7 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [progress, setProgress] = useState({ completed: 0, total: 0 })
   const [results, setResults] = useState<ContactMatch[]>([])
+  const [enableSummary, setEnableSummary] = useState(true)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
   
   const mutation = useMutation({
@@ -139,7 +142,7 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
       return allResults
     },
     onSuccess: (allResults, searchQuery) => {
-      if (allResults.length > 0) {
+      if (allResults.length > 0 && enableSummary) {
         generateSummary(allResults, searchQuery)
       }
     }
@@ -186,6 +189,21 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
                 'Search'
               )}
             </Button>
+          </div>
+          
+          <div className="flex items-center gap-2 pt-2">
+            <Switch
+              id="ai-summary"
+              checked={enableSummary}
+              onCheckedChange={setEnableSummary}
+              disabled={mutation.isPending}
+            />
+            <Label 
+              htmlFor="ai-summary" 
+              className="text-sm font-normal text-gray-600 cursor-pointer"
+            >
+              Generate AI summary after search
+            </Label>
           </div>
           
           {contacts.length === 0 && (
