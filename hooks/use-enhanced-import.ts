@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { DuplicateMatch, mergeContacts } from '@/lib/contact-merger'
+import { DuplicateMatch } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 
 interface ImportResponse {
@@ -229,9 +229,28 @@ export function useEnhancedImport(onComplete?: () => void) {
     let contactToSave: Contact | null = null
     
     if (action === 'merge') {
-      const merged = mergeContacts(currentDuplicate.existing, currentDuplicate.incoming)
-      // Use the existing contact's ID to replace it
-      contactToSave = { ...merged, id: currentDuplicate.existing.id }
+      try {
+        // Call the merge API endpoint
+        const response = await fetch('/api/merge-contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            existing: currentDuplicate.existing,
+            incoming: currentDuplicate.incoming
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to merge contacts')
+        }
+        
+        const { mergedContact } = await response.json()
+        contactToSave = mergedContact
+      } catch (error) {
+        console.error('Failed to merge contacts:', error)
+        toast.error('Failed to merge contacts')
+        return
+      }
     } else if (action === 'keep-both') {
       contactToSave = currentDuplicate.incoming as Contact
     }

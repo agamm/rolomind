@@ -1,6 +1,9 @@
 export interface Contact {
   id: string
   name: string
+  company?: string
+  role?: string
+  location?: string
   contactInfo: {
     phones: string[]
     emails: string[]

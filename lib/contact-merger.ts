@@ -184,15 +184,84 @@ function mergeContactNotes(
   return result.join('\n')
 }
 
+function cleanNotesFromDuplicateFields(
+  notes: string, 
+  contact: Partial<Contact>
+): string {
+  if (!notes) return ''
+  
+  // Split notes into lines
+  const lines = notes.split('\n').map(line => line.trim()).filter(Boolean)
+  const cleanedLines: string[] = []
+  
+  for (const line of lines) {
+    const lowerLine = line.toLowerCase()
+    let shouldKeep = true
+    
+    // Check if this line contains information that's already in structured fields
+    if (contact.role && (lowerLine.includes('role:') || lowerLine.includes('position:') || lowerLine.includes('title:'))) {
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const value = line.substring(colonIndex + 1).trim()
+        // Remove if it's the same as the structured field
+        if (value.toLowerCase() === contact.role.toLowerCase()) {
+          shouldKeep = false
+        }
+      }
+    }
+    
+    if (contact.company && (lowerLine.includes('company:') || lowerLine.includes('employer:'))) {
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const value = line.substring(colonIndex + 1).trim()
+        if (value.toLowerCase() === contact.company.toLowerCase()) {
+          shouldKeep = false
+        }
+      }
+    }
+    
+    if (contact.location && lowerLine.includes('location:')) {
+      const colonIndex = line.indexOf(':')
+      if (colonIndex > 0) {
+        const value = line.substring(colonIndex + 1).trim()
+        if (value.toLowerCase() === contact.location.toLowerCase()) {
+          shouldKeep = false
+        }
+      }
+    }
+    
+    // Remove "Connected on" lines since we extract this separately
+    if (lowerLine.includes('connected:') || lowerLine.includes('connected on')) {
+      shouldKeep = false
+    }
+    
+    if (shouldKeep) {
+      cleanedLines.push(line)
+    }
+  }
+  
+  return cleanedLines.join('\n')
+}
+
 export function mergeContacts(
   existing: Contact,
   incoming: Partial<Contact>
 ): Contact {
+  // Merge structured fields first
+  const mergedStructuredFields = {
+    company: incoming.company || existing.company,
+    role: incoming.role || existing.role,
+    location: incoming.location || existing.location,
+  }
+  
   // Merge notes intelligently
   const mergedNotes = mergeContactNotes(
     existing.notes || '',
     incoming.notes || ''
   )
+  
+  // Clean merged notes from duplicate field information
+  const cleanedNotes = cleanNotesFromDuplicateFields(mergedNotes, mergedStructuredFields)
   
   const merged: Contact = {
     ...existing,
@@ -200,6 +269,8 @@ export function mergeContacts(
     name: (incoming.name && incoming.name.length > existing.name.length) 
       ? incoming.name 
       : existing.name,
+    // Use merged structured fields
+    ...mergedStructuredFields,
     contactInfo: {
       // Merge and deduplicate arrays
       phones: Array.from(new Set([
@@ -215,8 +286,8 @@ export function mergeContacts(
         ...(incoming.contactInfo?.linkedinUrls || [])
       ]))
     },
-    // Use AI-merged notes
-    notes: mergedNotes,
+    // Use cleaned notes
+    notes: cleanedNotes,
     // Update timestamp
     updatedAt: new Date()
   }

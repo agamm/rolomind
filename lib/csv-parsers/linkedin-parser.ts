@@ -39,19 +39,21 @@ export class LinkedInParser implements CSVParser {
       const lastName = row["Last Name"] || ""
       const fullName = `${firstName} ${lastName}`.trim() || `Contact ${index + 1}`
 
-      // Build professional info for notes
-      const company = row["Company"] || ""
-      const position = row["Position"] || ""
+      // Extract structured fields
+      const company = row["Company"] || undefined
+      const position = row["Position"] || undefined
       const connectedOn = row["Connected On"] || ""
       
+      // Only put non-structured data in notes
       let notes = ""
-      if (company) notes += `Company: ${company}`
-      if (position) notes += `${notes ? "; " : ""}Position: ${position}`
-      if (connectedOn) notes += `${notes ? "; " : ""}Connected: ${connectedOn}`
+      if (connectedOn) notes = `Connected: ${connectedOn}`
 
       const contact: Contact = {
         id: `linkedin-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
         name: fullName,
+        company,
+        role: position,
+        location: undefined, // LinkedIn doesn't export location by default
         contactInfo: {
           emails: row["Email Address"] ? [row["Email Address"]] : [],
           phones: [], // LinkedIn exports typically don't include phone numbers

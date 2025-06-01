@@ -10,9 +10,9 @@ const normalizedContactSchema = z.object({
   emails: z.array(z.string()).describe('Email addresses'),
   linkedinUrls: z.array(z.string()).describe('LinkedIn profile URLs'),
   company: z.string().optional().describe('Company name'),
-  title: z.string().optional().describe('Job title or position'),
-  location: z.string().optional().describe('Location or address'),
-  notes: z.string().optional().describe('Any additional notes or information')
+  role: z.string().optional().describe('Job title, position or role'),
+  location: z.string().optional().describe('Location, city, or address'),
+  notes: z.string().optional().describe('Any additional notes or information that does not fit in other fields')
 })
 
 export async function normalizeContactWithLLM(
@@ -33,8 +33,10 @@ Instructions:
 2. Extract all phone numbers (normalize to include country codes if evident from context)
 3. Extract all email addresses
 4. Extract LinkedIn URLs (look for linkedin.com URLs or profile identifiers)
-5. Extract company, title, and location if available
-6. Compile any other relevant information into notes
+5. Extract company name if available
+6. Extract job title/position/role if available
+7. Extract location (city, state, country) if available
+8. Put any other relevant information into notes (but NOT company, role, or location)
 
 Be thorough in extracting all available contact information.`
     })
@@ -42,17 +44,15 @@ Be thorough in extracting all available contact information.`
     const contact: Partial<Contact> = {
       id: uuidv4(),
       name: object.name,
+      company: object.company,
+      role: object.role,
+      location: object.location,
       contactInfo: {
         phones: object.phones || [],
         emails: object.emails || [],
         linkedinUrls: object.linkedinUrls || []
       },
-      notes: [
-        object.company && `Company: ${object.company}`,
-        object.title && `Title: ${object.title}`,
-        object.location && `Location: ${object.location}`,
-        object.notes
-      ].filter(Boolean).join('\n'),
+      notes: object.notes || '',
       source: 'manual' as const,
       createdAt: new Date(),
       updatedAt: new Date()

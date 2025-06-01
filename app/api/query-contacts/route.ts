@@ -51,15 +51,10 @@ For compound queries like "CEOs in Israel":
 ✗ Do NOT return contacts you aren't sure about
 ---
 
-SEARCH FIELDS:
-1. Job titles/roles in notes
-2. LinkedIn profile data
-3. Location mentions
-4. Company locations
-5. Geographic indicators
-
 CONTACTS TO ANALYZE:
+---
 ${JSON.stringify(batch)}
+---
 
 OUTPUT: Return empty array if no COMPLETE matches found.`
     });

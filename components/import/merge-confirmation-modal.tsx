@@ -1,6 +1,6 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Contact } from '@/types/contact'
-import { DuplicateMatch, mergeContacts } from '@/lib/contact-merger'
+import { DuplicateMatch } from '@/lib/contact-merger'
 import { Button } from '@/components/ui/button'
 import { 
   Dialog, 
@@ -10,8 +10,8 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog'
-import { Badge } from '@/components/ui/badge'
-import { Mail, Phone, Calendar, AlertCircle, Link } from 'lucide-react'
+import { AlertCircle, Loader2 } from 'lucide-react'
+import { ContactCard } from '@/components/contact'
 
 interface MergeConfirmationModalProps {
   duplicate: DuplicateMatch | null
@@ -24,16 +24,48 @@ export function MergeConfirmationModal({
   onDecision,
   remainingCount 
 }: MergeConfirmationModalProps) {
+  const [mergedPreview, setMergedPreview] = useState<Contact | null>(null)
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false)
+  
+  useEffect(() => {
+    if (!duplicate) return
+    
+    // Fetch merge preview
+    const fetchMergePreview = async () => {
+      setIsLoadingPreview(true)
+      try {
+        const response = await fetch('/api/merge-contacts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            existing: duplicate.existing,
+            incoming: duplicate.incoming
+          })
+        })
+        
+        if (response.ok) {
+          const { mergedContact } = await response.json()
+          setMergedPreview(mergedContact)
+        }
+      } catch (error) {
+        console.error('Failed to get merge preview:', error)
+      } finally {
+        setIsLoadingPreview(false)
+      }
+    }
+    
+    fetchMergePreview()
+  }, [duplicate])
+  
   if (!duplicate) return null
   
   const { existing, incoming, matchType, matchValue } = duplicate
-  const merged = mergeContacts(existing, incoming)
   
   return (
     <Dialog open={!!duplicate} onOpenChange={(open) => {
       if (!open) onDecision('cancel')
     }}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-center">
             Duplicate Contact Found
@@ -60,7 +92,9 @@ export function MergeConfirmationModal({
               <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
               Current Contact
             </h3>
-            <ContactCard contact={existing} />
+            <div className="border-2 border-gray-200 rounded-lg">
+              <ContactCard contact={existing} />
+            </div>
           </div>
           
           {/* Incoming Contact */}
@@ -69,16 +103,30 @@ export function MergeConfirmationModal({
               <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
               New Contact
             </h3>
-            <ContactCard contact={incoming as Contact} isPartial />
+            <div className="border-2 border-blue-200 rounded-lg">
+              <ContactCard contact={incoming as Contact} />
+            </div>
           </div>
           
-          {/* Merged Result */}
+          {/* Merged Preview */}
           <div className="space-y-3">
             <h3 className="font-semibold text-sm text-green-700 flex items-center gap-2">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
               After Merge
             </h3>
-            <ContactCard contact={merged} isMerged />
+            <div className="border-2 border-green-300 rounded-lg bg-green-50">
+              {isLoadingPreview ? (
+                <div className="flex items-center justify-center h-48">
+                  <Loader2 className="h-6 w-6 animate-spin text-green-600" />
+                </div>
+              ) : mergedPreview ? (
+                <ContactCard contact={mergedPreview} />
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  Unable to preview merge
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -95,86 +143,5 @@ export function MergeConfirmationModal({
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function ContactCard({ 
-  contact, 
-  isPartial = false,
-  isMerged = false 
-}: { 
-  contact: Contact | Partial<Contact>
-  isPartial?: boolean
-  isMerged?: boolean 
-}) {
-  const bgClass = isMerged 
-    ? 'bg-green-50 border-green-300 shadow-sm' 
-    : isPartial 
-    ? 'bg-blue-50 border-blue-200'
-    : 'bg-gray-50 border-gray-200'
-  
-  return (
-    <div className={`rounded-lg border-2 p-4 space-y-3 ${bgClass}`}>
-      <div>
-        <h4 className="font-medium text-gray-900">{contact.name || 'No name'}</h4>
-        {contact.source && (
-          <Badge variant="outline" className="text-xs mt-1">
-            {contact.source}
-          </Badge>
-        )}
-      </div>
-      
-      {contact.contactInfo && (
-        <div className="space-y-2 text-sm">
-          {contact.contactInfo.emails?.length > 0 && (
-            <div className="flex items-start gap-2">
-              <Mail className="h-4 w-4 text-gray-400 mt-0.5" />
-              <div className="space-y-1">
-                {contact.contactInfo.emails.map((email, i) => (
-                  <div key={i} className="text-gray-600">{email}</div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {contact.contactInfo.phones?.length > 0 && (
-            <div className="flex items-start gap-2">
-              <Phone className="h-4 w-4 text-gray-400 mt-0.5" />
-              <div className="space-y-1">
-                {contact.contactInfo.phones.map((phone, i) => (
-                  <div key={i} className="text-gray-600">{phone}</div>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {contact.contactInfo.linkedinUrls?.length > 0 && (
-            <div className="flex items-start gap-2">
-              <Link className="h-4 w-4 text-gray-400 mt-0.5" />
-              <div className="space-y-1">
-                {contact.contactInfo.linkedinUrls.map((url, i) => (
-                  <div key={i} className="text-gray-600 truncate">
-                    {url.replace('https://www.linkedin.com/in/', '')}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-      
-      {contact.notes && (
-        <div className="text-sm text-gray-600 bg-white rounded p-2 max-h-32 overflow-y-auto">
-          <p className="whitespace-pre-wrap">{contact.notes}</p>
-        </div>
-      )}
-      
-      {contact.createdAt && (
-        <div className="flex items-center gap-1 text-xs text-gray-500">
-          <Calendar className="h-3 w-3" />
-          {isPartial ? 'New' : new Date(contact.createdAt).toLocaleDateString()}
-        </div>
-      )}
-    </div>
   )
 }

@@ -5,7 +5,7 @@ import type { Contact } from "@/types/contact"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
+import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
@@ -35,30 +35,6 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
     }
   }, [contact.contactInfo.phones])
 
-  // Extract company, position, location, and connection date from notes
-  const extractedInfo = React.useMemo(() => {
-    const info = {
-      company: "",
-      position: "",
-      location: "",
-      connectedOn: "",
-    }
-
-    if (!contact.notes) return info
-
-    // Extract information using regex
-    const companyMatch = contact.notes.match(/Company: ([^;]+)/)
-    const positionMatch = contact.notes.match(/Position: ([^;]+)/)
-    const locationMatch = contact.notes.match(/Location: ([^;]+)/)
-    const connectedMatch = contact.notes.match(/Connected: ([^;]+)/)
-
-    if (companyMatch) info.company = companyMatch[1].trim()
-    if (positionMatch) info.position = positionMatch[1].trim()
-    if (locationMatch) info.location = locationMatch[1].trim()
-    if (connectedMatch) info.connectedOn = connectedMatch[1].trim()
-
-    return info
-  }, [contact.notes])
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -84,35 +60,27 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
           </div>
         </div>
 
-        {/* Professional Info */}
-        {(extractedInfo.company || extractedInfo.position || extractedInfo.location || extractedInfo.connectedOn) && (
-          <div className="mb-3 space-y-1.5">
-            {(extractedInfo.position || extractedInfo.company) && (
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Briefcase className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span>
-                  {extractedInfo.position && <span>{extractedInfo.position}</span>}
-                  {extractedInfo.position && extractedInfo.company && <span> at </span>}
-                  {extractedInfo.company && <span className="font-medium">{extractedInfo.company}</span>}
-                </span>
-              </div>
-            )}
-
-            {extractedInfo.location && (
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <MapPin className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span>{extractedInfo.location}</span>
-              </div>
-            )}
-
-            {extractedInfo.connectedOn && (
-              <div className="flex items-center gap-2 text-xs text-gray-700">
-                <Calendar className="w-3 h-3 text-gray-500 flex-shrink-0" />
-                <span>Connected on {extractedInfo.connectedOn}</span>
-              </div>
-            )}
-          </div>
-        )}
+        {/* Professional Info - Each property on new line */}
+        <div className="mb-3 space-y-1 text-sm">
+          {contact.company && (
+            <div className="text-gray-700 flex items-center gap-1.5">
+              <Building2 className="w-3.5 h-3.5 text-gray-500" />
+              {contact.company}
+            </div>
+          )}
+          {contact.role && (
+            <div className="text-gray-700 flex items-center gap-1.5">
+              <Briefcase className="w-3.5 h-3.5 text-gray-500" />
+              {contact.role}
+            </div>
+          )}
+          {contact.location && (
+            <div className="text-gray-700 flex items-center gap-1.5">
+              <MapPin className="w-3.5 h-3.5 text-gray-500" />
+              {contact.location}
+            </div>
+          )}
+        </div>
 
         <div className="space-y-2 text-sm">
           {contact.contactInfo.emails.length > 0 && (
@@ -138,7 +106,7 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
           {/* Show notes with expand/collapse functionality */}
           {contact.notes && (
             <div className="space-y-2">
-              <div className="text-gray-600 text-xs bg-gray-50 p-2 rounded">
+              <div className="text-gray-600 text-xs bg-gray-100 p-3 rounded-md border border-gray-200">
                 {(() => {
                   
                   // For structured data, show full notes if expanded, otherwise show excerpt
