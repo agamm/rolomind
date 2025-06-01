@@ -1,0 +1,335 @@
+import { useState } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { DuplicateMatch, mergeContacts } from '@/lib/contact-merger'
+import { Contact } from '@/types/contact'
+
+interface ImportResponse {
+  success: boolean
+  phase?: 'detection' | 'complete'
+  processed?: {
+    total: number
+    normalized: number
+    unique: number
+    duplicates: number
+  }
+  uniqueContacts?: Contact[]
+  duplicates?: DuplicateMatch[]
+  parserUsed?: string
+  rowCount?: number
+  error?: string
+}
+
+interface SaveResponse {
+  success: boolean
+  totalContacts: number
+  saved: number
+  error?: string
+}
+
+export interface ImportProgress {
+  status: 'idle' | 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
+  parserType?: 'linkedin' | 'llm-normalizer'
+  progress?: {
+    current: number
+    total: number
+    message?: string
+  }
+  error?: string
+}
+
+export function useEnhancedImport(onComplete?: () => void) {
+  const queryClient = useQueryClient()
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([])
+  const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
+  const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
+  const [importProgress, setImportProgress] = useState<ImportProgress>({ status: 'idle' })
+  
+  // Import mutation
+  const importMutation = useMutation({
+    mutationFn: async (file: File): Promise<ImportResponse> => {
+      setImportProgress({ status: 'detecting' })
+      
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // Phase 1: Quick detection
+      const detectResponse = await fetch('/api/import?phase=detect', {
+        method: 'POST',
+        body: formData
+      })
+      
+      const detectData = await detectResponse.json()
+      
+      if (!detectResponse.ok) {
+        throw new Error(detectData.error || 'Detection failed')
+      }
+      
+      // Update progress with parser type
+      const parserType = detectData.parserUsed === 'linkedin' ? 'linkedin' : 'llm-normalizer'
+      
+      // Show format detection animation
+      setImportProgress({
+        status: 'detecting',
+        parserType,
+        progress: {
+          current: 0,
+          total: detectData.rowCount || 0,
+          message: 'Format detected!'
+        }
+      })
+      
+      // Wait to show the format selection animation
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Transition to processing/normalizing
+      setImportProgress({
+        status: parserType === 'linkedin' ? 'processing' : 'normalizing',
+        parserType,
+        progress: {
+          current: 0,
+          total: detectData.rowCount || 0,
+          message: parserType === 'linkedin' 
+            ? 'Processing LinkedIn contacts...' 
+            : 'AI is analyzing your contacts...'
+        }
+      })
+      
+      // Phase 2: Full processing
+      const processResponse = await fetch('/api/import?phase=process', {
+        method: 'POST',
+        body: formData
+      })
+      
+      const processData = await processResponse.json()
+      
+      if (!processResponse.ok) {
+        throw new Error(processData.error || 'Processing failed')
+      }
+      
+      // Update progress with final data
+      setImportProgress({
+        status: parserType === 'linkedin' ? 'processing' : 'normalizing',
+        parserType,
+        progress: {
+          current: processData.processed?.normalized || 0,
+          total: processData.processed?.total || 0,
+          message: 'Processing complete!'
+        }
+      })
+      
+      return processData
+    },
+    onSuccess: async (data) => {
+      // Show checking duplicates status
+      setImportProgress({
+        status: 'checking-duplicates',
+        parserType: importProgress.parserType,
+        progress: {
+          current: data.processed?.unique || 0,
+          total: data.processed?.normalized || 0,
+          message: 'Checking for duplicate contacts...'
+        }
+      })
+      
+      // Longer delay to show the checking phase properly
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Initialize with unique contacts
+      setResolvedContacts(data.uniqueContacts || [])
+      
+      // If there are duplicates, start resolution
+      if (data.duplicates && data.duplicates.length > 0) {
+        setImportProgress({ 
+          status: 'resolving',
+          parserType: importProgress.parserType
+        })
+        setDuplicates(data.duplicates)
+        setCurrentDuplicate(data.duplicates[0])
+      } else {
+        // No duplicates, save immediately
+        saveMutation.mutate(data.uniqueContacts || [])
+      }
+    },
+    onError: (error) => {
+      setImportProgress({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Import failed'
+      })
+    }
+  })
+  
+  // Save mutation
+  const saveMutation = useMutation({
+    mutationFn: async (contacts: Contact[]): Promise<SaveResponse> => {
+      setImportProgress({
+        status: 'saving',
+        parserType: importProgress.parserType,
+        progress: {
+          current: 0,
+          total: contacts.length,
+          message: 'Saving contacts to database...'
+        }
+      })
+      const response = await fetch('/api/import', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts })
+      })
+      
+      const data = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Save failed')
+      }
+      
+      return data
+    },
+    onSuccess: (data) => {
+      setImportProgress({
+        status: 'complete',
+        parserType: importProgress.parserType,
+        progress: {
+          current: data.saved,
+          total: data.saved,
+          message: 'Import completed successfully!'
+        }
+      })
+      
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+      toast.success(`Successfully imported ${data.saved} contacts`)
+      
+      // Reset after delay
+      setTimeout(() => {
+        setImportProgress({ status: 'idle' })
+        onComplete?.()
+      }, 2000)
+    },
+    onError: (error) => {
+      setImportProgress({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Save failed'
+      })
+    }
+  })
+  
+  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => {
+    if (!currentDuplicate) return
+    
+    // Handle cancel - stop entire import
+    if (action === 'cancel') {
+      cancelImport()
+      return
+    }
+    
+    const remainingDuplicates = [...duplicates]
+    const currentIndex = remainingDuplicates.findIndex(d => d === currentDuplicate)
+    
+    // Handle the current duplicate
+    let contactToSave: Contact | null = null
+    
+    if (action === 'merge') {
+      const merged = mergeContacts(currentDuplicate.existing, currentDuplicate.incoming)
+      contactToSave = { ...merged, mergeWithId: currentDuplicate.existing.id }
+    } else if (action === 'keep-both') {
+      contactToSave = currentDuplicate.incoming as Contact
+    }
+    // If 'skip', contactToSave remains null
+    
+    // Save immediately if we have a contact to save
+    if (contactToSave) {
+      try {
+        // Save this single contact immediately
+        const response = await fetch('/api/import', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ contacts: [contactToSave] })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to save contact')
+        }
+        
+        // Refresh contacts list
+        queryClient.invalidateQueries({ queryKey: ['contacts'] })
+        
+        // Show feedback
+        if (action === 'merge') {
+          toast.success('Contact merged and saved')
+        } else {
+          toast.success('Contact saved')
+        }
+      } catch (error) {
+        console.error('Failed to save contact:', error)
+        toast.error('Failed to save merged contact')
+      }
+    }
+    
+    // Remove current duplicate and move to next
+    remainingDuplicates.splice(currentIndex, 1)
+    setDuplicates(remainingDuplicates)
+    
+    if (remainingDuplicates.length > 0) {
+      setCurrentDuplicate(remainingDuplicates[0])
+    } else {
+      // All duplicates handled, now save any remaining unique contacts
+      setCurrentDuplicate(null)
+      if (resolvedContacts.length > 0) {
+        saveMutation.mutate(resolvedContacts)
+      } else {
+        // No more contacts to save, we're done
+        setImportProgress({
+          status: 'complete',
+          parserType: importProgress.parserType,
+          progress: {
+            current: 1,
+            total: 1,
+            message: 'Import completed!'
+          }
+        })
+        
+        toast.success('Import completed!')
+        
+        setTimeout(() => {
+          setImportProgress({ status: 'idle' })
+          onComplete?.()
+        }, 2000)
+      }
+    }
+  }
+  
+  const resetImport = () => {
+    setImportProgress({ status: 'idle' })
+    setDuplicates([])
+    setCurrentDuplicate(null)
+    setResolvedContacts([])
+  }
+  
+  const cancelImport = () => {
+    // Cancel any pending mutations
+    importMutation.reset()
+    saveMutation.reset()
+    
+    // Reset state
+    resetImport()
+    
+    toast.info('Import cancelled')
+  }
+  
+  return {
+    importFile: (file: File) => {
+      // Set detecting status immediately before mutation
+      setImportProgress({ status: 'detecting' })
+      importMutation.mutate(file)
+    },
+    isImporting: importMutation.isPending,
+    isSaving: saveMutation.isPending,
+    currentDuplicate,
+    duplicatesCount: duplicates.length,
+    handleDuplicateDecision,
+    error: importMutation.error || saveMutation.error,
+    importProgress,
+    resetImport,
+    cancelImport
+  }
+}

@@ -5,27 +5,35 @@ import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
-import { useContacts, useImportContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
+import { useContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
+import { useEnhancedImport } from "@/hooks/use-enhanced-import"
 import { Contact } from "@/types/contact"
+import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
+import { ImportProgressModal } from "@/components/import/import-progress-modal"
 
 export function ContactManager() {
-  const { data: contacts = [], isLoading, error } = useContacts()
-  const importMutation = useImportContacts()
+  const { data: contacts = [], isLoading, error, refetch } = useContacts()
   const deleteAllMutation = useDeleteAllContacts()
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
+  
+  const {
+    importFile,
+    isImporting,
+    isSaving,
+    currentDuplicate,
+    duplicatesCount,
+    handleDuplicateDecision,
+    error: importError,
+    importProgress,
+    cancelImport
+  } = useEnhancedImport(() => refetch())
 
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
     setAiResults(results)
   }, [])
 
   const handleFileSelect = async (file: File) => {
-    try {
-      const result = await importMutation.mutateAsync(file)
-      toast.success(`Successfully imported ${result.totalImported} contacts using ${result.parserUsed} parser.`)
-    } catch (error) {
-      console.error("Failed to import contacts:", error)
-      toast.error(`Failed to import contacts: ${error instanceof Error ? error.message : "Please check the file format."}`)
-    }
+    importFile(file)
   }
 
   const handleDeleteAll = async () => {
@@ -57,7 +65,7 @@ export function ContactManager() {
             contactCount={contacts.length}
             onFileSelect={handleFileSelect}
             onDeleteAll={handleDeleteAll}
-            isImporting={importMutation.isPending}
+            isImporting={isImporting || isSaving}
             isDeleting={deleteAllMutation.isPending}
             disabled={isLoading}
           />
@@ -80,6 +88,21 @@ export function ContactManager() {
           )}
         </div>
       </div>
+      
+      <ImportProgressModal
+        isOpen={importProgress.status !== 'idle' && importProgress.status !== 'resolving'}
+        status={importProgress.status === 'idle' ? 'detecting' : importProgress.status}
+        parserType={importProgress.parserType}
+        progress={importProgress.progress}
+        error={importProgress.error}
+        onCancel={cancelImport}
+      />
+      
+      <MergeConfirmationModal
+        duplicate={currentDuplicate}
+        onDecision={handleDuplicateDecision}
+        remainingCount={duplicatesCount - 1}
+      />
     </div>
   )
 }

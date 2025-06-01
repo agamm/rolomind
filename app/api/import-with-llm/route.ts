@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
 import path from "path"
 import Papa from 'papaparse'
-import { CSVParserFactory } from "@/lib/csv-parsers/parser-factory"
 import { normalizeCsvBatch } from "@/lib/csv-parsers/llm-normalizer"
 import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
@@ -31,11 +30,6 @@ async function loadExistingContacts(): Promise<Contact[]> {
   }
 }
 
-function isLinkedInCsv(headers: string[]): boolean {
-  const linkedinHeaders = ['First Name', 'Last Name', 'Company', 'Position', 'Email Address']
-  return linkedinHeaders.every(h => headers.includes(h))
-}
-
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
@@ -55,7 +49,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "CSV file is empty" }, { status: 400 })
     }
 
-    // Parse CSV to check headers
+    // Parse CSV to get raw data
     const parseResult = Papa.parse<RawContactData>(content, {
       header: true,
       skipEmptyLines: true,
@@ -72,54 +66,20 @@ export async function POST(request: NextRequest) {
 
     const headers = parseResult.meta.fields || []
     const rows = parseResult.data
-    
-    // Check if we're in detection phase (quick check)
-    const phase = request.nextUrl.searchParams.get('phase')
-    
-    if (phase === 'detect' || !phase) {
-      // Quick detection phase - just determine the parser type
-      const parserType = isLinkedInCsv(headers) ? 'linkedin' : 'llm-normalizer'
-      
-      return NextResponse.json({ 
-        success: true,
-        phase: 'detection',
-        parserUsed: parserType,
-        rowCount: rows.length
-      })
-    }
-    
-    // Processing phase - do the actual work
-    let normalizedContacts: Partial<Contact>[] = []
-    let parserUsed = 'unknown'
-    
-    // Check if it's a LinkedIn CSV
-    if (isLinkedInCsv(headers)) {
-      // Use existing parser for LinkedIn
-      const parserFactory = new CSVParserFactory()
-      const result = parserFactory.detectAndParse(content)
-      normalizedContacts = result.contacts
-      parserUsed = result.parserUsed
-    } else {
-      // Use LLM normalizer for other CSV formats
-      const { normalized, errors } = await normalizeCsvBatch(rows, headers)
-      normalizedContacts = normalized
-      parserUsed = 'llm-normalizer'
-      
-      if (errors.length > 0) {
-        console.warn('Normalization errors:', errors)
-      }
-    }
+
+    // Normalize contacts using LLM
+    const { normalized, errors } = await normalizeCsvBatch(rows, headers)
 
     // Load existing contacts
     const existingContacts = await loadExistingContacts()
 
-    // Find duplicates
-    const contactsWithDuplicates = normalizedContacts.map(contact => {
+    // Find duplicates for each normalized contact
+    const contactsWithDuplicates = normalized.map(contact => {
       const duplicates = findDuplicates(existingContacts, contact)
       return { contact, duplicates }
     })
 
-    // Return data for client-side duplicate resolution
+    // Separate contacts with and without duplicates
     const uniqueContacts = contactsWithDuplicates
       .filter(item => item.duplicates.length === 0)
       .map(item => item.contact as Contact)
@@ -130,19 +90,19 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ 
       success: true,
-      phase: 'complete',
       processed: {
         total: rows.length,
-        normalized: normalizedContacts.length,
+        normalized: normalized.length,
         unique: uniqueContacts.length,
-        duplicates: duplicatesFound.length
+        duplicates: duplicatesFound.length,
+        errors: errors.length
       },
       uniqueContacts,
       duplicates: duplicatesFound,
-      parserUsed
+      errors
     })
   } catch (error) {
-    console.error("Error importing CSV:", error)
+    console.error("Error importing CSV with LLM:", error)
     return NextResponse.json({ 
       success: false, 
       error: error instanceof Error ? error.message : "Failed to import CSV" 

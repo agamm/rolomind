@@ -1,8 +1,9 @@
 
 Next Steps:
 6. Import merge and dedup google/whatsapp/airtable/custom using llm to normalize and merge.
-7. Search again.
-8. Post on linkedin.
+7. Voice emrichment.
+8. Search again.
+9. Post on linkedin.
 
 
 Nice to have:

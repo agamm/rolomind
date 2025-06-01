@@ -1,10 +1,11 @@
 "use client"
 
-import React from "react"
+import React, { useState } from "react"
 import type { Contact } from "@/types/contact"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin, Sparkles } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { Mail, Phone, ExternalLink, Briefcase, Calendar, MapPin, Sparkles, ChevronDown, ChevronUp } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
@@ -12,6 +13,7 @@ interface ContactCardProps {
 }
 
 export function ContactCard({ contact, aiReason }: ContactCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrls.length > 0) {
       const url = contact.contactInfo.linkedinUrls[0]
@@ -133,16 +135,62 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
             </button>
           )}
 
-          {/* Only show raw notes if they contain information not already extracted */}
-          {contact.notes &&
-            !contact.notes.includes("Company:") &&
-            !contact.notes.includes("Position:") &&
-            !contact.notes.includes("Location:") &&
-            !contact.notes.includes("Connected:") && (
+          {/* Show notes with expand/collapse functionality */}
+          {contact.notes && (
+            <div className="space-y-2">
               <div className="text-gray-600 text-xs bg-gray-50 p-2 rounded">
-                {contact.notes.length > 100 ? `${contact.notes.substring(0, 100)}...` : contact.notes}
+                {(() => {
+                  // Check if notes contain structured data
+                  const hasStructuredData = 
+                    contact.notes.includes("Company:") ||
+                    contact.notes.includes("Position:") ||
+                    contact.notes.includes("Location:") ||
+                    contact.notes.includes("Connected:")
+                  
+                  // For structured data, show full notes if expanded, otherwise show excerpt
+                  // For unstructured notes, always show them with expand option if long
+                  const noteLines = contact.notes.split('\n').filter(Boolean)
+                  const isLong = noteLines.length > 3 || contact.notes.length > 150
+                  
+                  if (isExpanded || !isLong) {
+                    return <span className="whitespace-pre-wrap">{contact.notes}</span>
+                  } else {
+                    // Show excerpt
+                    const excerpt = noteLines.slice(0, 3).join('\n')
+                    const truncated = excerpt.length > 150 ? excerpt.substring(0, 150) + '...' : excerpt
+                    return (
+                      <>
+                        <span className="whitespace-pre-wrap">{truncated}</span>
+                        {noteLines.length > 3 && <span className="text-gray-400">...</span>}
+                      </>
+                    )
+                  }
+                })()}
               </div>
-            )}
+              
+              {/* Show expand button if notes are long */}
+              {(contact.notes.split('\n').filter(Boolean).length > 3 || contact.notes.length > 150) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="w-full py-1 h-auto text-xs"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="h-3 w-3 mr-1" />
+                      Show less
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-3 w-3 mr-1" />
+                      Show all notes
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          )}
         </div>
 
         {aiReason && (
