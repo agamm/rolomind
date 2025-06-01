@@ -61,9 +61,9 @@ export function ImportProgressModal({
         const isLLM = parserType === 'llm-normalizer'
         return {
           icon: isLLM ? (
-            <div className="relative">
-              <div className="absolute inset-0 animate-spin rounded-full h-16 w-16 border-4 border-purple-200 border-t-purple-600" />
-              <Sparkles className="h-8 w-8 text-purple-500 animate-pulse absolute top-4 left-4" />
+            <div className="relative h-16 w-16 flex items-center justify-center">
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
+              <Sparkles className="h-8 w-8 text-purple-500 animate-pulse relative z-10" />
             </div>
           ) : (
             <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
