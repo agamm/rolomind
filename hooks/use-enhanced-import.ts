@@ -82,7 +82,8 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Wait to show the format selection animation
       await new Promise(resolve => setTimeout(resolve, 1500))
       
-      // Transition to processing/normalizing
+      // Phase 2: Full processing
+      // First update status to processing/normalizing
       setImportProgress({
         status: parserType === 'linkedin' ? 'processing' : 'normalizing',
         parserType,
@@ -95,7 +96,6 @@ export function useEnhancedImport(onComplete?: () => void) {
         }
       })
       
-      // Phase 2: Full processing
       const processResponse = await fetch('/api/import?phase=process', {
         method: 'POST',
         body: formData
@@ -230,7 +230,8 @@ export function useEnhancedImport(onComplete?: () => void) {
     
     if (action === 'merge') {
       const merged = mergeContacts(currentDuplicate.existing, currentDuplicate.incoming)
-      contactToSave = { ...merged, mergeWithId: currentDuplicate.existing.id }
+      // Use the existing contact's ID to replace it
+      contactToSave = { ...merged, id: currentDuplicate.existing.id }
     } else if (action === 'keep-both') {
       contactToSave = currentDuplicate.incoming as Contact
     }

@@ -23,7 +23,6 @@ export function ContactManager() {
     currentDuplicate,
     duplicatesCount,
     handleDuplicateDecision,
-    error: importError,
     importProgress,
     cancelImport
   } = useEnhancedImport(() => refetch())
@@ -91,7 +90,7 @@ export function ContactManager() {
       
       <ImportProgressModal
         isOpen={importProgress.status !== 'idle' && importProgress.status !== 'resolving'}
-        status={importProgress.status === 'idle' ? 'detecting' : importProgress.status}
+        status={importProgress.status === 'idle' || importProgress.status === 'resolving' ? 'detecting' : importProgress.status}
         parserType={importProgress.parserType}
         progress={importProgress.progress}
         error={importProgress.error}

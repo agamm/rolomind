@@ -40,7 +40,7 @@ export async function* readJsonStream(response: Response) {
         if (buffer.trim()) {
           try {
             yield JSON.parse(buffer.trim())
-          } catch (error) {
+          } catch {
             console.warn('Failed to parse final buffer:', buffer)
           }
         }
@@ -55,7 +55,7 @@ export async function* readJsonStream(response: Response) {
         if (line.trim()) {
           try {
             yield JSON.parse(line)
-          } catch (error) {
+          } catch {
             console.warn('Failed to parse line:', line)
           }
         }

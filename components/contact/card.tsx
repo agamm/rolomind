@@ -140,12 +140,6 @@ export function ContactCard({ contact, aiReason }: ContactCardProps) {
             <div className="space-y-2">
               <div className="text-gray-600 text-xs bg-gray-50 p-2 rounded">
                 {(() => {
-                  // Check if notes contain structured data
-                  const hasStructuredData = 
-                    contact.notes.includes("Company:") ||
-                    contact.notes.includes("Position:") ||
-                    contact.notes.includes("Location:") ||
-                    contact.notes.includes("Connected:")
                   
                   // For structured data, show full notes if expanded, otherwise show excerpt
                   // For unstructured notes, always show them with expand option if long

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Loader2, FileText, Sparkles, CheckCircle } from 'lucide-react'
+import { Loader2, FileText, Sparkles, CheckCircle, LucideIcon } from 'lucide-react'
 import { 
   Dialog, 
   DialogContent, 
@@ -37,9 +37,8 @@ export function ImportProgressModal({
   useEffect(() => {
     if (status === 'detecting' && parserType && !showFormatSelected) {
       setShowFormatSelected(true)
-    } else if (status !== 'detecting' && showFormatSelected) {
-      // Keep showing during transition
-      setTimeout(() => setShowFormatSelected(false), 300)
+    } else if (status !== 'detecting') {
+      setShowFormatSelected(false)
     }
     setPrevStatus(status)
   }, [status, parserType, prevStatus, showFormatSelected])
@@ -150,43 +149,22 @@ export function ImportProgressModal({
           </div>
         )}
         
-        {(status === 'detecting' || showFormatSelected) && (
-          <div className="mt-4">
-            <div className="flex items-center justify-center gap-3">
-              <div className={`relative px-4 py-2 rounded-lg transition-all duration-500 ${
-                showFormatSelected && parserType === 'linkedin' 
-                  ? 'bg-blue-100 border-2 border-blue-500 scale-105' 
-                  : showFormatSelected && parserType !== 'linkedin'
-                  ? 'opacity-40 grayscale'
-                  : 'bg-gray-50 border border-gray-200'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <FileText className={`h-4 w-4 transition-colors duration-300 ${
-                    showFormatSelected && parserType === 'linkedin' ? 'text-blue-600' : 'text-gray-500'
-                  }`} />
-                  <span className={`text-sm font-medium transition-colors duration-300 ${
-                    showFormatSelected && parserType === 'linkedin' ? 'text-blue-700' : 'text-gray-600'
-                  }`}>LinkedIn</span>
-                </div>
-              </div>
-              
-              <div className={`relative px-4 py-2 rounded-lg transition-all duration-500 ${
-                showFormatSelected && parserType === 'llm-normalizer' 
-                  ? 'bg-purple-100 border-2 border-purple-500 scale-105' 
-                  : showFormatSelected && parserType !== 'llm-normalizer'
-                  ? 'opacity-40 grayscale'
-                  : 'bg-gray-50 border border-gray-200'
-              }`}>
-                <div className="flex items-center gap-2">
-                  <Sparkles className={`h-4 w-4 transition-colors duration-300 ${
-                    showFormatSelected && parserType === 'llm-normalizer' ? 'text-purple-600' : 'text-gray-500'
-                  }`} />
-                  <span className={`text-sm font-medium transition-colors duration-300 ${
-                    showFormatSelected && parserType === 'llm-normalizer' ? 'text-purple-700' : 'text-gray-600'
-                  }`}>Custom</span>
-                </div>
-              </div>
-            </div>
+        {status === 'detecting' && (
+          <div className="mt-4 flex items-center justify-center gap-3">
+            <FormatOption
+              icon={FileText}
+              label="LinkedIn"
+              isSelected={showFormatSelected && parserType === 'linkedin'}
+              showFormatSelected={showFormatSelected}
+              baseColor="blue"
+            />
+            <FormatOption
+              icon={Sparkles}
+              label="Custom"
+              isSelected={showFormatSelected && parserType === 'llm-normalizer'}
+              showFormatSelected={showFormatSelected}
+              baseColor="purple"
+            />
           </div>
         )}
         
@@ -209,5 +187,48 @@ export function ImportProgressModal({
         )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+// Simplified format option component
+function FormatOption({ 
+  icon: Icon, 
+  label, 
+  isSelected, 
+  showFormatSelected,
+  baseColor 
+}: { 
+  icon: LucideIcon
+  label: string
+  isSelected: boolean
+  showFormatSelected: boolean
+  baseColor: 'blue' | 'purple'
+}) {
+  const bgClasses = {
+    blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-gray-50 border border-gray-200',
+    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-gray-50 border border-gray-200'
+  }
+  
+  const iconClasses = {
+    blue: isSelected ? 'text-blue-600' : 'text-gray-500',
+    purple: isSelected ? 'text-purple-600' : 'text-gray-500'
+  }
+  
+  const textClasses = {
+    blue: isSelected ? 'text-blue-700' : 'text-gray-600',
+    purple: isSelected ? 'text-purple-700' : 'text-gray-600'
+  }
+  
+  return (
+    <div className={`relative px-4 py-2 rounded-lg transition-all duration-500 ${
+      bgClasses[baseColor]
+    } ${showFormatSelected && !isSelected ? 'opacity-40 grayscale' : ''}`}>
+      <div className="flex items-center gap-2">
+        <Icon className={`h-4 w-4 transition-colors duration-300 ${iconClasses[baseColor]}`} />
+        <span className={`text-sm font-medium transition-colors duration-300 ${textClasses[baseColor]}`}>
+          {label}
+        </span>
+      </div>
+    </div>
   )
 }

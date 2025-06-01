@@ -9,18 +9,10 @@ import type { Contact, RawContactData } from "@/types/contact"
 
 const dataFilePath = path.join(process.cwd(), "data", "contacts.json")
 
-async function ensureDataDirectory() {
-  const dataDir = path.join(process.cwd(), "data")
-  try {
-    await fs.access(dataDir)
-  } catch {
-    await fs.mkdir(dataDir, { recursive: true })
-  }
-}
-
 async function loadExistingContacts(): Promise<Contact[]> {
   try {
-    await ensureDataDirectory()
+    const dataDir = path.dirname(dataFilePath)
+    await fs.mkdir(dataDir, { recursive: true })
     const data = await fs.readFile(dataFilePath, "utf-8")
     return JSON.parse(data) as Contact[]
   } catch (error) {
@@ -170,20 +162,16 @@ export async function PUT(request: NextRequest) {
     
     // Process contacts (either new or merged)
     for (const contact of contacts) {
-      if (contact.mergeWithId) {
-        // This is a merge operation
-        existingMap.set(contact.mergeWithId, contact)
-      } else {
-        // This is a new contact
-        existingMap.set(contact.id, contact)
-      }
+      // Simply set by ID - merged contacts will replace existing ones
+      existingMap.set(contact.id, contact)
     }
     
     // Convert back to array
     const finalContacts = Array.from(existingMap.values())
     
     // Save to file
-    await ensureDataDirectory()
+    const dataDir = path.dirname(dataFilePath)
+    await fs.mkdir(dataDir, { recursive: true })
     await fs.writeFile(dataFilePath, JSON.stringify(finalContacts, null, 2))
     
     return NextResponse.json({ 

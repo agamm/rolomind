@@ -100,18 +100,7 @@ export function isRetryableError(response: Response): boolean {
     return true;
   }
   
-  // Check response body for isRetryable flag
-  try {
-    const contentType = response.headers.get('content-type');
-    if (contentType?.includes('application/json')) {
-      return response.clone().json()
-        .then((data: any) => data.isRetryable === true)
-        .catch(() => false);
-    }
-  } catch {
-    return false;
-  }
-  
+  // Don't check response body for isRetryable flag to avoid async issues
   return false;
 }
 

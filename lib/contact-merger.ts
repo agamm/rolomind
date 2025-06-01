@@ -103,8 +103,9 @@ function mergeContactNotes(
   if (!incomingNotes || !incomingNotes.trim()) return existingNotes || ''
   
   // Parse key-value pairs from notes
-  const parseNotes = (notes: string): Map<string, string> => {
-    const parsed = new Map<string, string>()
+  const parseNotes = (notes: string): { keyValues: Map<string, string>, freeText: Set<string> } => {
+    const keyValues = new Map<string, string>()
+    const freeText = new Set<string>()
     const lines = notes.split(/[;\n]/).map(line => line.trim()).filter(Boolean)
     
     for (const line of lines) {
@@ -114,37 +115,46 @@ function mergeContactNotes(
         const value = line.substring(colonIndex + 1).trim()
         
         // If key already exists, keep the longer/more detailed value
-        const existing = parsed.get(key)
+        const existing = keyValues.get(key)
         if (!existing || value.length > existing.length) {
-          parsed.set(key, value)
+          keyValues.set(key, value)
         }
       } else {
-        // Non key-value content
-        parsed.set(`_note_${parsed.size}`, line)
+        // Non key-value content - use Set to automatically deduplicate
+        freeText.add(line)
       }
     }
     
-    return parsed
+    return { keyValues, freeText }
   }
   
   // Parse both notes
   const existingParsed = parseNotes(existingNotes)
   const incomingParsed = parseNotes(incomingNotes)
   
-  // Merge maps, preferring longer values
-  const merged = new Map<string, string>()
+  // Merge key-value pairs, preferring longer values
+  const mergedKeyValues = new Map<string, string>()
   
   // Add all from existing
-  for (const [key, value] of existingParsed) {
-    merged.set(key, value)
+  for (const [key, value] of existingParsed.keyValues) {
+    mergedKeyValues.set(key, value)
   }
   
   // Add/update from incoming
-  for (const [key, value] of incomingParsed) {
-    const existing = merged.get(key)
+  for (const [key, value] of incomingParsed.keyValues) {
+    const existing = mergedKeyValues.get(key)
     if (!existing || value.length > existing.length) {
-      merged.set(key, value)
+      mergedKeyValues.set(key, value)
     }
+  }
+  
+  // Merge free text (Set automatically deduplicates)
+  const mergedFreeText = new Set<string>()
+  for (const text of existingParsed.freeText) {
+    mergedFreeText.add(text)
+  }
+  for (const text of incomingParsed.freeText) {
+    mergedFreeText.add(text)
   }
   
   // Reconstruct notes
@@ -153,31 +163,22 @@ function mergeContactNotes(
   
   // Add standard fields first
   for (const key of standardKeys) {
-    if (merged.has(key)) {
-      const value = merged.get(key)!
+    if (mergedKeyValues.has(key)) {
+      const value = mergedKeyValues.get(key)!
       result.push(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
-      merged.delete(key)
+      mergedKeyValues.delete(key)
     }
   }
   
   // Add other key-value pairs
-  for (const [key, value] of merged) {
-    if (!key.startsWith('_note_')) {
-      result.push(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
-    }
+  for (const [key, value] of mergedKeyValues) {
+    result.push(`${key.charAt(0).toUpperCase() + key.slice(1)}: ${value}`)
   }
   
   // Add non-key-value notes at the end
-  const notes: string[] = []
-  for (const [key, value] of merged) {
-    if (key.startsWith('_note_')) {
-      notes.push(value)
-    }
-  }
-  
-  if (notes.length > 0) {
+  if (mergedFreeText.size > 0) {
     if (result.length > 0) result.push('') // Empty line
-    result.push(...notes)
+    result.push(...Array.from(mergedFreeText))
   }
   
   return result.join('\n')
