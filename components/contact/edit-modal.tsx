@@ -17,6 +17,7 @@ import { Loader2, Plus, X } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
 import { VoiceRecorder } from '@/components/ui/voice-recorder'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface EditContactModalProps {
   contact: Contact | null
@@ -58,6 +59,8 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
           otherUrls: [...(contact.contactInfo.otherUrls || [])]
         }
       })
+      // Clear highlights when switching contacts
+      setUpdatedFields(new Set())
     }
   }, [contact])
 
@@ -106,6 +109,34 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
 
         const { updatedContact, changes, transcription } = await response.json()
         
+        // Track which fields were updated
+        const newUpdatedFields = new Set<string>()
+        
+        // Check for changes and update form data
+        if (changes.name && changes.name !== contact.name) newUpdatedFields.add('name')
+        if (changes.company && changes.company !== contact.company) newUpdatedFields.add('company')
+        if (changes.role && changes.role !== contact.role) newUpdatedFields.add('role')
+        if (changes.location && changes.location !== contact.location) newUpdatedFields.add('location')
+        if (changes.linkedinUrl && changes.linkedinUrl !== contact.contactInfo.linkedinUrl) newUpdatedFields.add('linkedinUrl')
+        if (changes.emails?.length) {
+          changes.emails.forEach((_: string, index: number) => {
+            newUpdatedFields.add(`email-${updatedContact.contactInfo.emails.length - changes.emails.length + index}`)
+          })
+        }
+        if (changes.phones?.length) {
+          changes.phones.forEach((_: string, index: number) => {
+            newUpdatedFields.add(`phone-${updatedContact.contactInfo.phones.length - changes.phones.length + index}`)
+          })
+        }
+        if (changes.otherUrls?.length) {
+          changes.otherUrls.forEach((_: any, index: number) => {
+            newUpdatedFields.add(`otherUrl-${updatedContact.contactInfo.otherUrls.length - changes.otherUrls.length + index}`)
+          })
+        }
+        if (changes.notesToAdd) newUpdatedFields.add('notes')
+        
+        setUpdatedFields(newUpdatedFields)
+        
         // Update form data with the voice-extracted information
         setFormData({
           name: updatedContact.name,
@@ -123,7 +154,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
         
         // Show transcription if available
         if (transcription && !transcription.includes('not configured')) {
-          toast.success('Voice recording processed successfully')
+          toast.success('Voice recording processed - highlighted fields were updated')
           
           // Show what was extracted
           const extractedFields = []
@@ -249,6 +280,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               value={formData.name || ''}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
+              className={cn(
+                updatedFields.has('name') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
@@ -258,6 +292,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               id="company"
               value={formData.company || ''}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
+              className={cn(
+                updatedFields.has('company') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
@@ -267,6 +304,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               id="role"
               value={formData.role || ''}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+              className={cn(
+                updatedFields.has('role') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
@@ -276,6 +316,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               id="location"
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className={cn(
+                updatedFields.has('location') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
@@ -288,6 +331,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
                   value={email}
                   onChange={(e) => handleArrayFieldChange('emails', index, e.target.value)}
                   placeholder="email@example.com"
+                  className={cn(
+                    updatedFields.has(`email-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                  )}
                 />
                 <Button
                   type="button"
@@ -320,6 +366,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
                   value={phone}
                   onChange={(e) => handleArrayFieldChange('phones', index, e.target.value)}
                   placeholder="+1 (555) 123-4567"
+                  className={cn(
+                    updatedFields.has(`phone-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                  )}
                 />
                 <Button
                   type="button"
@@ -357,6 +406,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
                 }
               }))}
               placeholder="https://linkedin.com/in/username"
+              className={cn(
+                updatedFields.has('linkedinUrl') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
@@ -369,13 +421,19 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
                   value={item.platform}
                   onChange={(e) => handleOtherUrlChange(index, 'platform', e.target.value)}
                   placeholder="Platform (e.g., Twitter)"
-                  className="w-1/3"
+                  className={cn(
+                    "w-1/3",
+                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                  )}
                 />
                 <Input
                   value={item.url}
                   onChange={(e) => handleOtherUrlChange(index, 'url', e.target.value)}
                   placeholder="URL"
-                  className="flex-1"
+                  className={cn(
+                    "flex-1",
+                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                  )}
                 />
                 <Button
                   type="button"
@@ -406,6 +464,9 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={4}
               placeholder="Add any additional notes about this contact..."
+              className={cn(
+                updatedFields.has('notes') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+              )}
             />
           </div>
 
