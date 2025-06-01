@@ -6,6 +6,7 @@ import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
 import { useContacts, useImportContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
+import { Contact } from "@/types/contact"
 
 export function ContactManager() {
   const { data: contacts = [], isLoading, error } = useContacts()
@@ -35,10 +36,6 @@ export function ContactManager() {
       console.error("Failed to delete all contacts:", error)
       toast.error(`Failed to delete contacts: ${error instanceof Error ? error.message : "Please try again."}`)
     }
-  }
-
-  const handleSearch = () => {
-    // Search will be handled in ContactList component
   }
 
   if (error) {
@@ -77,7 +74,6 @@ export function ContactManager() {
               />
               <ContactList
                 contacts={contacts}
-                onSearch={handleSearch}
                 aiResults={aiResults}
               />
             </>

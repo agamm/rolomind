@@ -11,7 +11,7 @@ import { usePagination } from "@/hooks/use-pagination"
 
 interface ContactListProps {
   contacts: Contact[]
-  onSearch: (query: string) => void
+  onSearch?: (query: string) => void
   aiResults?: Array<{ contact: Contact; reason: string }>
 }
 
@@ -45,7 +45,7 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
-    onSearch(query)
+    if (onSearch) onSearch(query)
   }
 
   return (

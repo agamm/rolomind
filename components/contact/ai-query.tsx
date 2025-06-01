@@ -7,6 +7,8 @@ import { Progress } from "@/components/ui/progress"
 import { Contact } from "@/types/contact"
 import { Loader2, Sparkles } from "lucide-react"
 import { useMutation } from "@tanstack/react-query"
+import { useSummaryGeneration } from "@/hooks/use-summary-generation"
+import { SummaryDisplay } from "./summary-display"
 
 interface ContactMatch {
   contact: Contact
@@ -19,7 +21,7 @@ interface AIQueryProps {
 }
 
 const BATCH_SIZE = 100
-const PARALLEL_LIMIT = 10 // Start with 10 parallel requests
+const PARALLEL_LIMIT = 6 // Start with 6 parallel requests
 
 async function queryBatch(contacts: Contact[], query: string, retries = 3): Promise<ContactMatch[]> {
   try {
@@ -47,7 +49,7 @@ async function queryBatch(contacts: Contact[], query: string, retries = 3): Prom
       return []
     }
     
-    return matches.map((m: any) => ({
+    return matches.map((m: { id: string; reason: string }) => ({
       contact: contacts.find(c => c.id === m.id)!,
       reason: m.reason
     })).filter(m => m.contact)
@@ -86,9 +88,10 @@ async function processInParallel(
       if (!hitRateLimit && parallelLimit < 20) {
         parallelLimit = Math.min(parallelLimit + 2, 20)
       }
-    } catch (error: any) {
+    } catch (error) {
       // Hit rate limit, reduce parallelism
-      if (error.message?.includes('429') || error.message?.includes('rate')) {
+      const errorMessage = error instanceof Error ? error.message : ''
+      if (errorMessage.includes('429') || errorMessage.includes('rate')) {
         hitRateLimit = true
         parallelLimit = Math.max(Math.floor(parallelLimit / 2), 2)
         i -= parallelLimit // Retry this chunk
@@ -105,12 +108,14 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [progress, setProgress] = useState({ completed: 0, total: 0 })
   const [results, setResults] = useState<ContactMatch[]>([])
+  const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
   
   const mutation = useMutation({
     mutationFn: async (searchQuery: string) => {
       setResults([])
       setProgress({ completed: 0, total: 0 })
       onResults?.([])
+      resetSummary()
       
       // Create batches
       const batches: Contact[][] = []
@@ -132,6 +137,11 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
       )
       
       return allResults
+    },
+    onSuccess: (allResults, searchQuery) => {
+      if (allResults.length > 0) {
+        generateSummary(allResults, searchQuery)
+      }
     }
   })
 
@@ -195,9 +205,12 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
       {mutation.isPending && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-blue-900">
-              Processing {progress.total} batches (up to 10-20 in parallel)
-            </span>
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
+              <span className="text-sm font-medium text-blue-900">
+                Processing {progress.total} chunks (6-20 in parallel)
+              </span>
+            </div>
             <span className="text-sm text-blue-700">
               {progressPercent}% ({progress.completed} of {progress.total} complete)
             </span>
@@ -218,6 +231,12 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
           </p>
         </div>
       )}
+      
+      <SummaryDisplay 
+        summary={summary} 
+        isGenerating={isGenerating}
+        error={summaryError}
+      />
     </div>
   )
 }
