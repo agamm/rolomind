@@ -14,6 +14,9 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Loader2 } from 'lucide-react'
+import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
+import { VoiceRecorder } from '@/components/ui/voice-recorder'
+import { toast } from 'sonner'
 
 interface EditContactModalProps {
   contact: Contact | null
@@ -25,6 +28,19 @@ interface EditContactModalProps {
 export function EditContactModal({ contact, isOpen, onClose, onSave }: EditContactModalProps) {
   const [formData, setFormData] = useState<Partial<Contact>>({})
   const [isSaving, setIsSaving] = useState(false)
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false)
+  
+  const {
+    isRecording,
+    isPaused,
+    recordingTime,
+    audioLevel,
+    startRecording,
+    stopRecording,
+    pauseRecording,
+    resumeRecording,
+    error: recordingError
+  } = useVoiceRecorder()
 
   useEffect(() => {
     if (contact) {
@@ -61,6 +77,68 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
       console.error('Failed to save contact:', error)
     } finally {
       setIsSaving(false)
+    }
+  }
+
+  const handleVoiceRecording = async () => {
+    if (isRecording) {
+      // Stop recording and process
+      setIsProcessingVoice(true)
+      try {
+        const audioBlob = await stopRecording()
+        if (!audioBlob || !contact) return
+
+        const formData = new FormData()
+        formData.append('audio', audioBlob, 'recording.webm')
+        formData.append('contact', JSON.stringify(contact))
+
+        const response = await fetch('/api/voice-to-contact', {
+          method: 'POST',
+          body: formData
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || 'Failed to process voice recording')
+        }
+
+        const { updatedContact, changes, transcription } = await response.json()
+        
+        // Update form data with the voice-extracted information
+        setFormData(updatedContact)
+        
+        // Show transcription if available
+        if (transcription && !transcription.includes('not configured')) {
+          toast.success('Voice recording processed successfully')
+          
+          // Show what was extracted
+          const extractedFields = []
+          if (changes.name) extractedFields.push('name')
+          if (changes.company) extractedFields.push('company')
+          if (changes.role) extractedFields.push('role')
+          if (changes.location) extractedFields.push('location')
+          if (changes.emails?.length) extractedFields.push(`${changes.emails.length} email(s)`)
+          if (changes.phones?.length) extractedFields.push(`${changes.phones.length} phone(s)`)
+          if (changes.notesToAdd) extractedFields.push('notes')
+          
+          if (extractedFields.length > 0) {
+            toast.info(`Updated: ${extractedFields.join(', ')}`)
+          } else {
+            toast.info('No changes detected in the recording')
+          }
+        } else {
+          toast.warning('Voice transcription requires OpenAI API key configuration')
+        }
+      } catch (error) {
+        console.error('Failed to process voice recording:', error)
+        const errorMessage = error instanceof Error ? error.message : 'Failed to process voice recording'
+        toast.error(errorMessage)
+      } finally {
+        setIsProcessingVoice(false)
+      }
+    } else {
+      // Start recording
+      await startRecording()
     }
   }
 
@@ -104,6 +182,20 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Voice Recording Section */}
+          <VoiceRecorder
+            isRecording={isRecording}
+            isPaused={isPaused}
+            recordingTime={recordingTime}
+            audioLevel={audioLevel}
+            onStart={startRecording}
+            onStop={handleVoiceRecording}
+            onPause={pauseRecording}
+            onResume={resumeRecording}
+            isProcessing={isProcessingVoice}
+            error={recordingError}
+          />
+
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>
             <Input

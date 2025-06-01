@@ -16,13 +16,13 @@ interface ContactCardProps {
 export function ContactCard({ contact, aiReason, onEdit }: ContactCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
-    if (contact.contactInfo.linkedinUrls.length > 0) {
-      const url = contact.contactInfo.linkedinUrls[0]
+    if (contact.contactInfo.linkedinUrl) {
+      const url = contact.contactInfo.linkedinUrl
       // Ensure URL has protocol
       const linkedinUrl = url.startsWith("http") ? url : `https://${url}`
       window.open(linkedinUrl, "_blank", "noopener,noreferrer")
     }
-  }, [contact.contactInfo.linkedinUrls])
+  }, [contact.contactInfo.linkedinUrl])
 
   const handleEmailClick = React.useCallback(() => {
     if (contact.contactInfo.emails.length > 0) {
@@ -48,7 +48,7 @@ export function ContactCard({ contact, aiReason, onEdit }: ContactCardProps) {
                 {contact.source}
               </Badge>
 
-              {contact.contactInfo.linkedinUrls.length > 0 && (
+              {contact.contactInfo.linkedinUrl && (
                 <button
                   onClick={handleLinkedInClick}
                   className="inline-flex items-center text-blue-600 hover:text-blue-800 cursor-pointer"

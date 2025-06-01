@@ -7,7 +7,8 @@ export interface Contact {
   contactInfo: {
     phones: string[]
     emails: string[]
-    linkedinUrls: string[]
+    linkedinUrl?: string
+    otherUrls: { platform: string; url: string }[]
   }
   notes: string
   source: "google" | "linkedin" | "manual"
