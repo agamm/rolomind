@@ -1,0 +1,53 @@
+<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#1a202c"/>
+  
+  <!-- Rolodex base with gradient -->
+  <defs>
+    <linearGradient id="baseGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#4a5568;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2d3748;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ffffff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f7fafc;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4c51bf;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Cards fanned out with shadow effect -->
+  <g opacity="0.3">
+    <rect x="14" y="20" width="36" height="24" rx="2" transform="rotate(-12 32 32)" fill="#000"/>
+  </g>
+  <rect x="12" y="18" width="36" height="24" rx="2" transform="rotate(-12 32 32)" fill="url(#cardGrad)" opacity="0.7"/>
+  
+  <g opacity="0.3">
+    <rect x="14" y="20" width="36" height="24" rx="2" transform="rotate(-6 32 32)" fill="#000"/>
+  </g>
+  <rect x="12" y="18" width="36" height="24" rx="2" transform="rotate(-6 32 32)" fill="url(#cardGrad)" opacity="0.85"/>
+  
+  <!-- Main card with shadow -->
+  <g opacity="0.4">
+    <rect x="14" y="20" width="36" height="24" rx="2" fill="#000"/>
+  </g>
+  <rect x="12" y="18" width="36" height="24" rx="2" fill="url(#cardGrad)"/>
+  
+  <!-- Card content lines -->
+  <rect x="16" y="22" width="24" height="2" rx="1" fill="#a0aec0"/>
+  <rect x="16" y="26" width="18" height="2" rx="1" fill="#cbd5e0"/>
+  <rect x="16" y="30" width="20" height="2" rx="1" fill="#cbd5e0"/>
+  <rect x="16" y="34" width="14" height="2" rx="1" fill="#cbd5e0"/>
+  
+  <!-- Accent tab -->
+  <rect x="40" y="18" width="8" height="10" rx="1" fill="url(#accentGrad)"/>
+  
+  <!-- Rolodex wheel/mechanism -->
+  <circle cx="32" cy="44" r="4" fill="url(#baseGrad)"/>
+  <circle cx="32" cy="44" r="2" fill="#1a202c"/>
+  
+  <!-- Highlight overlay -->
+  <rect x="12" y="18" width="36" height="12" rx="2" fill="white" opacity="0.1"/>
+</svg>

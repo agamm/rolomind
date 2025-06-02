@@ -14,7 +14,7 @@ const mergedContactSchema = z.object({
     emails: z.array(z.string()).describe('All unique email addresses from both contacts'),
     linkedinUrls: z.array(z.string()).describe('All unique LinkedIn URLs from both contacts')
   }),
-  notes: z.string().describe('Merged notes - combine meaningfully, remove duplicates of structured fields (company, role, location) that are already captured above, keep other valuable information')
+  notes: z.string().describe('Merged notes - combine meaningfully, remove duplicates of structured fields (company, role, location) that are already captured above, keep ALL other valuable information including connection dates, meeting notes, and any other context')
 })
 
 export async function POST(request: NextRequest) {
@@ -46,8 +46,8 @@ Instructions:
 4. For notes:
    - Combine all unique information from both contacts
    - Remove any information that duplicates the structured fields (company, role, location)
-   - Remove "Connected on" or "Connected:" lines as these are handled separately
-   - Keep any other valuable context, observations, or notes
+   - KEEP LinkedIn connection dates (e.g., "LinkedIn connected: January 2024") as they provide valuable context
+   - Keep any other valuable context, observations, meeting notes, or personal information
    - Format the notes cleanly, one piece of information per line
 5. Preserve the best version of the name (longer/more complete is usually better)`
     })

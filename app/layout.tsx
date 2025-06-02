@@ -8,6 +8,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "Rolodex",
   description: "Simple contact management system",
+  icons: {
+    icon: '/rolodex-modern.svg',
+  },
 };
 
 export default function RootLayout({

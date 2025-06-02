@@ -46,7 +46,7 @@ export class LinkedInParser implements CSVParser {
       
       // Only put non-structured data in notes
       let notes = ""
-      if (connectedOn) notes = `Connected: ${connectedOn}`
+      if (connectedOn) notes = `LinkedIn connected: ${connectedOn}`
 
       const contact: Contact = {
         id: `linkedin-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
