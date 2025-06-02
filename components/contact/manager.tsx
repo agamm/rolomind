@@ -24,8 +24,7 @@ export function ContactManager() {
     duplicatesCount,
     handleDuplicateDecision,
     importProgress,
-    cancelImport,
-    isProcessingDuplicate
+    cancelImport
   } = useEnhancedImport(() => refetch())
 
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
@@ -102,7 +101,6 @@ export function ContactManager() {
         duplicate={currentDuplicate}
         onDecision={handleDuplicateDecision}
         remainingCount={duplicatesCount - 1}
-        isProcessing={isProcessingDuplicate}
       />
     </div>
   )

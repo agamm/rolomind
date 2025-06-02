@@ -44,7 +44,6 @@ export function useEnhancedImport(onComplete?: () => void) {
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
   const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
   const [importProgress, setImportProgress] = useState<ImportProgress>({ status: 'idle' })
-  const [isProcessingDuplicate, setIsProcessingDuplicate] = useState(false)
   
   // Import mutation
   const importMutation = useMutation({
@@ -97,29 +96,60 @@ export function useEnhancedImport(onComplete?: () => void) {
         }
       })
       
-      const processResponse = await fetch('/api/import?phase=process', {
-        method: 'POST',
-        body: formData
-      })
-      
-      const processData = await processResponse.json()
-      
-      if (!processResponse.ok) {
-        throw new Error(processData.error || 'Processing failed')
-      }
-      
-      // Update progress with final data
-      setImportProgress({
-        status: parserType === 'linkedin' ? 'processing' : 'normalizing',
-        parserType,
-        progress: {
-          current: processData.processed?.normalized || 0,
-          total: processData.processed?.total || 0,
-          message: 'Processing complete!'
+      // Use streaming for LLM normalizer
+      if (parserType === 'llm-normalizer') {
+        const processResponse = await fetch('/api/import-stream?phase=process', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (!processResponse.ok) {
+          throw new Error('Processing failed')
         }
-      })
-      
-      return processData
+        
+        const { readJsonStream } = await import('@/lib/stream-utils')
+        let finalData: any = null
+        
+        for await (const data of readJsonStream(processResponse)) {
+          if (data.type === 'progress') {
+            setImportProgress({
+              status: 'normalizing',
+              parserType,
+              progress: {
+                current: data.current,
+                total: data.total,
+                message: `AI is analyzing contact ${data.current} of ${data.total}...`
+              }
+            })
+          } else if (data.type === 'complete') {
+            finalData = {
+              success: true,
+              phase: 'complete',
+              ...data
+            }
+          }
+        }
+        
+        if (!finalData) {
+          throw new Error('No data received from stream')
+        }
+        
+        return finalData
+      } else {
+        // Use regular endpoint for other parsers
+        const processResponse = await fetch('/api/import?phase=process', {
+          method: 'POST',
+          body: formData
+        })
+        
+        const processData = await processResponse.json()
+        
+        if (!processResponse.ok) {
+          throw new Error(processData.error || 'Processing failed')
+        }
+        
+        return processData
+      }
     },
     onSuccess: async (data) => {
       // Show checking duplicates status
@@ -141,12 +171,48 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // If there are duplicates, start resolution
       if (data.duplicates && data.duplicates.length > 0) {
-        setImportProgress({ 
-          status: 'resolving',
-          parserType: importProgress.parserType
+        // Filter out duplicates that don't add any new information
+        const meaningfulDuplicates = data.duplicates.filter((dup: DuplicateMatch) => {
+          const existing = dup.existing
+          const incoming = dup.incoming
+          
+          // Check if incoming has any new information
+          const hasNewPhone = incoming.contactInfo?.phones?.some(
+            (phone: string) => !existing.contactInfo.phones.includes(phone)
+          )
+          const hasNewEmail = incoming.contactInfo?.emails?.some(
+            (email: string) => !existing.contactInfo.emails.includes(email)
+          )
+          const hasNewLinkedIn = incoming.contactInfo?.linkedinUrls?.some(
+            (url: string) => !existing.contactInfo.linkedinUrls.includes(url)
+          )
+          const hasNewCompany = incoming.company && incoming.company !== existing.company
+          const hasNewRole = incoming.role && incoming.role !== existing.role
+          const hasNewLocation = incoming.location && incoming.location !== existing.location
+          const hasNewNotes = incoming.notes && incoming.notes.trim() && 
+            (!existing.notes || !existing.notes.includes(incoming.notes))
+          
+          // If no new information, skip this duplicate
+          return hasNewPhone || hasNewEmail || hasNewLinkedIn || 
+                 hasNewCompany || hasNewRole || hasNewLocation || hasNewNotes
         })
-        setDuplicates(data.duplicates)
-        setCurrentDuplicate(data.duplicates[0])
+        
+        const skippedCount = data.duplicates.length - meaningfulDuplicates.length
+        if (skippedCount > 0) {
+          toast.info(`Auto-skipped ${skippedCount} duplicate${skippedCount > 1 ? 's' : ''} with no new information`)
+        }
+        
+        if (meaningfulDuplicates.length > 0) {
+          setImportProgress({ 
+            status: 'resolving',
+            parserType: importProgress.parserType
+          })
+          setDuplicates(meaningfulDuplicates)
+          setCurrentDuplicate(meaningfulDuplicates[0])
+        } else {
+          // No meaningful duplicates, save unique contacts
+          saveMutation.mutate(data.uniqueContacts || [])
+        }
       } else {
         // No duplicates, save immediately
         saveMutation.mutate(data.uniqueContacts || [])
@@ -223,9 +289,6 @@ export function useEnhancedImport(onComplete?: () => void) {
       return
     }
     
-    // Set processing state
-    setIsProcessingDuplicate(true)
-    
     const remainingDuplicates = [...duplicates]
     const currentIndex = remainingDuplicates.findIndex(d => d === currentDuplicate)
     
@@ -294,15 +357,11 @@ export function useEnhancedImport(onComplete?: () => void) {
     setDuplicates(remainingDuplicates)
     
     if (remainingDuplicates.length > 0) {
-      // Small delay before showing next duplicate to ensure smooth transition
-      setTimeout(() => {
-        setCurrentDuplicate(remainingDuplicates[0])
-        setIsProcessingDuplicate(false)
-      }, 300)
+      // Move to next duplicate immediately
+      setCurrentDuplicate(remainingDuplicates[0])
     } else {
       // All duplicates handled, now save any remaining unique contacts
       setCurrentDuplicate(null)
-      setIsProcessingDuplicate(false)
       if (resolvedContacts.length > 0) {
         saveMutation.mutate(resolvedContacts)
       } else {
@@ -332,7 +391,6 @@ export function useEnhancedImport(onComplete?: () => void) {
     setDuplicates([])
     setCurrentDuplicate(null)
     setResolvedContacts([])
-    setIsProcessingDuplicate(false)
   }
   
   const cancelImport = () => {
@@ -360,7 +418,6 @@ export function useEnhancedImport(onComplete?: () => void) {
     error: importMutation.error || saveMutation.error,
     importProgress,
     resetImport,
-    cancelImport,
-    isProcessingDuplicate
+    cancelImport
   }
 }

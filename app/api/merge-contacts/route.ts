@@ -5,13 +5,13 @@ import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 
 const mergedContactSchema = z.object({
-  name: z.string().describe('The most complete and accurate name'),
-  company: z.string().optional().describe('Company name - prefer the most recent or complete'),
-  role: z.string().optional().describe('Job title/role - prefer the most recent or complete'),
-  location: z.string().optional().describe('Location - prefer the most specific'),
+  name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
+  company: z.string().optional().describe('Company name - ONLY real company names, not UNKNOWN/N/A/placeholders'),
+  role: z.string().optional().describe('Job title/role - ONLY real roles, not UNKNOWN/N/A/placeholders'),
+  location: z.string().optional().describe('Location - ONLY real locations, not <UNKNOWN>/N/A/placeholders'),
   contactInfo: z.object({
-    phones: z.array(z.string()).describe('All unique phone numbers from both contacts'),
-    emails: z.array(z.string()).describe('All unique email addresses from both contacts'),
+    phones: z.array(z.string()).describe('All unique REAL phone numbers - no placeholders'),
+    emails: z.array(z.string()).describe('All unique REAL email addresses - no placeholders'),
     linkedinUrls: z.array(z.string()).describe('All unique LinkedIn URLs from both contacts')
   }),
   notes: z.string().describe('Merged notes - combine meaningfully, remove duplicates of structured fields (company, role, location) that are already captured above, keep ALL other valuable information including connection dates, meeting notes, and any other context')
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     const { object } = await generateObject({
-      model: anthropic('claude-3-haiku-20240307'),
+      model: anthropic('claude-3-5-sonnet-20241022'),
       schema: mergedContactSchema,
       prompt: `Merge these two contact records intelligently. 
       
@@ -42,14 +42,28 @@ ${JSON.stringify(incoming, null, 2)}
 Instructions:
 1. Keep the most complete and accurate information from both contacts
 2. Combine all contact methods (phones, emails, LinkedIn) without duplicates
-3. For structured fields (company, role, location), prefer the most recent or complete information
-4. For notes:
+3. CRITICAL: For ALL fields (name, company, role, location, emails, phones, notes, etc.), NEVER include placeholder values:
+   - If a field only contains placeholders like UNKNOWN, <UNKNOWN>, N/A, <N/A>, None, null, undefined, or empty strings, leave that field empty/undefined
+   - Examples: 
+     * If location is "<UNKNOWN>" in one contact and empty in another, the merged location should be undefined (not "<UNKNOWN>")
+     * If company is "N/A" in one contact and "Google" in another, the merged company should be "Google"
+     * If role is "Unknown" in both contacts, the merged role should be undefined
+4. For structured fields (company, role, location):
+   - Only use real values, not placeholders
+   - If both contacts have placeholders or one has placeholder and other is empty, leave the field undefined
+   - If one has a real value and other has placeholder, use the real value
+5. For notes:
    - Combine all unique information from both contacts
    - Remove any information that duplicates the structured fields (company, role, location)
    - KEEP LinkedIn connection dates (e.g., "LinkedIn connected: January 2024") as they provide valuable context
-   - Keep any other valuable context, observations, meeting notes, or personal information
-   - Format the notes cleanly, one piece of information per line
-5. Preserve the best version of the name (longer/more complete is usually better)`
+   - Identify and merge similar/duplicate notes that express the same information (even with slight variations in wording, spelling, or capitalization)
+   - For example: "Said he would like to meet for coffee when I'm in NYC" and "Said he would like to meet for coffee when I'm in NyC" should be merged into a single note
+   - When merging similar notes, keep the version with better spelling/grammar or more detail
+   - Keep all truly unique observations, meeting notes, or personal information
+   - Format the notes cleanly, one piece of information per line (list items with "-" preferred)
+   - Do not repeat the same information multiple times, even if worded slightly differently
+   - Do not include any lines that only contain placeholder values
+6. Preserve the best version of the name (longer/more complete is usually better)`
     })
 
     // Create the merged contact using the existing contact's ID and timestamps
