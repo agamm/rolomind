@@ -44,6 +44,7 @@ export function useEnhancedImport(onComplete?: () => void) {
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
   const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
   const [importProgress, setImportProgress] = useState<ImportProgress>({ status: 'idle' })
+  const [isProcessingDuplicate, setIsProcessingDuplicate] = useState(false)
   
   // Import mutation
   const importMutation = useMutation({
@@ -222,6 +223,9 @@ export function useEnhancedImport(onComplete?: () => void) {
       return
     }
     
+    // Set processing state
+    setIsProcessingDuplicate(true)
+    
     const remainingDuplicates = [...duplicates]
     const currentIndex = remainingDuplicates.findIndex(d => d === currentDuplicate)
     
@@ -290,10 +294,15 @@ export function useEnhancedImport(onComplete?: () => void) {
     setDuplicates(remainingDuplicates)
     
     if (remainingDuplicates.length > 0) {
-      setCurrentDuplicate(remainingDuplicates[0])
+      // Small delay before showing next duplicate to ensure smooth transition
+      setTimeout(() => {
+        setCurrentDuplicate(remainingDuplicates[0])
+        setIsProcessingDuplicate(false)
+      }, 300)
     } else {
       // All duplicates handled, now save any remaining unique contacts
       setCurrentDuplicate(null)
+      setIsProcessingDuplicate(false)
       if (resolvedContacts.length > 0) {
         saveMutation.mutate(resolvedContacts)
       } else {
@@ -323,6 +332,7 @@ export function useEnhancedImport(onComplete?: () => void) {
     setDuplicates([])
     setCurrentDuplicate(null)
     setResolvedContacts([])
+    setIsProcessingDuplicate(false)
   }
   
   const cancelImport = () => {
@@ -350,6 +360,7 @@ export function useEnhancedImport(onComplete?: () => void) {
     error: importMutation.error || saveMutation.error,
     importProgress,
     resetImport,
-    cancelImport
+    cancelImport,
+    isProcessingDuplicate
   }
 }

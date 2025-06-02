@@ -17,18 +17,24 @@ interface MergeConfirmationModalProps {
   duplicate: DuplicateMatch | null
   onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => void
   remainingCount?: number
+  isProcessing?: boolean
 }
 
 export function MergeConfirmationModal({ 
   duplicate, 
   onDecision,
-  remainingCount 
+  remainingCount,
+  isProcessing = false
 }: MergeConfirmationModalProps) {
   const [mergedPreview, setMergedPreview] = useState<Contact | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   
   useEffect(() => {
-    if (!duplicate) return
+    if (!duplicate) {
+      // Reset states when duplicate is cleared
+      setMergedPreview(null)
+      return
+    }
     
     // Fetch merge preview
     const fetchMergePreview = async () => {
@@ -57,15 +63,27 @@ export function MergeConfirmationModal({
     fetchMergePreview()
   }, [duplicate])
   
+  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => {
+    onDecision(action)
+  }
+  
   if (!duplicate) return null
   
   const { existing, incoming, matchType, matchValue } = duplicate
   
   return (
     <Dialog open={!!duplicate} onOpenChange={(open) => {
-      if (!open) onDecision('cancel')
+      if (!open) handleDecision('cancel')
     }}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto relative">
+        {isProcessing && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center rounded-lg">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-8 w-8 animate-spin text-gray-600" />
+              <p className="text-sm text-gray-600 font-medium">Processing...</p>
+            </div>
+          </div>
+        )}
         <DialogHeader>
           <DialogTitle className="text-center">
             Duplicate Contact Found
@@ -131,13 +149,13 @@ export function MergeConfirmationModal({
         </div>
         
         <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={() => onDecision('skip')}>
+          <Button variant="outline" onClick={() => handleDecision('skip')} disabled={isProcessing}>
             Skip This Contact
           </Button>
-          <Button variant="outline" onClick={() => onDecision('keep-both')}>
+          <Button variant="outline" onClick={() => handleDecision('keep-both')} disabled={isProcessing}>
             Keep Both
           </Button>
-          <Button onClick={() => onDecision('merge')} className="bg-green-600 hover:bg-green-700">
+          <Button onClick={() => handleDecision('merge')} className="bg-green-600 hover:bg-green-700" disabled={isProcessing}>
             Merge Contact
           </Button>
         </DialogFooter>
