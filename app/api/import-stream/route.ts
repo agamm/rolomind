@@ -1,7 +1,8 @@
 import { NextRequest } from "next/server"
 import Papa from 'papaparse'
-import * as linkedinParser from "@/lib/csv-parsers/linkedin-parser"
-import * as rolodexParser from "@/lib/csv-parsers/rolodex-parser"
+import * as linkedinParser from "../import/parsers/linkedin-parser"
+import * as rolodexParser from "../import/parsers/rolodex-parser"
+import * as googleParser from "../import/parsers/google-parser"
 import { Contact } from '@/types/contact'
 import { loadExistingContacts } from '@/lib/contacts-storage'
 import { findDuplicates } from '@/lib/contact-merger'
@@ -28,6 +29,8 @@ export async function POST(request: NextRequest) {
     parserUsed = 'rolodex'
   } else if (linkedinParser.isApplicableParser(headers)) {
     parserUsed = 'linkedin'
+  } else if (googleParser.isApplicableParser(headers)) {
+    parserUsed = 'google'
   }
   
   if (phase === 'detect') {
@@ -56,7 +59,7 @@ export async function POST(request: NextRequest) {
         // Process batch
         const promises = batch.map(async (row) => {
           try {
-            const { normalizeContactWithLLM } = await import('@/lib/csv-parsers/llm-normalizer')
+            const { normalizeContactWithLLM } = await import('../import/parsers/llm-normalizer')
             return await normalizeContactWithLLM(row, headers)
           } catch (error) {
             console.error('Failed to normalize contact:', error)
@@ -122,6 +125,8 @@ export async function POST(request: NextRequest) {
     contacts = rolodexParser.parse(text)
   } else if (parserUsed === 'linkedin') {
     contacts = linkedinParser.parse(text)
+  } else if (parserUsed === 'google') {
+    contacts = googleParser.parse(text)
   }
   
   const existingContacts = await loadExistingContacts()

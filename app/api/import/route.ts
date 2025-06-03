@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
 import path from "path"
 import Papa from 'papaparse'
-import * as linkedinParser from "@/lib/csv-parsers/linkedin-parser"
-import * as rolodexParser from "@/lib/csv-parsers/rolodex-parser"
-import * as customParser from "@/lib/csv-parsers/custom-parser"
+import * as linkedinParser from "./parsers/linkedin-parser"
+import * as rolodexParser from "./parsers/rolodex-parser"
+import * as googleParser from "./parsers/google-parser"
+import * as customParser from "./parsers/custom-parser"
 import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
 
@@ -73,6 +74,8 @@ export async function POST(request: NextRequest) {
         parserType = 'rolodex'
       } else if (linkedinParser.isApplicableParser(headers)) {
         parserType = 'linkedin'
+      } else if (googleParser.isApplicableParser(headers)) {
+        parserType = 'google'
       }
       
       return NextResponse.json({ 
@@ -96,6 +99,9 @@ export async function POST(request: NextRequest) {
     } else if (parserType === 'linkedin' || (!parserType && linkedinParser.isApplicableParser(headers))) {
       normalizedContacts = linkedinParser.parse(content)
       parserUsed = 'linkedin'
+    } else if (parserType === 'google' || (!parserType && googleParser.isApplicableParser(headers))) {
+      normalizedContacts = googleParser.parse(content)
+      parserUsed = 'google'
     } else {
       // Use custom parser (AI) for other formats
       normalizedContacts = await customParser.parse(content)

@@ -29,7 +29,7 @@ interface SaveResponse {
 
 export interface ImportProgress {
   status: 'idle' | 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
-  parserType?: 'linkedin' | 'rolodex' | 'custom' | 'llm-normalizer'
+  parserType?: 'linkedin' | 'rolodex' | 'google' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
     total: number
@@ -68,6 +68,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Update progress with parser type
       const parserType = detectData.parserUsed === 'linkedin' ? 'linkedin' : 
                          detectData.parserUsed === 'rolodex' ? 'rolodex' : 
+                         detectData.parserUsed === 'google' ? 'google' :
                          detectData.parserUsed === 'custom' ? 'custom' : 'llm-normalizer'
       
       // Show format detection animation
@@ -87,7 +88,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Phase 2: Full processing
       // First update status to processing/normalizing
       setImportProgress({
-        status: (parserType === 'linkedin' || parserType === 'rolodex') ? 'processing' : 'normalizing',
+        status: (parserType === 'linkedin' || parserType === 'rolodex' || parserType === 'google') ? 'processing' : 'normalizing',
         parserType,
         progress: {
           current: 0,
@@ -96,6 +97,8 @@ export function useEnhancedImport(onComplete?: () => void) {
             ? 'Processing LinkedIn contacts...' 
             : parserType === 'rolodex'
             ? 'Processing Rolodex export...'
+            : parserType === 'google'
+            ? 'Processing Google contacts...'
             : 'AI is analyzing your contacts...'
         }
       })

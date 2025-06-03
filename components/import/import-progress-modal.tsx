@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress'
 interface ImportProgressModalProps {
   isOpen: boolean
   status: 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'saving' | 'complete' | 'error'
-  parserType?: 'linkedin' | 'rolodex' | 'custom' | 'llm-normalizer'
+  parserType?: 'linkedin' | 'rolodex' | 'google' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
     total: number
@@ -52,7 +52,7 @@ export function ImportProgressModal({
             : <FileText className="h-8 w-8 text-gray-500 animate-pulse" />,
           title: showFormatSelected ? 'Format Detected!' : 'Analyzing CSV Format',
           description: showFormatSelected 
-            ? `Using ${parserType === 'linkedin' ? 'LinkedIn' : parserType === 'rolodex' ? 'Rolodex' : 'Custom (AI)'} parser`
+            ? `Using ${parserType === 'linkedin' ? 'LinkedIn' : parserType === 'rolodex' ? 'Rolodex' : parserType === 'google' ? 'Google' : 'Custom (AI)'} parser`
             : 'Detecting CSV structure...'
         }
       
@@ -60,6 +60,7 @@ export function ImportProgressModal({
       case 'normalizing':
         const isCustom = parserType === 'custom' || parserType === 'llm-normalizer'
         const isRolodex = parserType === 'rolodex'
+        const isGoogle = parserType === 'google'
         return {
           icon: isCustom ? (
             <div className="relative h-16 w-16 flex items-center justify-center">
@@ -69,11 +70,16 @@ export function ImportProgressModal({
           ) : (
             <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
           ),
-          title: isCustom ? 'AI-Powered Normalization' : isRolodex ? 'Processing Rolodex Export' : 'Processing LinkedIn CSV',
+          title: isCustom ? 'AI-Powered Normalization' : 
+                 isRolodex ? 'Processing Rolodex Export' : 
+                 isGoogle ? 'Processing Google Contacts' :
+                 'Processing LinkedIn CSV',
           description: isCustom 
             ? 'Using AI to understand and normalize your contact data...'
             : isRolodex 
             ? 'Importing your Rolodex contacts...'
+            : isGoogle
+            ? 'Importing your Google contacts...'
             : 'Parsing LinkedIn export format...'
         }
       
@@ -162,7 +168,7 @@ export function ImportProgressModal({
         )}
         
         {status === 'detecting' && (
-          <div className="mt-4 flex items-center justify-center gap-3">
+          <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
             <FormatOption
               icon={FileText}
               label="Rolodex"
@@ -176,6 +182,13 @@ export function ImportProgressModal({
               isSelected={showFormatSelected && parserType === 'linkedin'}
               showFormatSelected={showFormatSelected}
               baseColor="blue"
+            />
+            <FormatOption
+              icon={FileText}
+              label="Google"
+              isSelected={showFormatSelected && parserType === 'google'}
+              showFormatSelected={showFormatSelected}
+              baseColor="red"
             />
             <FormatOption
               icon={Sparkles}
@@ -199,6 +212,11 @@ export function ImportProgressModal({
                 <>
                   <FileText className="h-3 w-3 text-blue-500" />
                   LinkedIn Format
+                </>
+              ) : parserType === 'google' ? (
+                <>
+                  <FileText className="h-3 w-3 text-red-500" />
+                  Google Format
                 </>
               ) : (
                 <>
@@ -231,24 +249,27 @@ function FormatOption({
   label: string
   isSelected: boolean
   showFormatSelected: boolean
-  baseColor: 'blue' | 'purple' | 'green'
+  baseColor: 'blue' | 'purple' | 'green' | 'red'
 }) {
   const bgClasses = {
     blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-gray-50 border border-gray-200',
     purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-gray-50 border border-gray-200',
-    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-gray-50 border border-gray-200'
+    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-gray-50 border border-gray-200',
+    red: isSelected ? 'bg-red-100 border-2 border-red-500 scale-105' : 'bg-gray-50 border border-gray-200'
   }
   
   const iconClasses = {
     blue: isSelected ? 'text-blue-600' : 'text-gray-500',
     purple: isSelected ? 'text-purple-600' : 'text-gray-500',
-    green: isSelected ? 'text-green-600' : 'text-gray-500'
+    green: isSelected ? 'text-green-600' : 'text-gray-500',
+    red: isSelected ? 'text-red-600' : 'text-gray-500'
   }
   
   const textClasses = {
     blue: isSelected ? 'text-blue-700' : 'text-gray-600',
     purple: isSelected ? 'text-purple-700' : 'text-gray-600',
-    green: isSelected ? 'text-green-700' : 'text-gray-600'
+    green: isSelected ? 'text-green-700' : 'text-gray-600',
+    red: isSelected ? 'text-red-700' : 'text-gray-600'
   }
   
   return (
