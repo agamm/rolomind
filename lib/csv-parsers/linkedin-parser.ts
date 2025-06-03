@@ -1,40 +1,36 @@
 import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
-import type { CSVParser, ParsedCSVRow } from "./types"
 
-export class LinkedInParser implements CSVParser {
-  name = "LinkedIn"
+export function isApplicableParser(headers: string[]): boolean {
+  // LinkedIn CSV typically has these required headers
+  const requiredHeaders = ['First Name', 'Last Name', 'URL']
+  const optionalHeaders = ['Email Address', 'Company', 'Position', 'Connected On']
+  
+  // Check if we have the core LinkedIn headers
+  const hasRequiredHeaders = requiredHeaders.every(header => 
+    headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
+  )
+  
+  // Check if we have some optional LinkedIn-specific headers
+  const hasOptionalHeaders = optionalHeaders.some(header =>
+    headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
+  )
+  
+  return hasRequiredHeaders && hasOptionalHeaders
+}
 
-  canParse(_csvContent: string, headers: string[]): boolean {
-    // LinkedIn CSV typically has these required headers
-    const requiredHeaders = ['First Name', 'Last Name', 'URL']
-    const optionalHeaders = ['Email Address', 'Company', 'Position', 'Connected On']
-    
-    // Check if we have the core LinkedIn headers
-    const hasRequiredHeaders = requiredHeaders.every(header => 
-      headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
-    )
-    
-    // Check if we have some optional LinkedIn-specific headers
-    const hasOptionalHeaders = optionalHeaders.some(header =>
-      headers.some(h => h.toLowerCase().includes(header.toLowerCase()))
-    )
-    
-    return hasRequiredHeaders && hasOptionalHeaders
+export function parse(csvContent: string): Contact[] {
+  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+    transform: (value: string) => value.trim()
+  })
+
+  if (parseResult.errors.length > 0) {
+    console.warn('CSV parsing warnings:', parseResult.errors)
   }
 
-  parse(csvContent: string): Contact[] {
-    const parseResult = Papa.parse<ParsedCSVRow>(csvContent, {
-      header: true,
-      skipEmptyLines: true,
-      transform: (value: string) => value.trim()
-    })
-
-    if (parseResult.errors.length > 0) {
-      console.warn('CSV parsing warnings:', parseResult.errors)
-    }
-
-    return parseResult.data.map((row, index) => {
+  return parseResult.data.map((row, index) => {
       const firstName = row["First Name"] || ""
       const lastName = row["Last Name"] || ""
       const fullName = `${firstName} ${lastName}`.trim() || `Contact ${index + 1}`
@@ -57,7 +53,8 @@ export class LinkedInParser implements CSVParser {
         contactInfo: {
           emails: row["Email Address"] ? [row["Email Address"]] : [],
           phones: [], // LinkedIn exports typically don't include phone numbers
-          linkedinUrls: row["URL"] ? [row["URL"]] : []
+          linkedinUrl: row["URL"] || undefined,
+          otherUrls: []
         },
         notes,
         source: "linkedin",
@@ -66,8 +63,5 @@ export class LinkedInParser implements CSVParser {
       }
 
       return contact
-    }).filter(contact => contact.name !== `Contact ${parseResult.data.indexOf(parseResult.data.find(row => 
-      !row["First Name"] && !row["Last Name"]
-    )!) + 1}`) // Filter out completely empty rows
-  }
+  }).filter(contact => contact.name.trim() !== '')
 }

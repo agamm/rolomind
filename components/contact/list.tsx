@@ -6,6 +6,7 @@ import { ContactCard } from "./card"
 import { SearchInput } from "./search-input"
 import { EditContactModal } from "./edit-modal"
 import { PaginationControls } from "@/components/pagination-controls"
+import { DeleteConfirmationDialog } from "@/components/delete/delete-confirmation-dialog"
 import { Card, CardContent } from "@/components/ui/card"
 import { Upload } from "lucide-react"
 import { usePagination } from "@/hooks/use-pagination"
@@ -21,7 +22,31 @@ interface ContactListProps {
 export function ContactList({ contacts, onSearch, aiResults }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [deletingContact, setDeletingContact] = useState<Contact | null>(null)
   const queryClient = useQueryClient()
+
+  const deleteContactMutation = useMutation({
+    mutationFn: async (contactId: string) => {
+      const response = await fetch(`/api/contacts?id=${contactId}`, {
+        method: 'DELETE',
+      })
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete contact')
+      }
+      
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+      toast.success('Contact deleted successfully')
+      setDeletingContact(null)
+    },
+    onError: (error) => {
+      toast.error('Failed to delete contact')
+      console.error('Delete error:', error)
+    }
+  })
 
   const updateContactMutation = useMutation({
     mutationFn: async (updatedContact: Contact) => {
@@ -116,6 +141,7 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
                       contact={contact}
                       aiReason={aiResult?.reason}
                       onEdit={setEditingContact}
+                      onDelete={setDeletingContact}
                     />
                   )
                 })}
@@ -141,6 +167,14 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
         isOpen={!!editingContact}
         onClose={() => setEditingContact(null)}
         onSave={updateContactMutation.mutate}
+      />
+      
+      <DeleteConfirmationDialog
+        isOpen={!!deletingContact}
+        contact={deletingContact}
+        onConfirm={() => deletingContact && deleteContactMutation.mutate(deletingContact.id)}
+        onCancel={() => setDeletingContact(null)}
+        isDeleting={deleteContactMutation.isPending}
       />
     </Card>
   )

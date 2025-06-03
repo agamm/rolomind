@@ -62,17 +62,53 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const contactId = searchParams.get('id')
+    
+    if (!contactId) {
+      // If no ID provided, delete all contacts
+      await ensureDataDirectory()
+      await fs.writeFile(dataFilePath, JSON.stringify([], null, 2))
+      return Response.json({ success: true, message: "All contacts deleted" })
+    }
+    
     await ensureDataDirectory()
     
-    // Write empty array to the file
-    await fs.writeFile(dataFilePath, JSON.stringify([], null, 2))
+    // Read existing contacts
+    let contacts: Contact[] = []
+    try {
+      const data = await fs.readFile(dataFilePath, "utf-8")
+      contacts = JSON.parse(data)
+    } catch (readError) {
+      if ((readError as NodeJS.ErrnoException).code === "ENOENT") {
+        return Response.json(
+          { success: false, error: "No contacts found" },
+          { status: 404 }
+        )
+      }
+      throw readError
+    }
     
-    return Response.json({ success: true })
+    // Find and remove the contact
+    const initialLength = contacts.length
+    contacts = contacts.filter(c => c.id !== contactId)
+    
+    if (contacts.length === initialLength) {
+      return Response.json(
+        { success: false, error: "Contact not found" },
+        { status: 404 }
+      )
+    }
+    
+    // Save updated contacts
+    await fs.writeFile(dataFilePath, JSON.stringify(contacts, null, 2))
+    
+    return Response.json({ success: true, message: "Contact deleted successfully" })
   } catch (error) {
-    console.error("Error deleting all contacts:", error)
-    return Response.json({ success: false, error: "Failed to delete all contacts" }, { status: 500 })
+    console.error("Error deleting contact:", error)
+    return Response.json({ success: false, error: "Failed to delete contact" }, { status: 500 })
   }
 }
 

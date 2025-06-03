@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server"
 import Papa from 'papaparse'
-import { CSVParserFactory } from '@/lib/csv-parsers'
+import * as linkedinParser from "@/lib/csv-parsers/linkedin-parser"
+import * as rolodexParser from "@/lib/csv-parsers/rolodex-parser"
 import { Contact } from '@/types/contact'
 import { loadExistingContacts } from '@/lib/contacts-storage'
 import { findDuplicates } from '@/lib/contact-merger'
@@ -18,22 +19,15 @@ export async function POST(request: NextRequest) {
   const text = await file.text()
   const parseResult = Papa.parse(text, { header: true })
   const headers = parseResult.meta.fields || []
-  const rows = parseResult.data as any[]
+  const rows = parseResult.data as Record<string, string>[]
   
   // Detect parser type
-  const factory = new CSVParserFactory()
-  let parserUsed = 'llm-normalizer' // default
+  let parserUsed = 'custom' // default
   
-  try {
-    // Try to detect if it's LinkedIn or another known format
-    for (const row of headers) {
-      if (row && ['First Name', 'Last Name', 'Company', 'Position', 'Connected On'].some(h => row.includes(h))) {
-        parserUsed = 'linkedin'
-        break
-      }
-    }
-  } catch (error) {
-    console.log('Using LLM normalizer as fallback')
+  if (rolodexParser.isApplicableParser(headers)) {
+    parserUsed = 'rolodex'
+  } else if (linkedinParser.isApplicableParser(headers)) {
+    parserUsed = 'linkedin'
   }
   
   if (phase === 'detect') {
@@ -45,10 +39,10 @@ export async function POST(request: NextRequest) {
     }))
   }
 
-  // Stream processing for LLM normalizer
-  if (parserUsed === 'llm-normalizer') {
+  // Stream processing for custom parser (AI)
+  if (parserUsed === 'custom') {
     async function* generateProgress() {
-      const BATCH_SIZE = 5
+      const BATCH_SIZE = 50
       const totalRows = rows.length
       let processed = 0
       const normalizedContacts: Contact[] = []
@@ -121,8 +115,15 @@ export async function POST(request: NextRequest) {
     return createJsonStream(generateProgress)
   }
   
-  // For non-LLM parsers, use regular parsing
-  const { contacts } = factory.detectAndParse(text)
+  // For non-custom parsers, use regular parsing
+  let contacts: Contact[] = []
+  
+  if (parserUsed === 'rolodex') {
+    contacts = rolodexParser.parse(text)
+  } else if (parserUsed === 'linkedin') {
+    contacts = linkedinParser.parse(text)
+  }
+  
   const existingContacts = await loadExistingContacts()
   
   const contactsWithDuplicates = contacts.map(contact => {

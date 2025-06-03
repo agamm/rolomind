@@ -5,15 +5,16 @@ import type { Contact } from "@/types/contact"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin, Edit2 } from "lucide-react"
+import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin, Edit2, Trash2 } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
   aiReason?: string
   onEdit?: (contact: Contact) => void
+  onDelete?: (contact: Contact) => void
 }
 
-export function ContactCard({ contact, aiReason, onEdit }: ContactCardProps) {
+export function ContactCard({ contact, aiReason, onEdit, onDelete }: ContactCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrl) {
@@ -60,17 +61,31 @@ export function ContactCard({ contact, aiReason, onEdit }: ContactCardProps) {
             </div>
           </div>
           
-          {onEdit && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(contact)}
-              className="h-8 w-8 p-0"
-              title="Edit contact"
-            >
-              <Edit2 className="h-4 w-4" />
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {onEdit && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onEdit(contact)}
+                className="h-8 w-8 p-0"
+                title="Edit contact"
+              >
+                <Edit2 className="h-4 w-4" />
+              </Button>
+            )}
+            
+            {onDelete && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => onDelete(contact)}
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                title="Delete contact"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Professional Info - Each property on new line */}

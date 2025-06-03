@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress'
 interface ImportProgressModalProps {
   isOpen: boolean
   status: 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'saving' | 'complete' | 'error'
-  parserType?: 'linkedin' | 'llm-normalizer'
+  parserType?: 'linkedin' | 'rolodex' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
     total: number
@@ -52,15 +52,16 @@ export function ImportProgressModal({
             : <FileText className="h-8 w-8 text-gray-500 animate-pulse" />,
           title: showFormatSelected ? 'Format Detected!' : 'Analyzing CSV Format',
           description: showFormatSelected 
-            ? `Using ${parserType === 'linkedin' ? 'LinkedIn' : 'AI'} parser`
+            ? `Using ${parserType === 'linkedin' ? 'LinkedIn' : parserType === 'rolodex' ? 'Rolodex' : 'Custom (AI)'} parser`
             : 'Detecting CSV structure...'
         }
       
       case 'processing':
       case 'normalizing':
-        const isLLM = parserType === 'llm-normalizer'
+        const isCustom = parserType === 'custom' || parserType === 'llm-normalizer'
+        const isRolodex = parserType === 'rolodex'
         return {
-          icon: isLLM ? (
+          icon: isCustom ? (
             <div className="relative h-16 w-16 flex items-center justify-center">
               <div className="absolute inset-0 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
               <Sparkles className="h-8 w-8 text-purple-500 animate-pulse relative z-10" />
@@ -68,9 +69,11 @@ export function ImportProgressModal({
           ) : (
             <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
           ),
-          title: isLLM ? 'AI-Powered Normalization' : 'Processing LinkedIn CSV',
-          description: isLLM 
+          title: isCustom ? 'AI-Powered Normalization' : isRolodex ? 'Processing Rolodex Export' : 'Processing LinkedIn CSV',
+          description: isCustom 
             ? 'Using AI to understand and normalize your contact data...'
+            : isRolodex 
+            ? 'Importing your Rolodex contacts...'
             : 'Parsing LinkedIn export format...'
         }
       
@@ -149,7 +152,7 @@ export function ImportProgressModal({
               </span>
             </div>
             <Progress value={progressPercent} className="h-2" />
-            {parserType === 'llm-normalizer' && status === 'normalizing' && progressPercent > 0 && (
+            {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && progressPercent > 0 && (
               <div className="flex items-center justify-center gap-2 text-xs text-purple-600">
                 <Sparkles className="h-3 w-3 animate-pulse" />
                 <span>AI is extracting names, emails, phones, and other contact details...</span>
@@ -162,6 +165,13 @@ export function ImportProgressModal({
           <div className="mt-4 flex items-center justify-center gap-3">
             <FormatOption
               icon={FileText}
+              label="Rolodex"
+              isSelected={showFormatSelected && parserType === 'rolodex'}
+              showFormatSelected={showFormatSelected}
+              baseColor="green"
+            />
+            <FormatOption
+              icon={FileText}
               label="LinkedIn"
               isSelected={showFormatSelected && parserType === 'linkedin'}
               showFormatSelected={showFormatSelected}
@@ -170,7 +180,7 @@ export function ImportProgressModal({
             <FormatOption
               icon={Sparkles}
               label="Custom"
-              isSelected={showFormatSelected && parserType === 'llm-normalizer'}
+              isSelected={showFormatSelected && (parserType === 'custom' || parserType === 'llm-normalizer')}
               showFormatSelected={showFormatSelected}
               baseColor="purple"
             />
@@ -180,7 +190,12 @@ export function ImportProgressModal({
         {parserType && ['processing', 'normalizing', 'saving'].includes(status) && (
           <div className="mt-4 flex flex-col items-center gap-2">
             <span className="inline-flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-1 text-xs">
-              {parserType === 'linkedin' ? (
+              {parserType === 'rolodex' ? (
+                <>
+                  <FileText className="h-3 w-3 text-green-500" />
+                  Rolodex Format
+                </>
+              ) : parserType === 'linkedin' ? (
                 <>
                   <FileText className="h-3 w-3 text-blue-500" />
                   LinkedIn Format
@@ -192,7 +207,7 @@ export function ImportProgressModal({
                 </>
               )}
             </span>
-            {parserType === 'llm-normalizer' && status === 'normalizing' && (
+            {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && (
               <div className="text-xs text-gray-500 animate-pulse">
                 AI is analyzing field patterns and data structure...
               </div>
@@ -216,21 +231,24 @@ function FormatOption({
   label: string
   isSelected: boolean
   showFormatSelected: boolean
-  baseColor: 'blue' | 'purple'
+  baseColor: 'blue' | 'purple' | 'green'
 }) {
   const bgClasses = {
     blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-gray-50 border border-gray-200',
-    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-gray-50 border border-gray-200'
+    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-gray-50 border border-gray-200',
+    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-gray-50 border border-gray-200'
   }
   
   const iconClasses = {
     blue: isSelected ? 'text-blue-600' : 'text-gray-500',
-    purple: isSelected ? 'text-purple-600' : 'text-gray-500'
+    purple: isSelected ? 'text-purple-600' : 'text-gray-500',
+    green: isSelected ? 'text-green-600' : 'text-gray-500'
   }
   
   const textClasses = {
     blue: isSelected ? 'text-blue-700' : 'text-gray-600',
-    purple: isSelected ? 'text-purple-700' : 'text-gray-600'
+    purple: isSelected ? 'text-purple-700' : 'text-gray-600',
+    green: isSelected ? 'text-green-700' : 'text-gray-600'
   }
   
   return (

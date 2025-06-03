@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { DuplicateMatch } from '@/lib/contact-merger'
+import { DuplicateMatch, areContactsIdentical } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 
 interface ImportResponse {
@@ -29,7 +29,7 @@ interface SaveResponse {
 
 export interface ImportProgress {
   status: 'idle' | 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
-  parserType?: 'linkedin' | 'llm-normalizer'
+  parserType?: 'linkedin' | 'rolodex' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
     total: number
@@ -66,7 +66,9 @@ export function useEnhancedImport(onComplete?: () => void) {
       }
       
       // Update progress with parser type
-      const parserType = detectData.parserUsed === 'linkedin' ? 'linkedin' : 'llm-normalizer'
+      const parserType = detectData.parserUsed === 'linkedin' ? 'linkedin' : 
+                         detectData.parserUsed === 'rolodex' ? 'rolodex' : 
+                         detectData.parserUsed === 'custom' ? 'custom' : 'llm-normalizer'
       
       // Show format detection animation
       setImportProgress({
@@ -85,19 +87,21 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Phase 2: Full processing
       // First update status to processing/normalizing
       setImportProgress({
-        status: parserType === 'linkedin' ? 'processing' : 'normalizing',
+        status: (parserType === 'linkedin' || parserType === 'rolodex') ? 'processing' : 'normalizing',
         parserType,
         progress: {
           current: 0,
           total: detectData.rowCount || 0,
           message: parserType === 'linkedin' 
             ? 'Processing LinkedIn contacts...' 
+            : parserType === 'rolodex'
+            ? 'Processing Rolodex export...'
             : 'AI is analyzing your contacts...'
         }
       })
       
-      // Use streaming for LLM normalizer
-      if (parserType === 'llm-normalizer') {
+      // Use streaming for custom parser (AI)
+      if (parserType === 'custom' || parserType === 'llm-normalizer') {
         const processResponse = await fetch('/api/import-stream?phase=process', {
           method: 'POST',
           body: formData
@@ -171,30 +175,10 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // If there are duplicates, start resolution
       if (data.duplicates && data.duplicates.length > 0) {
-        // Filter out duplicates that don't add any new information
+        // Filter out duplicates that are identical
         const meaningfulDuplicates = data.duplicates.filter((dup: DuplicateMatch) => {
-          const existing = dup.existing
-          const incoming = dup.incoming
-          
-          // Check if incoming has any new information
-          const hasNewPhone = incoming.contactInfo?.phones?.some(
-            (phone: string) => !existing.contactInfo.phones.includes(phone)
-          )
-          const hasNewEmail = incoming.contactInfo?.emails?.some(
-            (email: string) => !existing.contactInfo.emails.includes(email)
-          )
-          const hasNewLinkedIn = incoming.contactInfo?.linkedinUrls?.some(
-            (url: string) => !existing.contactInfo.linkedinUrls.includes(url)
-          )
-          const hasNewCompany = incoming.company && incoming.company !== existing.company
-          const hasNewRole = incoming.role && incoming.role !== existing.role
-          const hasNewLocation = incoming.location && incoming.location !== existing.location
-          const hasNewNotes = incoming.notes && incoming.notes.trim() && 
-            (!existing.notes || !existing.notes.includes(incoming.notes))
-          
-          // If no new information, skip this duplicate
-          return hasNewPhone || hasNewEmail || hasNewLinkedIn || 
-                 hasNewCompany || hasNewRole || hasNewLocation || hasNewNotes
+          // Skip if contacts are identical
+          return !areContactsIdentical(dup.existing, dup.incoming)
         })
         
         const skippedCount = data.duplicates.length - meaningfulDuplicates.length

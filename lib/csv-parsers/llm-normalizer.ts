@@ -68,8 +68,8 @@ Be thorough in extracting all available contact information.`
 export async function normalizeCsvBatch(
   rows: RawContactData[],
   headers: string[]
-): Promise<{ normalized: Partial<Contact>[], errors: string[] }> {
-  const normalized: Partial<Contact>[] = []
+): Promise<{ normalized: Contact[], errors: string[] }> {
+  const normalized: Contact[] = []
   const errors: string[] = []
   
   // Process in small batches to avoid rate limits

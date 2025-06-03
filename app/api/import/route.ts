@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { promises as fs } from "fs"
 import path from "path"
 import Papa from 'papaparse'
-import { CSVParserFactory } from "@/lib/csv-parsers/parser-factory"
-import { normalizeCsvBatch } from "@/lib/csv-parsers/llm-normalizer"
+import * as linkedinParser from "@/lib/csv-parsers/linkedin-parser"
+import * as rolodexParser from "@/lib/csv-parsers/rolodex-parser"
+import * as customParser from "@/lib/csv-parsers/custom-parser"
 import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
 
@@ -23,10 +24,6 @@ async function loadExistingContacts(): Promise<Contact[]> {
   }
 }
 
-function isLinkedInCsv(headers: string[]): boolean {
-  const linkedinHeaders = ['First Name', 'Last Name', 'Company', 'Position', 'Email Address']
-  return linkedinHeaders.every(h => headers.includes(h))
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -70,7 +67,13 @@ export async function POST(request: NextRequest) {
     
     if (phase === 'detect' || !phase) {
       // Quick detection phase - just determine the parser type
-      const parserType = isLinkedInCsv(headers) ? 'linkedin' : 'llm-normalizer'
+      let parserType = 'custom' // default (AI)
+      
+      if (rolodexParser.isApplicableParser(headers)) {
+        parserType = 'rolodex'
+      } else if (linkedinParser.isApplicableParser(headers)) {
+        parserType = 'linkedin'
+      }
       
       return NextResponse.json({ 
         success: true,
@@ -81,25 +84,22 @@ export async function POST(request: NextRequest) {
     }
     
     // Processing phase - do the actual work
-    let normalizedContacts: Partial<Contact>[] = []
+    let normalizedContacts: Contact[] = []
     let parserUsed = 'unknown'
     
-    // Check if it's a LinkedIn CSV
-    if (isLinkedInCsv(headers)) {
-      // Use existing parser for LinkedIn
-      const parserFactory = new CSVParserFactory()
-      const result = parserFactory.detectAndParse(content)
-      normalizedContacts = result.contacts
-      parserUsed = result.parserUsed
+    // Use the appropriate parser based on detected type
+    const parserType = request.nextUrl.searchParams.get('parserType')
+    
+    if (parserType === 'rolodex' || (!parserType && rolodexParser.isApplicableParser(headers))) {
+      normalizedContacts = rolodexParser.parse(content)
+      parserUsed = 'rolodex'
+    } else if (parserType === 'linkedin' || (!parserType && linkedinParser.isApplicableParser(headers))) {
+      normalizedContacts = linkedinParser.parse(content)
+      parserUsed = 'linkedin'
     } else {
-      // Use LLM normalizer for other CSV formats
-      const { normalized, errors } = await normalizeCsvBatch(rows, headers)
-      normalizedContacts = normalized
-      parserUsed = 'llm-normalizer'
-      
-      if (errors.length > 0) {
-        console.warn('Normalization errors:', errors)
-      }
+      // Use custom parser (AI) for other formats
+      normalizedContacts = await customParser.parse(content)
+      parserUsed = 'custom'
     }
 
     // Load existing contacts

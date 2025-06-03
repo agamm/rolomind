@@ -12,6 +12,42 @@ export interface MergeDecision {
   mergedContact?: Contact
 }
 
+export function areContactsIdentical(
+  existing: Contact,
+  incoming: Partial<Contact>
+): boolean {
+  // Check if all meaningful fields are the same
+  if (normalizeString(existing.name) !== normalizeString(incoming.name || '')) return false
+  if (existing.company !== incoming.company) return false
+  if (existing.role !== incoming.role) return false
+  if (existing.location !== incoming.location) return false
+  
+  // Check contact info arrays
+  const existingPhones = existing.contactInfo.phones.map(p => normalizePhone(p)).sort()
+  const incomingPhones = (incoming.contactInfo?.phones || []).map(p => normalizePhone(p)).sort()
+  if (JSON.stringify(existingPhones) !== JSON.stringify(incomingPhones)) return false
+  
+  const existingEmails = existing.contactInfo.emails.map(e => e.toLowerCase()).sort()
+  const incomingEmails = (incoming.contactInfo?.emails || []).map(e => e.toLowerCase()).sort()
+  if (JSON.stringify(existingEmails) !== JSON.stringify(incomingEmails)) return false
+  
+  const existingLinkedIn = existing.contactInfo.linkedinUrl
+  const incomingLinkedIn = incoming.contactInfo?.linkedinUrl
+  if (existingLinkedIn !== incomingLinkedIn) return false
+  
+  // Check other URLs
+  const existingOtherUrls = existing.contactInfo.otherUrls.map(u => `${u.platform}:${u.url}`).sort()
+  const incomingOtherUrls = (incoming.contactInfo?.otherUrls || []).map(u => `${u.platform}:${u.url}`).sort()
+  if (JSON.stringify(existingOtherUrls) !== JSON.stringify(incomingOtherUrls)) return false
+  
+  // Check notes (normalize whitespace)
+  const existingNotes = (existing.notes || '').replace(/\s+/g, ' ').trim()
+  const incomingNotes = (incoming.notes || '').replace(/\s+/g, ' ').trim()
+  if (existingNotes !== incomingNotes) return false
+  
+  return true
+}
+
 function normalizeString(str: string): string {
   return str.toLowerCase().trim().replace(/\s+/g, ' ')
 }
@@ -71,17 +107,14 @@ export function findDuplicates(
     }
     
     // Check LinkedIn matches
-    if (incomingContact.contactInfo?.linkedinUrls) {
-      for (const url of incomingContact.contactInfo.linkedinUrls) {
-        if (existing.contactInfo.linkedinUrls.some(u => u === url)) {
-          duplicates.push({
-            existing,
-            incoming: incomingContact,
-            matchType: 'linkedin',
-            matchValue: url
-          })
-          break
-        }
+    if (incomingContact.contactInfo?.linkedinUrl) {
+      if (existing.contactInfo.linkedinUrl === incomingContact.contactInfo.linkedinUrl) {
+        duplicates.push({
+          existing,
+          incoming: incomingContact,
+          matchType: 'linkedin',
+          matchValue: incomingContact.contactInfo.linkedinUrl
+        })
       }
     }
   }
@@ -281,10 +314,13 @@ export function mergeContacts(
         ...existing.contactInfo.emails,
         ...(incoming.contactInfo?.emails || [])
       ])),
-      linkedinUrls: Array.from(new Set([
-        ...existing.contactInfo.linkedinUrls,
-        ...(incoming.contactInfo?.linkedinUrls || [])
-      ]))
+      linkedinUrl: incoming.contactInfo?.linkedinUrl || existing.contactInfo.linkedinUrl,
+      otherUrls: [
+        ...existing.contactInfo.otherUrls,
+        ...(incoming.contactInfo?.otherUrls || [])
+      ].filter((url, index, self) => 
+        index === self.findIndex(u => u.platform === url.platform && u.url === url.url)
+      )
     },
     // Use cleaned notes
     notes: cleanedNotes,
