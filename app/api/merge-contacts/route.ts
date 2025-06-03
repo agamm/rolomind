@@ -12,7 +12,11 @@ const mergedContactSchema = z.object({
   contactInfo: z.object({
     phones: z.array(z.string()).describe('All unique REAL phone numbers - no placeholders'),
     emails: z.array(z.string()).describe('All unique REAL email addresses - no placeholders'),
-    linkedinUrls: z.array(z.string()).describe('All unique LinkedIn URLs from both contacts')
+    linkedinUrl: z.string().optional().describe('LinkedIn URL - keep the most complete one'),
+    otherUrls: z.array(z.object({
+      platform: z.string(),
+      url: z.string()
+    })).describe('Other social/professional URLs')
   }),
   notes: z.string().describe('Merged notes - combine meaningfully, remove duplicates of structured fields (company, role, location) that are already captured above, keep ALL other valuable information including connection dates, meeting notes, and any other context')
 })
@@ -34,10 +38,16 @@ export async function POST(request: NextRequest) {
       prompt: `Merge these two contact records intelligently. 
       
 Existing contact:
-${JSON.stringify(existing, null, 2)}
+${JSON.stringify((() => {
+  const { createdAt, updatedAt, ...rest } = existing;
+  return rest;
+})(), null, 2)}
 
 Incoming contact:
-${JSON.stringify(incoming, null, 2)}
+${JSON.stringify((() => {
+  const { createdAt, updatedAt, ...rest } = incoming;
+  return rest;
+})(), null, 2)}
 
 Instructions:
 1. Keep the most complete and accurate information from both contacts
@@ -56,6 +66,8 @@ Instructions:
    - Combine all unique information from both contacts
    - Remove any information that duplicates the structured fields (company, role, location)
    - KEEP LinkedIn connection dates (e.g., "LinkedIn connected: January 2024") as they provide valuable context
+   - If the notes mention when a contact was imported/added and from what source, preserve this information - but don't duplicate dates and sources.
+   - If no year is provided to a date in the notes, add the current year to it: ${new Date().getFullYear()}
    - Identify and merge similar/duplicate notes that express the same information (even with slight variations in wording, spelling, or capitalization)
    - For example: "Said he would like to meet for coffee when I'm in NYC" and "Said he would like to meet for coffee when I'm in NyC" should be merged into a single note
    - When merging similar notes, keep the version with better spelling/grammar or more detail

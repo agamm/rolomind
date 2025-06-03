@@ -115,7 +115,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         }
         
         const { readJsonStream } = await import('@/lib/stream-utils')
-        let finalData: any = null
+        let finalData: ImportResponse | null = null
         
         for await (const data of readJsonStream(processResponse)) {
           if (data.type === 'progress') {
@@ -283,34 +283,88 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         toast.info(`Merging ${allDuplicates.length} contacts...`)
         
-        // Use batch merge endpoint for efficiency
-        const response = await fetch('/api/merge-contacts-batch', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            mergePairs: allDuplicates.map(dup => ({
-              existing: dup.existing,
-              incoming: dup.incoming
-            }))
-          })
+        // Update import progress to show merging status
+        setImportProgress({
+          status: 'processing',
+          parserType: importProgress.parserType,
+          progress: {
+            current: 0,
+            total: allDuplicates.length,
+            message: 'Merging duplicate contacts...'
+          }
         })
         
-        if (!response.ok) {
-          throw new Error('Failed to batch merge contacts')
+        // Process merges in batches directly from client
+        const BATCH_SIZE = 20
+        const allMergedContacts: Contact[] = []
+        let totalProcessed = 0
+        
+        console.log(`Starting merge-all with ${allDuplicates.length} contacts`)
+        
+        for (let i = 0; i < allDuplicates.length; i += BATCH_SIZE) {
+          const batch = allDuplicates.slice(i, Math.min(i + BATCH_SIZE, allDuplicates.length))
+          
+          // Process batch in parallel
+          const batchPromises = batch.map(async (dup) => {
+            try {
+              const response = await fetch('/api/merge-contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  existing: dup.existing,
+                  incoming: dup.incoming
+                })
+              })
+              
+              if (!response.ok) {
+                throw new Error('Failed to merge contact')
+              }
+              
+              const { mergedContact } = await response.json()
+              return { success: true, contact: mergedContact }
+            } catch (error) {
+              console.error('Failed to merge contact:', error)
+              return { success: false }
+            }
+          })
+          
+          const results = await Promise.all(batchPromises)
+          
+          // Collect successful merges
+          for (const result of results) {
+            if (result.success && result.contact) {
+              allMergedContacts.push(result.contact)
+            }
+            totalProcessed++
+            
+            // Update progress
+            setImportProgress({
+              status: 'processing',
+              parserType: importProgress.parserType,
+              progress: {
+                current: totalProcessed,
+                total: allDuplicates.length,
+                message: `Merged ${totalProcessed} of ${allDuplicates.length} contacts...`
+              }
+            })
+          }
+          
+          // Show toast update every batch
+          if (totalProcessed % 10 === 0 || totalProcessed === allDuplicates.length) {
+            toast.info(`Merged ${totalProcessed} of ${allDuplicates.length} contacts...`)
+          }
         }
         
-        const { mergedContacts } = await response.json()
-        
         // Save all merged contacts
-        if (mergedContacts.length > 0) {
+        if (allMergedContacts.length > 0) {
           const response = await fetch('/api/import', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contacts: mergedContacts })
+            body: JSON.stringify({ contacts: allMergedContacts })
           })
           
           if (response.ok) {
-            toast.success(`Successfully merged ${mergedContacts.length} contacts`)
+            toast.success(`Successfully merged ${allMergedContacts.length} contacts`)
             queryClient.invalidateQueries({ queryKey: ['contacts'] })
           }
         }
@@ -327,8 +381,8 @@ export function useEnhancedImport(onComplete?: () => void) {
             status: 'complete',
             parserType: importProgress.parserType,
             progress: {
-              current: mergedContacts.length,
-              total: mergedContacts.length,
+              current: allMergedContacts.length,
+              total: allMergedContacts.length,
               message: 'Import completed!'
             }
           })
