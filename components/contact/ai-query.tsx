@@ -226,7 +226,7 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
               <span className="text-sm font-medium text-blue-900">
-                Processing {progress.total} chunks (6-20 in parallel)
+                Querying contacts in batches...
               </span>
             </div>
             <span className="text-sm text-blue-700">

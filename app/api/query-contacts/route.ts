@@ -22,7 +22,11 @@ export async function POST(req: Request) {
     }
 
     // Process up to 100 contacts per request
-    const batch = contacts.slice(0, 100).map((c: Contact) => ({
+    if (contacts.length > 100) {
+      return Response.json({ error: 'Too many contacts' }, { status: 400 });
+    }
+
+    const batch = contacts.map((c: Contact) => ({
       id: c.id,
       name: c.name,
       company: c.company,
@@ -50,6 +54,7 @@ CRITICAL RULES:
 2. ONLY use information directly stated in the contact fields
 3. If location/company/role is not mentioned, DO NOT assume or guess
 4. For compound queries, ALL conditions must be verifiably met
+5. If query specifies a specific contact field to focus on, focus on that field when searching.
 ---
 
 MATCHING RULES:
@@ -60,6 +65,15 @@ For compound queries like "CEOs in Israel":
 ✗ Do NOT return if location is not specified
 ✗ Do NOT return if role is not specified
 ✗ Do NOT guess or infer missing information
+
+For specific contact field queries like "Find contacts with a non-descriptive name":
+✓ Name can be like "Contact 123" or "John"
+✗ Do NOT return if the company is "Company" (different contact field, isn't the field name)
+---
+
+Notes:
+---
+1. Company "Stealth" is a known way to indicate they are working on a startup in stealth mode.
 ---
 
 CONTACTS TO ANALYZE:
