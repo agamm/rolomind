@@ -110,7 +110,7 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [progress, setProgress] = useState({ completed: 0, total: 0 })
   const [results, setResults] = useState<ContactMatch[]>([])
-  const [enableSummary, setEnableSummary] = useState(true)
+  const [enableSummary, setEnableSummary] = useState(false)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
   
   const mutation = useMutation({

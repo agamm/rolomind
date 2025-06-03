@@ -267,13 +267,84 @@ export function useEnhancedImport(onComplete?: () => void) {
     }
   })
   
-  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => {
+  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
     if (!currentDuplicate) return
     
     // Handle cancel - stop entire import
     if (action === 'cancel') {
       cancelImport()
       return
+    }
+    
+    // Handle merge-all
+    if (action === 'merge-all') {
+      try {
+        const allDuplicates = [currentDuplicate, ...duplicates.filter(d => d !== currentDuplicate)]
+        
+        toast.info(`Merging ${allDuplicates.length} contacts...`)
+        
+        // Use batch merge endpoint for efficiency
+        const response = await fetch('/api/merge-contacts-batch', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mergePairs: allDuplicates.map(dup => ({
+              existing: dup.existing,
+              incoming: dup.incoming
+            }))
+          })
+        })
+        
+        if (!response.ok) {
+          throw new Error('Failed to batch merge contacts')
+        }
+        
+        const { mergedContacts } = await response.json()
+        
+        // Save all merged contacts
+        if (mergedContacts.length > 0) {
+          const response = await fetch('/api/import', {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contacts: mergedContacts })
+          })
+          
+          if (response.ok) {
+            toast.success(`Successfully merged ${mergedContacts.length} contacts`)
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+          }
+        }
+        
+        // Clear duplicates and finish
+        setDuplicates([])
+        setCurrentDuplicate(null)
+        
+        // Save any remaining unique contacts
+        if (resolvedContacts.length > 0) {
+          saveMutation.mutate(resolvedContacts)
+        } else {
+          setImportProgress({
+            status: 'complete',
+            parserType: importProgress.parserType,
+            progress: {
+              current: mergedContacts.length,
+              total: mergedContacts.length,
+              message: 'Import completed!'
+            }
+          })
+          
+          setTimeout(() => {
+            setImportProgress({ status: 'idle' })
+            onComplete?.()
+          }, 2000)
+        }
+        
+        return
+      } catch (error) {
+        console.error('Failed to merge all contacts:', error)
+        toast.error('Failed to merge all contacts')
+        return
+      }
     }
     
     const remainingDuplicates = [...duplicates]

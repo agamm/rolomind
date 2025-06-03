@@ -15,7 +15,7 @@ import { ContactCard } from '@/components/contact'
 
 interface MergeConfirmationModalProps {
   duplicate: DuplicateMatch | null
-  onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => void
+  onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => void
   remainingCount?: number
 }
 
@@ -27,7 +27,7 @@ export function MergeConfirmationModal({
   const [mergedPreview, setMergedPreview] = useState<Contact | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [actionType, setActionType] = useState<'merge' | 'skip' | 'keep-both' | null>(null)
+  const [actionType, setActionType] = useState<'merge' | 'skip' | 'keep-both' | 'merge-all' | null>(null)
   
   useEffect(() => {
     // Reset processing state when duplicate changes
@@ -67,7 +67,7 @@ export function MergeConfirmationModal({
     fetchMergePreview()
   }, [duplicate])
   
-  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'cancel') => {
+  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
     if (action !== 'cancel') {
       setIsProcessing(true)
       setActionType(action)
@@ -148,49 +148,68 @@ export function MergeConfirmationModal({
           </div>
         </div>
         
-        <DialogFooter className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={() => handleDecision('skip')}
-            disabled={isProcessing}
-          >
-            {isProcessing && actionType === 'skip' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Skipping...
-              </>
-            ) : (
-              'Skip This Contact'
-            )}
-          </Button>
-          <Button 
-            variant="outline" 
-            onClick={() => handleDecision('keep-both')}
-            disabled={isProcessing}
-          >
-            {isProcessing && actionType === 'keep-both' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Keeping Both...
-              </>
-            ) : (
-              'Keep Both'
-            )}
-          </Button>
-          <Button 
-            onClick={() => handleDecision('merge')} 
-            className="bg-green-600 hover:bg-green-700"
-            disabled={isProcessing}
-          >
-            {isProcessing && actionType === 'merge' ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Merging...
-              </>
-            ) : (
-              'Merge Contact'
-            )}
-          </Button>
+        <DialogFooter className="flex flex-wrap gap-2 justify-between">
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => handleDecision('skip')}
+              disabled={isProcessing}
+            >
+              {isProcessing && actionType === 'skip' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Skipping...
+                </>
+              ) : (
+                'Skip This Contact'
+              )}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => handleDecision('keep-both')}
+              disabled={isProcessing}
+            >
+              {isProcessing && actionType === 'keep-both' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Keeping Both...
+                </>
+              ) : (
+                'Keep Both'
+              )}
+            </Button>
+            <Button 
+              onClick={() => handleDecision('merge')} 
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isProcessing}
+            >
+              {isProcessing && actionType === 'merge' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Merging...
+                </>
+              ) : (
+                'Merge Contact'
+              )}
+            </Button>
+            {remainingCount && remainingCount > 0 && (
+            <Button 
+              variant="default" 
+              onClick={() => handleDecision('merge-all')}
+              disabled={isProcessing}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isProcessing && actionType === 'merge-all' ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Merging All...
+                </>
+              ) : (
+                <>Merge All ({remainingCount + 1} Contacts)</>
+              )}
+            </Button>
+          )}
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
