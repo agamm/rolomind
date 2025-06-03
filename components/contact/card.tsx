@@ -12,9 +12,12 @@ interface ContactCardProps {
   aiReason?: string
   onEdit?: (contact: Contact) => void
   onDelete?: (contact: Contact) => void
+  isSelected?: boolean
+  onSelectToggle?: (contact: Contact) => void
+  showCheckbox?: boolean
 }
 
-export function ContactCard({ contact, aiReason, onEdit, onDelete }: ContactCardProps) {
+export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, onSelectToggle, showCheckbox }: ContactCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrl) {
@@ -39,11 +42,22 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete }: ContactCard
 
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={`hover:shadow-md transition-shadow ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
       <CardContent className="p-4">
         <div className="flex items-start justify-between mb-3">
           <div className="flex-1">
-            <h3 className="font-medium text-gray-900 mb-1">{contact.name}</h3>
+            <div className="flex items-start gap-3">
+              {showCheckbox && (
+                <input
+                  type="checkbox"
+                  checked={isSelected || false}
+                  onChange={() => onSelectToggle?.(contact)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              )}
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900 mb-1">{contact.name}</h3>
             <div className="flex items-center gap-2">
               <Badge variant={contact.source === "linkedin" ? "default" : "secondary"} className="text-xs">
                 {contact.source}
@@ -58,6 +72,8 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete }: ContactCard
                   <ExternalLink className="w-4 h-4" />
                 </button>
               )}
+            </div>
+              </div>
             </div>
           </div>
           

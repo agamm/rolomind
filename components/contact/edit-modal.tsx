@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Plus, X } from 'lucide-react'
+import { Loader2, Plus, X, Trash2 } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
 import { VoiceRecorder } from '@/components/ui/voice-recorder'
 import { toast } from 'sonner'
@@ -24,9 +24,10 @@ interface EditContactModalProps {
   isOpen: boolean
   onClose: () => void
   onSave: (updatedContact: Contact) => void
+  onDelete?: (contact: Contact) => void
 }
 
-export function EditContactModal({ contact, isOpen, onClose, onSave }: EditContactModalProps) {
+export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }: EditContactModalProps) {
   const [formData, setFormData] = useState<Partial<Contact>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
@@ -470,20 +471,39 @@ export function EditContactModal({ contact, isOpen, onClose, onSave }: EditConta
             />
           </div>
 
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save Changes'
+          <DialogFooter className="flex justify-between">
+            <div className="flex gap-2">
+              {onDelete && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    if (contact) {
+                      onDelete(contact)
+                      onClose()
+                    }
+                  }}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </Button>
               )}
-            </Button>
+            </div>
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit" disabled={isSaving}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Changes'
+                )}
+              </Button>
+            </div>
           </DialogFooter>
         </form>
       </DialogContent>
