@@ -1,13 +1,17 @@
 
 Next Steps:
-6. Import merge and dedup google/whatsapp/airtable/custom using llm to normalize and merge.
-7. Voice emrichment.
-8. Search again.
-9. Post on linkedin.
+1. Add open-router
+2. Add clerk
+3. Rename to rolomind.com and buy domain
+3. Upload to vercel
+4. Clean code base
+5. e2e tests + vitest
+6. Install documentation
+7. Github publish 
+8. LinkedIn post
+9. ProductHunt?
 
 
 Nice to have:
 - Make contact card more compact.
-- Click on card to add information using whisper record.
-- Export to CSV
 - Auto questions on top ISR.

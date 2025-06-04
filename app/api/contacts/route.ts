@@ -1,43 +1,19 @@
-import { promises as fs } from "fs"
-import path from "path"
 import type { Contact } from "@/types/contact"
 import { NextRequest } from "next/server"
-
-const dataFilePath = path.join(process.cwd(), "data", "contacts.json")
-
-// Ensure the data directory exists
-async function ensureDataDirectory() {
-  const dataDir = path.join(process.cwd(), "data")
-  try {
-    await fs.access(dataDir)
-  } catch {
-    await fs.mkdir(dataDir, { recursive: true })
-  }
-}
+import { readContacts, writeContacts, deleteContact, updateContact } from "@/lib/contacts-file-lock"
 
 export async function GET() {
   try {
-    await ensureDataDirectory()
+    const contacts = await readContacts()
 
-    try {
-      const data = await fs.readFile(dataFilePath, "utf-8")
-      const contacts = JSON.parse(data) as Contact[]
+    // Convert string dates back to Date objects
+    const processedContacts = contacts.map((contact) => ({
+      ...contact,
+      createdAt: new Date(contact.createdAt),
+      updatedAt: new Date(contact.updatedAt),
+    }))
 
-      // Convert string dates back to Date objects
-      const processedContacts = contacts.map((contact) => ({
-        ...contact,
-        createdAt: new Date(contact.createdAt),
-        updatedAt: new Date(contact.updatedAt),
-      }))
-
-      return Response.json({ contacts: processedContacts, success: true })
-    } catch (readError) {
-      // If file doesn't exist or is invalid, return empty array
-      if ((readError as NodeJS.ErrnoException).code === "ENOENT") {
-        return Response.json({ contacts: [], success: true })
-      }
-      throw readError
-    }
+    return Response.json({ contacts: processedContacts, success: true })
   } catch (error) {
     console.error("Error loading contacts:", error)
     return Response.json({ contacts: [], success: false, error: "Failed to load contacts" }, { status: 500 })
@@ -52,8 +28,7 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: "Invalid contacts data" }, { status: 400 })
     }
 
-    await ensureDataDirectory()
-    await fs.writeFile(dataFilePath, JSON.stringify(contacts, null, 2))
+    await writeContacts(contacts)
     
     return Response.json({ success: true })
   } catch (error) {
@@ -69,41 +44,18 @@ export async function DELETE(request: NextRequest) {
     
     if (!contactId) {
       // If no ID provided, delete all contacts
-      await ensureDataDirectory()
-      await fs.writeFile(dataFilePath, JSON.stringify([], null, 2))
+      await writeContacts([])
       return Response.json({ success: true, message: "All contacts deleted" })
     }
     
-    await ensureDataDirectory()
+    const deleted = await deleteContact(contactId)
     
-    // Read existing contacts
-    let contacts: Contact[] = []
-    try {
-      const data = await fs.readFile(dataFilePath, "utf-8")
-      contacts = JSON.parse(data)
-    } catch (readError) {
-      if ((readError as NodeJS.ErrnoException).code === "ENOENT") {
-        return Response.json(
-          { success: false, error: "No contacts found" },
-          { status: 404 }
-        )
-      }
-      throw readError
-    }
-    
-    // Find and remove the contact
-    const initialLength = contacts.length
-    contacts = contacts.filter(c => c.id !== contactId)
-    
-    if (contacts.length === initialLength) {
+    if (!deleted) {
       return Response.json(
         { success: false, error: "Contact not found" },
         { status: 404 }
       )
     }
-    
-    // Save updated contacts
-    await fs.writeFile(dataFilePath, JSON.stringify(contacts, null, 2))
     
     return Response.json({ success: true, message: "Contact deleted successfully" })
   } catch (error) {
@@ -114,49 +66,27 @@ export async function DELETE(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const updatedContact: Contact = await request.json()
+    const contact: Contact = await request.json()
     
-    if (!updatedContact.id) {
+    if (!contact.id) {
       return Response.json(
         { success: false, error: "Contact ID is required" },
         { status: 400 }
       )
     }
 
-    await ensureDataDirectory()
+    const updatedContact = await updateContact(contact)
     
-    // Read existing contacts
-    let contacts: Contact[] = []
-    try {
-      const data = await fs.readFile(dataFilePath, "utf-8")
-      contacts = JSON.parse(data)
-    } catch (readError) {
-      if ((readError as NodeJS.ErrnoException).code !== "ENOENT") {
-        throw readError
-      }
-    }
-
-    const index = contacts.findIndex(c => c.id === updatedContact.id)
-    
-    if (index === -1) {
+    if (!updatedContact) {
       return Response.json(
         { success: false, error: "Contact not found" },
         { status: 404 }
       )
     }
 
-    // Update the contact
-    contacts[index] = {
-      ...contacts[index],
-      ...updatedContact,
-      updatedAt: new Date()
-    }
-
-    await fs.writeFile(dataFilePath, JSON.stringify(contacts, null, 2))
-
     return Response.json({
       success: true,
-      contact: contacts[index]
+      contact: updatedContact
     })
   } catch (error) {
     console.error("Error updating contact:", error)

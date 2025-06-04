@@ -40,49 +40,87 @@ export async function POST(req: Request) {
     }));
 
     const { object } = await generateObject({
-      model: anthropic('claude-3-5-sonnet-20241022'),
+      model: anthropic('claude-3-7-sonnet-20250219'),
       schema: matchSchema,
-      prompt: `You are a contact search system that MUST match ALL conditions in compound queries.
+      prompt: `You are an advanced contact search system. Your task is to find contacts that match the user's search query.
 
-QUERY: "${query}"
+USER QUERY: "${query}"
 
-TASK: Analyze each contact and return ONLY those matching EVERY part of the query.
+STEP 1: UNDERSTAND THE QUERY
+First, analyze what the user is looking for:
+- Which specific fields are mentioned? (name, company, role, location, etc.)
+- Is this a compound query requiring multiple conditions?
+- Are they looking for specific patterns or characteristics?
+
+STEP 2: FIELD MAPPING
+Contact fields available:
+- name: Person's full name
+- company: Company/organization name
+- role: Job title/position
+- location: Geographic location
+- emails: Email addresses
+- phones: Phone numbers
+- linkedinUrl: LinkedIn profile URL
+- notes: Additional information
+- source: Where the contact came from
+
+STEP 3: APPLY SEARCH LOGIC
+
+EXAMPLES OF CORRECT MATCHING:
+---
+Query: "Find non descriptive contact names (like 'tmp' or 'Contact 123')"
+→ Focus on the NAME field only
+→ Non-descriptive names are placeholder/temporary names, NOT real people names
+
+WHAT ARE NON-DESCRIPTIVE NAMES:
+- "tmp 1", "contact 123", "John"
+
+WHAT ARE DESCRIPTIVE NAMES (DO NOT MATCH):
+- Real full names: "John Smith", "Ariel Ofer", "Jane Doe"
+- Any name that sounds like a real person
+
+✓ Match: {name: "Contact 123", company: "Google"} - name is a placeholder
+✓ Match: {name: "tmp", company: "Meta"} - name is temporary text
+✓ Match: {name: "test user", company: "Apple"} - name is test data
+✗ Don't match: {name: "Ariel Ofer", company: ""} - this is a real person's name
+✗ Don't match: {name: "John A.", company: ""} - this is a real first name
+✗ Don't match: {name: "Sarah Johnson", company: "tmp"} - name is real (ignore company field)
+---
+
+---
+Query: "CEOs in Israel"
+→ Focus on ROLE and LOCATION fields
+✓ Match: {role: "CEO", location: "Tel Aviv, Israel"} - has CEO role AND Israel location
+✓ Match: {role: "Chief Executive Officer", location: "Israel"} - has CEO role AND Israel location
+✗ Don't match: {role: "CEO", location: ""} - missing location
+✗ Don't match: {role: "CTO", location: "Israel"} - wrong role
+✗ Don't match: {role: "CEO", location: "USA"} - wrong location
+---
+
+---
+Query: "software engineers at startups"
+→ Focus on ROLE and COMPANY fields
+✓ Match: {role: "Software Engineer", company: "TechStartup (Seed)"} - has engineer role AND startup indicator
+✓ Match: {role: "Senior Engineer", notes: "Working at early stage startup"} - has engineer role AND startup mentioned
+✗ Don't match: {role: "Software Engineer", company: "Google"} - not a startup
+✗ Don't match: {role: "Product Manager", company: "Startup Inc"} - wrong role
+---
 
 CRITICAL RULES:
----
-1. NEVER invent or assume information not explicitly present in the contact data
-2. ONLY use information directly stated in the contact fields
-3. If location/company/role is not mentioned, DO NOT assume or guess
-4. For compound queries, ALL conditions must be verifiably met
-5. If query specifies a specific contact field to focus on, focus on that field when searching.
----
+1. ONLY examine the fields relevant to the query
+2. NEVER match based on unrelated fields, unless a field isn't specified
+3. For compound queries, ALL conditions must be met
+4. Empty or missing fields cannot satisfy a condition
 
-MATCHING RULES:
----
-For compound queries like "CEOs in Israel":
-✓ MUST have CEO/C-level title explicitly stated (in role, title, or notes)
-✓ MUST have Israel explicitly mentioned (in location, company address, or notes)
-✗ Do NOT return if location is not specified
-✗ Do NOT return if role is not specified
-✗ Do NOT guess or infer missing information
-
-For specific contact field queries like "Find contacts with a non-descriptive name":
-✓ Name can be like "Contact 123" or "John"
-✗ Do NOT return if the company is "Company" (different contact field, isn't the field name)
----
-
-Notes:
----
-1. Company "Stealth" is a known way to indicate they are working on a startup in stealth mode.
----
+SPECIAL CONVENTIONS:
+- "Stealth" as a company name indicates stealth mode startup
+- LinkedIn connections format: "LinkedIn connected: 9-May-25"
+- Common non-descriptive names: "tmp", "test", "Contact [number]", "User [number]", single common first names without last names
 
 CONTACTS TO ANALYZE:
----
-${JSON.stringify(batch)}
----
+${JSON.stringify(batch, null, 2)}
 
-OUTPUT: Return empty array if no COMPLETE matches with verified information found.
-For each match, explain ONLY using facts directly from the contact data.`
+Return ONLY contacts that match the query criteria. For each match, explain which specific fields matched and why.`
     });
 
     return Response.json(object);

@@ -57,22 +57,39 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
 
   const bulkDeleteMutation = useMutation({
     mutationFn: async (contactIds: string[]) => {
-      const deletePromises = contactIds.map(id => 
-        fetch(`/api/contacts?id=${id}`, { method: 'DELETE' })
-      )
+      let deleted = 0
+      let failed = 0
       
-      const responses = await Promise.all(deletePromises)
-      const failed = responses.filter(r => !r.ok).length
-      
-      if (failed > 0) {
-        throw new Error(`Failed to delete ${failed} contacts`)
+      // Delete contacts sequentially to avoid file lock issues
+      for (const id of contactIds) {
+        try {
+          const response = await fetch(`/api/contacts?id=${id}`, { method: 'DELETE' })
+          if (response.ok) {
+            deleted++
+          } else {
+            failed++
+          }
+        } catch (error) {
+          console.error(`Failed to delete contact ${id}:`, error)
+          failed++
+        }
       }
       
-      return { deleted: contactIds.length - failed }
+      if (failed > 0 && deleted === 0) {
+        throw new Error(`Failed to delete all ${failed} contacts`)
+      }
+      
+      return { deleted, failed }
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success(`Successfully deleted ${data.deleted} contacts`)
+      
+      if (data.failed > 0) {
+        toast.warning(`Deleted ${data.deleted} contacts, ${data.failed} failed`)
+      } else {
+        toast.success(`Successfully deleted ${data.deleted} contacts`)
+      }
+      
       setSelectedContacts(new Set())
       setShowCheckboxes(false)
       setShowBulkDelete(false)
@@ -80,6 +97,7 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
     onError: (error) => {
       toast.error(error.message || 'Failed to delete contacts')
       console.error('Bulk delete error:', error)
+      setShowBulkDelete(false)
     }
   })
 
