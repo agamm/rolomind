@@ -7,10 +7,8 @@ import { handleAIError } from '@/lib/ai-error-handler';
 export const maxDuration = 30;
 
 const matchSchema = z.object({
-  matches: z.array(z.object({
-    id: z.string(),
-    reason: z.string()
-  }))
+  id: z.string(),
+  reason: z.string()
 });
 
 export async function POST(req: Request) {
@@ -39,9 +37,11 @@ export async function POST(req: Request) {
       source: c.source
     }));
 
-    const { object } = await generateObject({
+    const { object: matches } = await generateObject({
       model: anthropic('claude-3-7-sonnet-20250219'),
+      output: 'array',
       schema: matchSchema,
+      maxRetries: 4,
       prompt: `You are an advanced contact search system. Your task is to find contacts that match the user's search query.
 
 USER QUERY: "${query}"
@@ -123,7 +123,7 @@ ${JSON.stringify(batch, null, 2)}
 Return ONLY contacts that match the query criteria. For each match, explain which specific fields matched and why.`
     });
 
-    return Response.json(object);
+    return Response.json({ matches });
   } catch (error) {
     return handleAIError(error);
   }

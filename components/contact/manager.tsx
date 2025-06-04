@@ -25,7 +25,7 @@ export function ContactManager() {
     handleDuplicateDecision,
     importProgress,
     cancelImport
-  } = useEnhancedImport(() => refetch())
+  } = useEnhancedImport()
 
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
     setAiResults(results)

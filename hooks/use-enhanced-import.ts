@@ -389,6 +389,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           
           setTimeout(() => {
             setImportProgress({ status: 'idle' })
+            queryClient.invalidateQueries({ queryKey: ['contacts'] })
             onComplete?.()
           }, 2000)
         }
@@ -492,6 +493,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         setTimeout(() => {
           setImportProgress({ status: 'idle' })
+          queryClient.invalidateQueries({ queryKey: ['contacts'] })
           onComplete?.()
         }, 2000)
       }

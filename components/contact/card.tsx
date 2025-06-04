@@ -83,7 +83,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
                 variant="ghost"
                 size="sm"
                 onClick={() => onEdit(contact)}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 cursor-pointer"
                 title="Edit contact"
               >
                 <Edit2 className="h-4 w-4" />
@@ -95,7 +95,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
                 variant="ghost"
                 size="sm"
                 onClick={() => onDelete(contact)}
-                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 cursor-pointer"
                 title="Delete contact"
               >
                 <Trash2 className="h-4 w-4" />
@@ -180,7 +180,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="w-full py-1 h-auto text-xs"
+                  className="w-full py-1 h-auto text-xs cursor-pointer"
                 >
                   {isExpanded ? (
                     <>

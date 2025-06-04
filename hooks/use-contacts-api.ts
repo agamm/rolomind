@@ -34,7 +34,9 @@ export function useContacts() {
         updatedAt: new Date(contact.updatedAt),
       }))
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 0, // Always refetch when invalidated
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
+    refetchOnWindowFocus: false, // Don't refetch on window focus
   })
 }
 

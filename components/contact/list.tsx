@@ -44,8 +44,15 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
       
       return response.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+    onSuccess: async () => {
+      // Immediately update the cache before refetching
+      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
+        if (!oldData) return []
+        return oldData.filter(c => c.id !== deletingContact?.id)
+      })
+      
+      // Then invalidate to ensure we get fresh data from server
+      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
       toast.success('Contact deleted successfully')
       setDeletingContact(null)
     },
@@ -81,8 +88,15 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
       
       return { deleted, failed }
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+    onSuccess: async (data) => {
+      // Immediately update the cache before refetching
+      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
+        if (!oldData) return []
+        return oldData.filter(c => !selectedContacts.has(c.id))
+      })
+      
+      // Then invalidate to ensure we get fresh data from server
+      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
       
       if (data.failed > 0) {
         toast.warning(`Deleted ${data.deleted} contacts, ${data.failed} failed`)
@@ -115,8 +129,15 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
       
       return response.json()
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
+    onSuccess: async (_, updatedContact) => {
+      // Immediately update the cache
+      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
+        if (!oldData) return []
+        return oldData.map(c => c.id === updatedContact.id ? updatedContact : c)
+      })
+      
+      // Then invalidate to ensure we get fresh data from server
+      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
       toast.success('Contact updated successfully')
       setEditingContact(null)
     },
