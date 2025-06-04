@@ -127,13 +127,18 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
         throw new Error('Failed to update contact')
       }
       
-      return response.json()
+      const data = await response.json()
+      return data.contact // Return the actual contact from the response
     },
-    onSuccess: async (_, updatedContact) => {
-      // Immediately update the cache
+    onSuccess: async (returnedContact) => {
+      // Immediately update the cache with the returned contact
       queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
         if (!oldData) return []
-        return oldData.map(c => c.id === updatedContact.id ? updatedContact : c)
+        return oldData.map(c => c.id === returnedContact.id ? {
+          ...returnedContact,
+          createdAt: new Date(returnedContact.createdAt),
+          updatedAt: new Date(returnedContact.updatedAt)
+        } : c)
       })
       
       // Then invalidate to ensure we get fresh data from server
