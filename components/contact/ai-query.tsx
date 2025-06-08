@@ -1,10 +1,10 @@
 "use client"
 
-import React, { useState } from "react"
+import React, { useState, useEffect, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Contact } from "@/types/contact"
-import { Loader2, Sparkles } from "lucide-react"
+import { Loader2, Sparkles, X } from "lucide-react"
 import { useSummaryGeneration } from "@/hooks/use-summary-generation"
 import { useAIQuery } from "@/hooks/use-ai-query"
 import { SummaryDisplay } from "./summary-display"
@@ -25,6 +25,9 @@ interface AIQueryProps {
 export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [enableSummary, setEnableSummary] = useState(false)
+  const [isStopping, setIsStopping] = useState(false)
+  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const timerRef = React.useRef<NodeJS.Timeout | null>(null)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
   
   const {
@@ -33,7 +36,8 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
     error,
     results,
     progress,
-    reset: resetQuery
+    reset: resetQuery,
+    stopSearch
   } = useAIQuery({ 
     contacts, 
     onResults: (results) => {
@@ -47,7 +51,46 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     resetSummary()
+    setIsStopping(false)
+    setElapsedSeconds(0)
     searchContacts(query)
+  }
+  
+  const handleStop = () => {
+    setIsStopping(true)
+    stopSearch()
+    // Reset after a short delay to show feedback
+    setTimeout(() => setIsStopping(false), 500)
+  }
+  
+  // Timer effect
+  useEffect(() => {
+    if (isSearching) {
+      // Start timer
+      timerRef.current = setInterval(() => {
+        setElapsedSeconds(prev => prev + 1)
+      }, 1000)
+    } else {
+      // Stop timer
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+      }
+    }
+  }, [isSearching])
+  
+  // Format elapsed time
+  const formatElapsedTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
   return (
@@ -105,7 +148,7 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
         </form>
       </div>
 
-      {error && (
+      {error && error.message !== 'Search aborted' && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <p className="text-red-700">{error.message}</p>
         </div>
@@ -117,12 +160,34 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
               <span className="text-sm font-medium text-blue-900">
-                Querying contacts in batches...
+                Querying contacts in batches... ({formatElapsedTime(elapsedSeconds)})
               </span>
             </div>
-            <span className="text-sm text-blue-700">
-              {progress.percent}% ({progress.completed} of {progress.total} complete)
-            </span>
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-blue-700">
+                {progress.percent}% ({progress.completed} of {progress.total} complete)
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleStop}
+                className="h-7 px-3 cursor-pointer hover:bg-gray-100"
+                type="button"
+                disabled={isStopping}
+              >
+                {isStopping ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                    Stopping...
+                  </>
+                ) : (
+                  <>
+                    <X className="h-3.5 w-3.5 mr-1" />
+                    Stop
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
           <div className="relative h-3 w-full overflow-hidden rounded-full bg-blue-200">
             <div 

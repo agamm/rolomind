@@ -46,6 +46,8 @@ export async function POST(req: Request) {
 
 USER QUERY: "${query}"
 
+CURRENT DATE: ${new Date().toISOString()}
+
 STEP 1: DETERMINE QUERY STRICTNESS
 Check if the query contains vague/speculative language:
 - "might", "could", "possibly", "potential", "maybe", "perhaps", "probably"
@@ -67,6 +69,7 @@ STEP 2: UNDERSTAND THE QUERY
 - Which specific fields are mentioned? (name, company, role, location, etc.)
 - Is this a compound query requiring multiple conditions?
 - Are they looking for specific patterns or characteristics?
+- Is this a temporal query? (before/after/during a specific date or year)
 
 STEP 3: FIELD MAPPING
 Contact fields available:
@@ -81,6 +84,26 @@ Contact fields available:
 - source: Where the contact came from
 
 STEP 4: APPLY SEARCH LOGIC
+
+TEMPORAL QUERY HANDLING:
+LinkedIn connection dates are stored in notes as "LinkedIn connected: DD-Mon-YY" format (e.g., "LinkedIn connected: 9-May-25")
+
+IMPORTANT DATE PARSING:
+- "25" = 2025 (NOT 1925!)
+- "24" = 2024
+- "23" = 2023
+- "22" = 2022
+- "21" = 2021
+- etc.
+
+So "9-May-25" = May 9, 2025 (which is AFTER 2024, not before!)
+
+TEMPORAL COMPARISONS:
+- "before 2024" = dates in 2023 or earlier (e.g., "15-Dec-23", "1-Jan-23", "10-Mar-22")
+- "after 2024" = dates in 2025 or later (e.g., "1-Jan-25", "9-May-25", "15-Dec-26")
+- "in 2024" = dates during 2024 only (e.g., "1-Jan-24", "15-Jun-24", "31-Dec-24")
+- "before 2025" = dates in 2024 or earlier
+- "after 2023" = dates in 2024 or later
 
 EXAMPLES OF CORRECT MATCHING:
 ---
@@ -141,6 +164,38 @@ Query: "might have connections to Elon Musk" (RELAXED - contains "might")
 ✗ Don't match: {notes: "Interested in electric cars"} - too weak connection
 ---
 
+---
+Query: "people I met before 2024"
+→ Look for LinkedIn connection dates in notes field
+→ ONLY match dates in 2023 or earlier
+✓ Match: {notes: "LinkedIn connected: 15-Dec-23"} - December 15, 2023 is before 2024
+✓ Match: {notes: "LinkedIn connected: 1-Jan-23"} - January 1, 2023 is before 2024
+✓ Match: {notes: "LinkedIn connected: 30-Jun-22"} - June 30, 2022 is before 2024
+✗ Don't match: {notes: "LinkedIn connected: 1-Jan-24"} - January 1, 2024 is NOT before 2024
+✗ Don't match: {notes: "LinkedIn connected: 9-May-25"} - May 9, 2025 is AFTER 2024 (not before!)
+✗ Don't match: {notes: "LinkedIn connected: 4-May-25"} - May 4, 2025 is AFTER 2024 (not before!)
+✗ Don't match: {notes: "Works at company since 2023"} - this is not a connection date
+---
+
+---
+Query: "Developers I know before 2024 from linkedin"
+→ Look for people with developer/engineer roles AND LinkedIn connection dates before 2024
+✓ Match: {role: "Software Engineer", notes: "LinkedIn connected: 15-Dec-23"} - developer role AND connected in 2023
+✓ Match: {role: "Full-stack Developer", notes: "LinkedIn connected: 1-Jun-22"} - developer role AND connected in 2022
+✗ Don't match: {role: "Full-stack Developer", notes: "LinkedIn connected: 4-May-25"} - 2025 is AFTER 2024, not before!
+✗ Don't match: {role: "Staff Software Engineer", notes: "LinkedIn connected: 19-Apr-25"} - 2025 is AFTER 2024!
+✗ Don't match: {role: "CEO", notes: "LinkedIn connected: 15-Dec-23"} - not a developer role
+---
+
+---
+Query: "connected after May 2025"
+→ Look for LinkedIn connection dates after May 2025
+✓ Match: {notes: "LinkedIn connected: 1-Jun-25"} - June 1, 2025 is after May 2025
+✓ Match: {notes: "LinkedIn connected: 15-Dec-25"} - December 15, 2025 is after May 2025
+✗ Don't match: {notes: "LinkedIn connected: 9-May-25"} - May 9, 2025 is IN May 2025, not after
+✗ Don't match: {notes: "LinkedIn connected: 1-Apr-25"} - April 1, 2025 is before May 2025
+---
+
 CRITICAL RULES:
 1. DEFAULT TO STRICT MATCHING unless query contains vague language
 2. For STRICT queries: require EXPLICIT evidence in the data
@@ -154,6 +209,14 @@ CRITICAL RULES:
 7. DO NOT ASSUME connections, relationships, or knowledge unless explicitly stated
 8. NEVER make assumptions based on names, ethnicity, or perceived background
 9. NEVER infer religious, ethnic, or cultural connections from names alone
+10. For temporal queries:
+    - Parse LinkedIn connection dates in format "LinkedIn connected: DD-Mon-YY"
+    - CRITICAL: YY format means 20YY, so: 25=2025, 24=2024, 23=2023, etc.
+    - "before 2024" = ONLY dates in 2023 or earlier (2023, 2022, 2021...)
+    - "after 2024" = ONLY dates in 2025 or later (2025, 2026, 2027...)
+    - "in 2024" = ONLY dates during 2024
+    - NEVER match a 2025 date for "before 2024" queries!
+    - NEVER match a 2023 date for "after 2024" queries!
 
 SPECIAL CONVENTIONS:
 - "Stealth" as a company name indicates stealth mode startup

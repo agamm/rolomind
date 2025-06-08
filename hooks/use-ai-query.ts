@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
 
@@ -15,19 +15,25 @@ interface UseAIQueryOptions {
 const BATCH_SIZE = 50
 const PARALLEL_LIMIT = 6
 
-async function queryBatch(contacts: Contact[], query: string, retries = 3): Promise<ContactMatch[]> {
+async function queryBatch(
+  contacts: Contact[], 
+  query: string, 
+  signal?: AbortSignal,
+  retries = 3
+): Promise<ContactMatch[]> {
   try {
     const response = await fetch('/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ contacts, query })
+      body: JSON.stringify({ contacts, query }),
+      signal
     })
     
     if (response.status === 429 && retries > 0) {
       // Rate limited - wait and retry
       const retryAfter = parseInt(response.headers.get('retry-after') || '5')
       await new Promise(resolve => setTimeout(resolve, retryAfter * 1000))
-      return queryBatch(contacts, query, retries - 1)
+      return queryBatch(contacts, query, signal, retries - 1)
     }
     
     if (!response.ok) {
@@ -46,9 +52,14 @@ async function queryBatch(contacts: Contact[], query: string, retries = 3): Prom
       reason: m.reason
     })).filter(m => m.contact)
   } catch (error) {
+    // Don't retry on abort
+    if (error instanceof Error && error.name === 'AbortError') {
+      return []
+    }
+    
     if (retries > 0) {
       await new Promise(resolve => setTimeout(resolve, 2000))
-      return queryBatch(contacts, query, retries - 1)
+      return queryBatch(contacts, query, signal, retries - 1)
     }
     throw error
   }
@@ -57,6 +68,7 @@ async function queryBatch(contacts: Contact[], query: string, retries = 3): Prom
 async function processInParallel(
   batches: Contact[][], 
   query: string, 
+  signal: AbortSignal,
   onProgress: (completed: number, total: number, results: ContactMatch[]) => void
 ) {
   const allResults: ContactMatch[] = []
@@ -67,10 +79,15 @@ async function processInParallel(
   let batchIndex = 0
   
   while (batchIndex < batches.length) {
+    // Check if aborted
+    if (signal.aborted) {
+      throw new Error('Search aborted')
+    }
+    
     const chunk = batches.slice(batchIndex, batchIndex + parallelLimit)
     
     try {
-      const promises = chunk.map(batch => queryBatch(batch, query))
+      const promises = chunk.map(batch => queryBatch(batch, query, signal))
       const results = await Promise.all(promises)
       
       results.forEach(matches => allResults.push(...matches))
@@ -84,6 +101,11 @@ async function processInParallel(
         parallelLimit = Math.min(parallelLimit + 1, 20)
       }
     } catch (error) {
+      // Re-throw abort errors
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Search aborted')) {
+        throw error
+      }
+      
       // Handle errors for individual batches
       const errorMessage = error instanceof Error ? error.message : ''
       
@@ -110,9 +132,13 @@ async function processInParallel(
 export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
   const [progress, setProgress] = useState({ completed: 0, total: 0 })
   const [results, setResults] = useState<ContactMatch[]>([])
+  const abortControllerRef = React.useRef<AbortController | null>(null)
   
   const mutation = useMutation({
     mutationFn: async (query: string) => {
+      // Create new abort controller
+      abortControllerRef.current = new AbortController()
+      
       // Reset state
       setResults([])
       setProgress({ completed: 0, total: 0 })
@@ -127,19 +153,28 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       console.log(`Processing ${contacts.length} contacts in ${batches.length} batches`)
       setProgress({ completed: 0, total: batches.length })
       
-      // Process with adaptive parallelism
-      const allResults = await processInParallel(
-        batches,
-        query,
-        (completed, total, results) => {
-          console.log(`Progress: ${completed}/${total} batches (${Math.round((completed/total) * 100)}%)`)
-          setProgress({ completed, total })
-          setResults([...results])
-          onResults?.([...results])
+      try {
+        // Process with adaptive parallelism
+        const allResults = await processInParallel(
+          batches,
+          query,
+          abortControllerRef.current.signal,
+          (completed, total, results) => {
+            console.log(`Progress: ${completed}/${total} batches (${Math.round((completed/total) * 100)}%)`)
+            setProgress({ completed, total })
+            setResults([...results])
+            onResults?.([...results])
+          }
+        )
+        
+        return allResults
+      } catch (error) {
+        if (error instanceof Error && error.message === 'Search aborted') {
+          console.log('Search was aborted by user')
+          return results // Return partial results
         }
-      )
-      
-      return allResults
+        throw error
+      }
     }
   })
   
@@ -153,6 +188,12 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
     ? Math.round((progress.completed / progress.total) * 100) 
     : 0
   
+  const stopSearch = () => {
+    if (abortControllerRef.current && !abortControllerRef.current.signal.aborted) {
+      abortControllerRef.current.abort()
+    }
+  }
+  
   return {
     searchContacts,
     isSearching: mutation.isPending,
@@ -163,9 +204,11 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       percent: progressPercent
     },
     reset: () => {
+      stopSearch()
       mutation.reset()
       setResults([])
       setProgress({ completed: 0, total: 0 })
-    }
+    },
+    stopSearch
   }
 }
