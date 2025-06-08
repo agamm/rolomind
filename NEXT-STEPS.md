@@ -13,5 +13,6 @@ Next Steps:
 
 
 Nice to have:
+- Integration page (import from google/apple/facebook/linkedin/whatsapp/teams)
 - Make contact card more compact.
 - Auto questions on top ISR.

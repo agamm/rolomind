@@ -46,13 +46,29 @@ export async function POST(req: Request) {
 
 USER QUERY: "${query}"
 
-STEP 1: UNDERSTAND THE QUERY
-First, analyze what the user is looking for:
+STEP 1: DETERMINE QUERY STRICTNESS
+Check if the query contains vague/speculative language:
+- "might", "could", "possibly", "potential", "maybe", "perhaps", "probably"
+- "connection to", "related to", "knows", "familiar with"
+- If YES → Use RELAXED matching (include potential matches)
+- If NO → Use STRICT matching (only clear, definitive matches)
+
+VAGUE QUERY EXAMPLES:
+- "might know someone at Google" → RELAXED: include anyone with possible Google connections
+- "could have connections to VCs" → RELAXED: include potential VC connections
+- "possibly in marketing" → RELAXED: include unclear marketing roles
+
+STRICT QUERY EXAMPLES:
+- "CEOs at Google" → STRICT: ONLY people who ARE CEOs at Google
+- "connection to John Smith" → STRICT: ONLY if notes explicitly mention John Smith
+- "works with AI" → STRICT: ONLY if role/company/notes clearly indicate AI work
+
+STEP 2: UNDERSTAND THE QUERY
 - Which specific fields are mentioned? (name, company, role, location, etc.)
 - Is this a compound query requiring multiple conditions?
 - Are they looking for specific patterns or characteristics?
 
-STEP 2: FIELD MAPPING
+STEP 3: FIELD MAPPING
 Contact fields available:
 - name: Person's full name
 - company: Company/organization name
@@ -64,7 +80,7 @@ Contact fields available:
 - notes: Additional information
 - source: Where the contact came from
 
-STEP 3: APPLY SEARCH LOGIC
+STEP 4: APPLY SEARCH LOGIC
 
 EXAMPLES OF CORRECT MATCHING:
 ---
@@ -106,11 +122,38 @@ Query: "software engineers at startups"
 ✗ Don't match: {role: "Product Manager", company: "Startup Inc"} - wrong role
 ---
 
+---
+Query: "connection to Elon Musk" (STRICT - no vague words)
+→ Look for EXPLICIT mentions of Elon Musk
+✓ Match: {notes: "Former Tesla employee, worked directly with Elon Musk"} - explicitly mentioned
+✓ Match: {notes: "Met Elon at SpaceX event, have his contact"} - explicitly mentioned
+✗ Don't match: {company: "Tesla"} - just working at Tesla doesn't mean connection to Elon
+✗ Don't match: {role: "SpaceX Engineer"} - no explicit mention of knowing Elon
+✗ Don't match: {notes: "Working on electric vehicles"} - no mention of Elon
+---
+
+---
+Query: "might have connections to Elon Musk" (RELAXED - contains "might")
+→ Allow reasonable inferences
+✓ Match: {company: "Tesla", role: "Senior VP"} - senior position suggests possible connection
+✓ Match: {company: "SpaceX", notes: "Part of founding team"} - early employee likely knows him
+✓ Match: {notes: "Working on Hyperloop project"} - related to Elon's projects
+✗ Don't match: {notes: "Interested in electric cars"} - too weak connection
+---
+
 CRITICAL RULES:
-1. ONLY examine the fields relevant to the query
-2. NEVER match based on unrelated fields, unless a field isn't specified
-3. For compound queries, ALL conditions must be met
-4. Empty or missing fields cannot satisfy a condition
+1. DEFAULT TO STRICT MATCHING unless query contains vague language
+2. For STRICT queries: require EXPLICIT evidence in the data
+   - "connection to X" → X must be explicitly mentioned in notes/fields
+   - "works at Y" → Y must be in company field or clearly stated
+   - "knows Z" → Z must be explicitly mentioned, not inferred
+3. For RELAXED queries (with vague words): allow reasonable inferences
+4. ONLY examine fields relevant to the query
+5. For compound queries, ALL conditions must be met
+6. Empty or missing fields CANNOT satisfy a condition
+7. DO NOT ASSUME connections, relationships, or knowledge unless explicitly stated
+8. NEVER make assumptions based on names, ethnicity, or perceived background
+9. NEVER infer religious, ethnic, or cultural connections from names alone
 
 SPECIAL CONVENTIONS:
 - "Stealth" as a company name indicates stealth mode startup
