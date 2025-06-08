@@ -15,14 +15,17 @@ import { Button } from "@/components/ui/button"
 import { usePagination } from "@/hooks/use-pagination"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { ExportQueryButton } from "@/components/export/export-query-button"
 
 interface ContactListProps {
   contacts: Contact[]
   onSearch?: (query: string) => void
   aiResults?: Array<{ contact: Contact; reason: string }>
+  isAISearching?: boolean
+  loadingMessage?: string
 }
 
-export function ContactList({ contacts, onSearch, aiResults }: ContactListProps) {
+export function ContactList({ contacts, onSearch, aiResults, isAISearching }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [deletingContact, setDeletingContact] = useState<Contact | null>(null)
@@ -209,11 +212,26 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="font-medium text-gray-900">
+              <h3 className="font-medium text-gray-900 flex items-center gap-2">
                 {aiResults && aiResults.length > 0 ? 'AI Search Results' : 'All Contacts'} ({filteredContacts.length})
+                {aiResults && aiResults.length > 0 && (
+                  <span className="relative flex h-2 w-2">
+                    {isAISearching ? (
+                      <>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                      </>
+                    ) : (
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                    )}
+                  </span>
+                )}
               </h3>
               {filteredContacts.length > 0 && (
                 <div className="flex items-center gap-2">
+                  {aiResults && aiResults.length > 0 && (
+                    <ExportQueryButton contacts={filteredContacts} />
+                  )}
                   <Button
                     variant="outline"
                     size="sm"
@@ -273,8 +291,33 @@ export function ContactList({ contacts, onSearch, aiResults }: ContactListProps)
             </div>
           </div>
 
+          {/* Status message when still searching/processing */}
+          {isAISearching && aiResults && aiResults.length > 0 && (
+            <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-flex items-center gap-2 self-start">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+              </span>
+              <span>
+                Still searching • Results will be sorted when complete
+              </span>
+            </div>
+          )}
+
           {/* Main content area */}
-          {filteredContacts.length === 0 ? (
+          {isAISearching && (!aiResults || aiResults.length === 0) ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                <div className="text-lg font-medium mb-2">
+                  AI Search in Progress
+                </div>
+                <p>
+                  {aiResults && aiResults.length > 0 ? 'Sorting and organizing results...' : 'Processing contacts in batches...'}
+                </p>
+              </div>
+            </div>
+          ) : filteredContacts.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500">
                 <Upload className="w-12 h-12 mx-auto mb-3 text-gray-300" />

@@ -15,6 +15,8 @@ export function ContactManager() {
   const { data: contacts = [], isLoading, error, refetch } = useContacts()
   const deleteAllMutation = useDeleteAllContacts()
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
+  const [isAISearching, setIsAISearching] = React.useState(false)
+  const [isProcessing, setIsProcessing] = React.useState(false)
   
   const {
     importFile,
@@ -78,10 +80,13 @@ export function ContactManager() {
               <AIQuery 
                 contacts={contacts} 
                 onResults={handleAiResults}
+                onSearchingChange={setIsAISearching}
+                onProcessingChange={setIsProcessing}
               />
               <ContactList
                 contacts={contacts}
                 aiResults={aiResults}
+                isAISearching={isAISearching || isProcessing}
               />
             </>
           )}

@@ -7,6 +7,7 @@ import { Contact } from "@/types/contact"
 import { Loader2, Sparkles, X } from "lucide-react"
 import { useSummaryGeneration } from "@/hooks/use-summary-generation"
 import { useAIQuery } from "@/hooks/use-ai-query"
+import { useResultsProcessing } from "@/hooks/use-results-processing"
 import { SummaryDisplay } from "./summary-display"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -19,16 +20,19 @@ interface ContactMatch {
 interface AIQueryProps {
   contacts: Contact[]
   onResults?: (results: ContactMatch[]) => void
+  onSearchingChange?: (isSearching: boolean) => void
+  onProcessingChange?: (isProcessing: boolean) => void
 }
 
 
-export function AIQuery({ contacts, onResults }: AIQueryProps) {
+export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingChange }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [enableSummary, setEnableSummary] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const timerRef = React.useRef<NodeJS.Timeout | null>(null)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
+  const { processResults, isProcessing: isProcessingResults, reset: resetProcessing } = useResultsProcessing()
   
   const {
     searchContacts,
@@ -41,16 +45,15 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
   } = useAIQuery({ 
     contacts, 
     onResults: (results) => {
+      // While searching, show results as they come in
       onResults?.(results)
-      if (results.length > 0 && enableSummary) {
-        generateSummary(results, query)
-      }
     }
   })
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     resetSummary()
+    resetProcessing()
     setIsStopping(false)
     setElapsedSeconds(0)
     searchContacts(query)
@@ -85,6 +88,31 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
       }
     }
   }, [isSearching])
+  
+  // Notify parent component of searching state changes
+  useEffect(() => {
+    onSearchingChange?.(isSearching)
+  }, [isSearching, onSearchingChange])
+  
+  // Notify parent component of processing state changes
+  useEffect(() => {
+    onProcessingChange?.(isProcessingResults)
+  }, [isProcessingResults, onProcessingChange])
+  
+  // Handle post-processing when search completes
+  useEffect(() => {
+    if (!isSearching && results.length > 0 && query) {
+      // Search just completed, process results
+      processResults(query, results).then(processedResults => {
+        if (processedResults) {
+          onResults?.(processedResults)
+          if (enableSummary) {
+            generateSummary(processedResults, query)
+          }
+        }
+      })
+    }
+  }, [isSearching]) // Only trigger when isSearching changes
   
   // Format elapsed time
   const formatElapsedTime = (seconds: number) => {
@@ -154,56 +182,62 @@ export function AIQuery({ contacts, onResults }: AIQueryProps) {
         </div>
       )}
 
-      {isSearching && (
+      {(isSearching || isProcessingResults) && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
               <span className="text-sm font-medium text-blue-900">
-                Querying contacts in batches... ({formatElapsedTime(elapsedSeconds)})
+                {isProcessingResults ? 'Sorting and cleaning results...' : `Querying contacts in batches... (${formatElapsedTime(elapsedSeconds)})`}
               </span>
             </div>
-            <div className="flex items-center gap-3">
-              <span className="text-sm text-blue-700">
-                {progress.percent}% ({progress.completed} of {progress.total} complete)
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleStop}
-                className="h-7 px-3 cursor-pointer hover:bg-gray-100"
-                type="button"
-                disabled={isStopping}
-              >
-                {isStopping ? (
-                  <>
-                    <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-                    Stopping...
-                  </>
-                ) : (
-                  <>
-                    <X className="h-3.5 w-3.5 mr-1" />
-                    Stop
-                  </>
-                )}
-              </Button>
-            </div>
+            {isSearching && (
+              <div className="flex items-center gap-3">
+                <span className="text-sm text-blue-700">
+                  {progress.percent}% ({progress.completed} of {progress.total} complete)
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleStop}
+                  className="h-7 px-3 cursor-pointer hover:bg-gray-100"
+                  type="button"
+                  disabled={isStopping}
+                >
+                  {isStopping ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                      Stopping...
+                    </>
+                  ) : (
+                    <>
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Stop
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
-          <div className="relative h-3 w-full overflow-hidden rounded-full bg-blue-200">
-            <div 
-              className="h-full bg-blue-600 transition-all duration-300 ease-out"
-              style={{ width: `${progress.percent}%` }}
-            />
-          </div>
-          {results.length > 0 && (
-            <p className="text-sm text-blue-700">
-              Found {results.length} matches so far...
-            </p>
+          {isSearching && (
+            <>
+              <div className="relative h-3 w-full overflow-hidden rounded-full bg-blue-200">
+                <div 
+                  className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                  style={{ width: `${progress.percent}%` }}
+                />
+              </div>
+              {results.length > 0 && (
+                <p className="text-sm text-blue-700">
+                  Found {results.length} matches so far...
+                </p>
+              )}
+            </>
           )}
         </div>
       )}
 
-      {!isSearching && results.length > 0 && (
+      {!isSearching && !isProcessingResults && results.length > 0 && (
         <div className="bg-green-50 border border-green-200 rounded-lg p-4">
           <p className="text-green-800">
             ✓ Found {results.length} matches
