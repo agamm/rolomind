@@ -42,119 +42,124 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
 
 
   return (
-    <div className={`contact-card ${isSelected ? 'ring-2 ring-primary' : ''}`}>
-      <div className="">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <div className="flex items-start gap-3">
-              {showCheckbox && (
-                <input
-                  type="checkbox"
-                  checked={isSelected || false}
-                  onChange={() => onSelectToggle?.(contact)}
-                  className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  onClick={(e) => e.stopPropagation()}
-                />
-              )}
-              <div className="flex-1">
-                <h3 className="contact-name">{contact.name}</h3>
-            <div className="flex items-center gap-2">
-              <span className="organic-badge">
-                {contact.source}
-              </span>
+    <div className={`contact-card group ${isSelected ? 'ring-2 ring-gray-900' : ''}`}>
+      <div className="relative">
+        {/* Action buttons - show on hover */}
+        <div className="absolute -top-2 -right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          {onEdit && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onEdit(contact)}
+              className="h-8 w-8 p-0 cursor-pointer text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              title="Edit contact"
+            >
+              <Edit2 className="h-4 w-4" />
+            </Button>
+          )}
+          
+          {onDelete && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => onDelete(contact)}
+              className="h-8 w-8 p-0 text-red-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
+              title="Delete contact"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </div>
 
-              {contact.contactInfo.linkedinUrl && (
-                <button
-                  onClick={handleLinkedInClick}
-                  className="inline-flex items-center text-primary hover:text-primary/80 cursor-pointer"
-                  title="Open LinkedIn Profile"
-                >
-                  <ExternalLink className="w-4 h-4" />
-                </button>
-              )}
-            </div>
+        {/* Primary section - Name and LinkedIn */}
+        <div className="mb-3">
+          <div className="flex items-start gap-3">
+            {showCheckbox && (
+              <input
+                type="checkbox"
+                checked={isSelected || false}
+                onChange={() => onSelectToggle?.(contact)}
+                className="mt-1 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                onClick={(e) => e.stopPropagation()}
+              />
+            )}
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-xl font-semibold text-gray-900">{contact.name}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="inline-flex text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full">
+                  {contact.source}
+                </span>
+                {contact.contactInfo.linkedinUrl && (
+                  <button
+                    onClick={handleLinkedInClick}
+                    className="inline-flex items-center text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+                    title="Open LinkedIn Profile"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                  </button>
+                )}
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center gap-1">
-            {onEdit && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onEdit(contact)}
-                className="h-8 w-8 p-0 cursor-pointer text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                title="Edit contact"
-              >
-                <Edit2 className="h-4 w-4" />
-              </Button>
-            )}
-            
-            {onDelete && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(contact)}
-                className="h-8 w-8 p-0 text-red-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
-                title="Delete contact"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
-          </div>
         </div>
 
-        {/* Professional Info - Each property on new line */}
-        <div className="mb-3 space-y-1">
-          {contact.company && (
-            <div className="contact-detail">
-              <Building2 />
-              {contact.company}
+        {/* Secondary section - Professional Info */}
+        <div className="mb-3 space-y-1.5 pl-1">
+          {contact.role && (
+            <div className="flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-gray-400" />
+              <span className="text-sm font-medium text-gray-900">{contact.role}</span>
             </div>
           )}
-          {contact.role && (
-            <div className="contact-detail">
-              <Briefcase />
-              {contact.role}
+          {contact.company && (
+            <div className="flex items-center gap-2">
+              <Building2 className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-700">{contact.company}</span>
             </div>
           )}
           {contact.location && (
-            <div className="contact-detail">
-              <MapPin />
-              {contact.location}
+            <div className="flex items-center gap-2">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <span className="text-sm text-gray-600">{contact.location}</span>
             </div>
           )}
         </div>
 
-        <div className="space-y-2 text-sm">
-          {contact.contactInfo.emails.length > 0 && (
-            <button
-              onClick={handleEmailClick}
-              className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors w-full text-left"
-            >
-              <Mail className="w-4 h-4" />
-              <span className="truncate">{contact.contactInfo.emails[0]}</span>
-            </button>
-          )}
+        {/* Show contact info and notes if they exist */}
+        {(contact.contactInfo.emails.length > 0 || contact.contactInfo.phones.length > 0) && (
+          <div className="mb-3 pt-3 border-t border-gray-100">
+            <div className="space-y-1.5">
+              {contact.contactInfo.emails.length > 0 && (
+                <button
+                  onClick={handleEmailClick}
+                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors w-full text-left group"
+                >
+                  <Mail className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                  <span className="text-sm truncate">{contact.contactInfo.emails[0]}</span>
+                </button>
+              )}
 
-          {contact.contactInfo.phones.length > 0 && (
-            <button
-              onClick={handlePhoneClick}
-              className="flex items-center gap-2 text-gray-600 hover:text-primary transition-colors w-full text-left"
-            >
-              <Phone className="w-4 h-4" />
-              <span>{contact.contactInfo.phones[0]}</span>
-            </button>
-          )}
+              {contact.contactInfo.phones.length > 0 && (
+                <button
+                  onClick={handlePhoneClick}
+                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors w-full text-left group"
+                >
+                  <Phone className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                  <span className="text-sm">{contact.contactInfo.phones[0]}</span>
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
-          {/* Show notes with expand/collapse functionality */}
-          {contact.notes && (
-            <div className="space-y-2">
-              <div className="text-gray-600 text-xs bg-gray-50 p-3 rounded-md border border-gray-200">
+        {/* Notes section - Expandable */}
+        {contact.notes && (
+          <div className="space-y-2 mb-4">
+            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+              <div className="text-sm text-gray-700">
                 {(() => {
-                  
-                  // For structured data, show full notes if expanded, otherwise show excerpt
-                  // For unstructured notes, always show them with expand option if long
                   const noteLines = contact.notes.split('\n').filter(Boolean)
                   const isLong = noteLines.length > 3 || contact.notes.length > 150
                   
@@ -176,42 +181,41 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
               
               {/* Show expand button if notes are long */}
               {(contact.notes.split('\n').filter(Boolean).length > 3 || contact.notes.length > 150) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
+                <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="w-full py-1 h-auto text-xs cursor-pointer"
+                  className="mt-2 text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 cursor-pointer"
                 >
                   {isExpanded ? (
                     <>
-                      <ChevronUp className="h-3 w-3 mr-1" />
+                      <ChevronUp className="h-3 w-3" />
                       Show less
                     </>
                   ) : (
                     <>
-                      <ChevronDown className="h-3 w-3 mr-1" />
-                      Show all notes
+                      <ChevronDown className="h-3 w-3" />
+                      Show more
                     </>
                   )}
-                </Button>
+                </button>
               )}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {aiReason && (
-          <div className="mt-3 ai-glow">
+          <div className="ai-glow mb-4">
             <div className="flex items-start gap-2 relative z-10">
-              <Sparkles className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-medium text-primary mb-1">AI Match</p>
-                <p className="text-xs text-subtle">{aiReason}</p>
+                <p className="text-xs font-medium text-purple-900 mb-1">AI Match</p>
+                <p className="text-xs text-purple-700">{aiReason}</p>
               </div>
             </div>
           </div>
         )}
 
-        <div className="mt-3 pt-3 border-t text-xs text-subtle">
+        {/* Metadata - Footer */}
+        <div className="pt-2 text-xs text-gray-500">
           Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}
         </div>
       </div>

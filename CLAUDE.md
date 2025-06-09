@@ -12,3 +12,11 @@ App functionality:
 - If there are more than 500 contacts it should send chunked requests to query-contacts.
 - It should stream contacts as components in the UI, merging them from all chunks.
 - It should finish with sending all fund contacts to the generate-summary route to get a summary and then show it in the ui.
+
+
+Shadcn and designing:
+  - Using CSS variables for theming (keeping the existing structure)
+  - Minimizing custom CSS classes
+  - Relying more on Tailwind utilities
+  - Avoiding global style overrides
+  - Keeping animations simple and performant

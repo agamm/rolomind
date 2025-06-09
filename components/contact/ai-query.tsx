@@ -122,7 +122,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
   return (
     <div className="space-y-6">
-      <div className="ai-glow fade-in">
+      <div className="ai-search-form fade-in">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-gray-900">AI Contact Search</h2>
@@ -183,7 +183,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       )}
 
       {(isSearching || isProcessingResults) && (
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 space-y-3">
+        <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -221,7 +221,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           {isSearching && (
             <>
-              <div className="relative h-2 w-full overflow-hidden rounded-full bg-primary/10">
+              <div className="relative h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
                 <div 
                   className="h-full bg-primary transition-all duration-300 ease-out"
                   style={{ width: `${progress.percent}%` }}
@@ -238,7 +238,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       )}
 
       {!isSearching && !isProcessingResults && results.length > 0 && (
-        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <p className="text-primary font-semibold">
             ✓ Found {results.length} matches
           </p>
