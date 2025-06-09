@@ -37,7 +37,7 @@ async function acquireLock(): Promise<() => Promise<void>> {
           // Ignore errors when removing lock
         }
       }
-    } catch (error) {
+    } catch {
       // Lock file exists, wait and retry
       await new Promise(resolve => setTimeout(resolve, LOCK_RETRY_INTERVAL))
     }

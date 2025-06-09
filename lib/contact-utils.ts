@@ -34,7 +34,7 @@ export function normalizeContact(rawData: RawContactData, source: Contact["sourc
 
   const emails = extractMultipleValues(rawData, ["email", "emailAddress", "mail", "Email", "Email Address"])
 
-  const linkedinUrls = extractMultipleValues(rawData, [
+  const linkedinUrlsArray = extractMultipleValues(rawData, [
     "linkedin",
     "linkedinUrl",
     "linkedinProfile",
@@ -43,6 +43,7 @@ export function normalizeContact(rawData: RawContactData, source: Contact["sourc
     "Profile URL",
     "LinkedIn URL",
   ])
+  const linkedinUrl = linkedinUrlsArray[0]
 
   // Extract notes from remaining fields with LinkedIn-specific fields
   const notesData: string[] = []
@@ -72,7 +73,8 @@ export function normalizeContact(rawData: RawContactData, source: Contact["sourc
     contactInfo: {
       phones,
       emails,
-      linkedinUrls,
+      linkedinUrl,
+      otherUrls: []
     },
     notes,
     source,
@@ -234,10 +236,12 @@ export function mergeContacts(contacts: Contact[]): Contact {
   )
 
   // Merge all contact information
+  const linkedinUrls = contacts.map(c => c.contactInfo.linkedinUrl).filter(Boolean) as string[]
   merged.contactInfo = {
     phones: [...new Set(contacts.flatMap((c) => c.contactInfo.phones))],
     emails: [...new Set(contacts.flatMap((c) => c.contactInfo.emails))],
-    linkedinUrls: [...new Set(contacts.flatMap((c) => c.contactInfo.linkedinUrls))],
+    linkedinUrl: linkedinUrls[0],
+    otherUrls: contacts.flatMap((c) => c.contactInfo.otherUrls),
   }
 
   // Merge notes

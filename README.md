@@ -1,4 +1,4 @@
-# Rolodex - AI-Powered Contact Management
+# Rolomind - AI-Powered Contact Management
 
 A modern contact management system with AI-powered features including smart search, voice notes, and intelligent contact merging.
 
@@ -21,8 +21,8 @@ A modern contact management system with AI-powered features including smart sear
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/rolodex.git
-   cd rolodex
+   git clone https://github.com/yourusername/rolomind.git
+   cd rolomind
    ```
 
 2. **Install dependencies**
@@ -36,31 +36,21 @@ A modern contact management system with AI-powered features including smart sear
    
    Create a `.env` file in the root directory:
    ```env
-   # Required: Anthropic API Key for AI features
-   # Get your key at: https://console.anthropic.com/account/keys
-   ANTHROPIC_API_KEY=sk...
-   
-   # Optional: OpenAI API Key for voice transcription
-   # Get your key at: https://platform.openai.com/api-keys
-   # Only needed if you want to use voice notes feature
-   OPENAI_API_KEY=sk-...
+   # Required: OpenRouter API Key for AI features
+   # Get your key at: https://openrouter.ai/api-keys
+   OPENROUTER_API_KEY=sk-...
    ```
 
 ## Getting API Keys
 
-### Anthropic API Key (Required)
-1. Go to [Anthropic Console](https://console.anthropic.com/)
+### OpenRouter API Key (Required)
+1. Go to [OpenRouter](https://openrouter.ai/)
 2. Sign up or log in to your account
-3. Navigate to [API Keys](https://console.anthropic.com/account/keys)
+3. Navigate to [API Keys](https://openrouter.ai/api-keys)
 4. Click "Create Key"
 5. Copy the key and add it to your `.env` file
 
-### OpenAI API Key (Optional - for voice features)
-1. Go to [OpenAI Platform](https://platform.openai.com/)
-2. Sign up or log in to your account
-3. Navigate to [API Keys](https://platform.openai.com/api-keys)
-4. Click "Create new secret key"
-5. Copy the key and add it to your `.env` file
+Note: Voice transcription features are currently disabled as OpenRouter doesn't support Whisper models.
 
 ## Running the Application
 

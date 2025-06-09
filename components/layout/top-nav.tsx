@@ -26,7 +26,7 @@ export function TopNav({
   return (
     <div className="flex items-center justify-between">
       <Link href="/" className="no-underline">
-        <h1 className="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors cursor-pointer">Rolodex</h1>
+        <h1 className="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors cursor-pointer">Rolomind</h1>
       </Link>
       <div className="flex items-center gap-3">
         {contactCount > 0 && <ExportButton />}

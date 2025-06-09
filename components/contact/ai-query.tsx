@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from "react"
+import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Contact } from "@/types/contact"
@@ -40,7 +40,6 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
     error,
     results,
     progress,
-    reset: resetQuery,
     stopSearch
   } = useAIQuery({ 
     contacts, 
@@ -112,7 +111,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
         }
       })
     }
-  }, [isSearching]) // Only trigger when isSearching changes
+  }, [isSearching]) // eslint-disable-line react-hooks/exhaustive-deps
   
   // Format elapsed time
   const formatElapsedTime = (seconds: number) => {

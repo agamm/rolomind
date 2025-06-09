@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
 import { z } from 'zod'
+import { openrouter } from '@/lib/openrouter-config'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }))
     
     const { object } = await generateObject({
-      model: anthropic('claude-3-7-sonnet-20250219'),
+      model: openrouter('anthropic/claude-3.5-sonnet'),
       schema: summarySchema,
       prompt: `Analyze these ${contacts.length} contacts that match the query "${query}".
       

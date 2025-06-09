@@ -19,13 +19,10 @@ export async function GET() {
       if (contact.contactInfo.emails?.length > 0) score += 2;
       if (contact.contactInfo.phones?.length > 0) score += 2;
       if (contact.contactInfo.linkedinUrl) score += 1;
-      if (contact.contactInfo.twitterHandle) score += 1;
-      if (contact.contactInfo.websiteUrl) score += 1;
+      if (contact.contactInfo.otherUrls?.length > 0) score += 1;
       
       // Additional info scoring
       if (contact.notes) score += 1;
-      if (contact.tags?.length > 0) score += 1;
-      if (contact.lastInteraction) score += 1;
       
       return { contact, score };
     });

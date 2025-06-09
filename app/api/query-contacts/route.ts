@@ -1,8 +1,8 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
 import { handleAIError } from '@/lib/ai-error-handler';
+import { openrouter } from '@/lib/openrouter-config';
 
 export const maxDuration = 30;
 
@@ -38,7 +38,7 @@ export async function POST(req: Request) {
     }));
 
     const { object: matches } = await generateObject({
-      model: anthropic('claude-3-7-sonnet-20250219'),
+      model: openrouter('anthropic/claude-3.5-sonnet'),
       output: 'array',
       schema: matchSchema,
       maxRetries: 4,

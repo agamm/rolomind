@@ -6,10 +6,10 @@ import { Providers } from "@/components/layout";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Rolodex",
-  description: "Simple contact management system",
+  title: "Rolomind",
+  description: "AI-powered contact management system",
   icons: {
-    icon: '/rolodex-modern.svg',
+    icon: '/rolomind-modern.svg',
   },
 };
 

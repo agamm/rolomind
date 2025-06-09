@@ -12,7 +12,7 @@ import { MergeConfirmationModal } from "@/components/import/merge-confirmation-m
 import { ImportProgressModal } from "@/components/import/import-progress-modal"
 
 export function ContactManager() {
-  const { data: contacts = [], isLoading, error, refetch } = useContacts()
+  const { data: contacts = [], isLoading, error } = useContacts()
   const deleteAllMutation = useDeleteAllContacts()
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)

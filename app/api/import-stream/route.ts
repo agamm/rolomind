@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         
         for (const contact of results) {
           if (contact) {
-            normalizedContacts.push(contact)
+            normalizedContacts.push(contact as Contact)
             processed++
             // Yield progress update
             yield { type: 'progress', current: processed, total: totalRows }

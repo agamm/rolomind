@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { generateObject, experimental_transcribe } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
-import { openai } from '@ai-sdk/openai'
+import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
+import { openrouter } from '@/lib/openrouter-config'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -39,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Use AI to extract structured information from the transcription
     const { object } = await generateObject({
-      model: anthropic('claude-3-haiku-20240307'),
+      model: openrouter('anthropic/claude-3-haiku'),
       schema: contactUpdateSchema,
       prompt: `Extract contact information updates from this voice transcription about a contact.
       
@@ -143,24 +142,10 @@ Examples of what to extract:
   }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function transcribeAudio(audioFile: File): Promise<string> {
-  try {
-    // Convert File to Uint8Array for the transcription API
-    const arrayBuffer = await audioFile.arrayBuffer()
-    const uint8Array = new Uint8Array(arrayBuffer)
-    
-    const result = await experimental_transcribe({
-      model: openai.transcription('whisper-1'),
-      audio: uint8Array,
-    })
-    
-    return result.text
-  } catch (error) {
-    console.error('Transcription error:', error)
-    // Check if it's an API key error
-    if (error instanceof Error && error.message.includes('API key')) {
-      return "OpenAI API key not configured. Set OPENAI_API_KEY environment variable to enable voice transcription."
-    }
-    throw new Error('Failed to transcribe audio')
-  }
+  // OpenRouter doesn't support Whisper transcription models
+  // For now, voice transcription is disabled
+  console.warn('Voice transcription is currently disabled as OpenRouter does not support Whisper models')
+  return "Voice transcription is temporarily unavailable. Please update contact information manually."
 }

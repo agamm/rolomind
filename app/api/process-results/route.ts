@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
-import { anthropic } from '@ai-sdk/anthropic'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact } from "@/types/contact"
+import { openrouter } from '@/lib/openrouter-config'
 
 interface ContactMatch {
   contact: Contact
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     })
 
     const { object: response } = await generateObject({
-      model: anthropic('claude-3-7-sonnet-20250219'),
+      model: openrouter('anthropic/claude-3.5-sonnet'),
       schema: responseSchema,
       prompt: `You are an AI assistant that helps sort and clean contact search results based on user queries.
     

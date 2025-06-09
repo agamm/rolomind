@@ -1,14 +1,14 @@
 import { generateObject } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
 import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
+import { openrouter } from '@/lib/openrouter-config'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
   phones: z.array(z.string()).describe('Phone numbers, normalized to include country code if possible'),
   emails: z.array(z.string()).describe('Email addresses'),
-  linkedinUrls: z.array(z.string()).describe('LinkedIn profile URLs'),
+  linkedinUrl: z.string().optional().describe('LinkedIn profile URL'),
   company: z.string().optional().describe('Company name'),
   role: z.string().optional().describe('Job title, position or role'),
   location: z.string().optional().describe('Location, city, or address'),
@@ -21,7 +21,7 @@ export async function normalizeContactWithLLM(
 ): Promise<Partial<Contact>> {
   try {
     const { object } = await generateObject({
-      model: anthropic('claude-3-haiku-20240307'),
+      model: openrouter('anthropic/claude-3-haiku'),
       schema: normalizedContactSchema,
       prompt: `Extract and normalize contact information from this CSV row data.
 
@@ -32,7 +32,7 @@ Instructions:
 1. Extract the person's full name
 2. Extract all phone numbers (normalize to include country codes if evident from context)
 3. Extract all email addresses
-4. Extract LinkedIn URLs (look for linkedin.com URLs or profile identifiers)
+4. Extract the LinkedIn URL if available (look for linkedin.com URLs or profile identifiers)
 5. Extract company name if available
 6. Extract job title/position/role if available
 7. Extract location (city, state, country) if available
@@ -50,7 +50,8 @@ Be thorough in extracting all available contact information.`
       contactInfo: {
         phones: object.phones || [],
         emails: object.emails || [],
-        linkedinUrls: object.linkedinUrls || []
+        linkedinUrl: object.linkedinUrl,
+        otherUrls: []
       },
       notes: object.notes || '',
       source: 'manual' as const,
@@ -95,7 +96,7 @@ export async function normalizeCsvBatch(
     
     for (const result of results) {
       if (result.success && result.contact) {
-        normalized.push(result.contact)
+        normalized.push(result.contact as Contact)
       } else if (!result.success) {
         errors.push(`Row ${result.index + 2}: ${result.error}`)
       }

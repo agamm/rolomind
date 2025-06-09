@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
+import { openrouter } from '@/lib/openrouter-config'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -33,18 +33,20 @@ export async function POST(request: NextRequest) {
     }
 
     const { object } = await generateObject({
-      model: anthropic('claude-3-5-sonnet-20241022'),
+      model: openrouter('anthropic/claude-3.5-sonnet'),
       schema: mergedContactSchema,
       prompt: `Merge these two contact records intelligently. 
       
 Existing contact:
 ${JSON.stringify((() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { createdAt, updatedAt, ...rest } = existing;
   return rest;
 })(), null, 2)}
 
 Incoming contact:
 ${JSON.stringify((() => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { createdAt, updatedAt, ...rest } = incoming;
   return rest;
 })(), null, 2)}

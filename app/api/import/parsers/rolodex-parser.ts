@@ -2,7 +2,7 @@ import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
 
 export function isApplicableParser(headers: string[]): boolean {
-  // Check if this is a Rolodex export by looking for our specific headers
+  // Check if this is a Rolomind export by looking for our specific headers
   const requiredHeaders = [
     'Name', 
     'Company', 
