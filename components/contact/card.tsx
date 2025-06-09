@@ -158,7 +158,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         {/* Notes section - Expandable */}
         {contact.notes && (
           <div className="space-y-2 mb-4">
-            <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
+            <div className="bg-zinc-50 p-3 rounded-lg border border-gray-100">
               <div className="text-sm text-gray-900">
                 {(() => {
                   const noteLines = contact.notes.split('\n').filter(Boolean)

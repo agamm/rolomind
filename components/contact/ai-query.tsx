@@ -141,7 +141,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               <button 
                 type="submit" 
                 disabled={isSearching || contacts.length === 0}
-                className="warm-button whitespace-nowrap"
+                className="warm-button whitespace-nowrap px-6 h-[50px] flex items-center justify-center"
               >
               {isSearching ? (
                 <>
@@ -171,7 +171,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           
           {contacts.length === 0 && (
-            <p className="text-sm opacity-70">
+            <p className="text-sm text-white/80">
               Import contacts to use AI search.
             </p>
           )}
@@ -185,7 +185,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       )}
 
       {(isSearching || isProcessingResults) && (
-        <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+        <div className="rounded-xl p-4 space-y-3" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
@@ -223,7 +223,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           {isSearching && (
             <>
-              <div className="relative h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)' }}>
+              <div className="relative h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)' }}>
                 <div 
                   className="h-full bg-primary transition-all duration-300 ease-out"
                   style={{ width: `${progress.percent}%` }}
@@ -240,7 +240,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       )}
 
       {!isSearching && !isProcessingResults && results.length > 0 && (
-        <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(124, 58, 237, 0.1)', borderColor: 'rgba(124, 58, 237, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
+        <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <p className="text-primary font-semibold">
             ✓ Found {results.length} matches
           </p>
