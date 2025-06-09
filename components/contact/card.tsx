@@ -88,13 +88,14 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
                 <h3 className="text-xl font-semibold text-gray-900">{contact.name}</h3>
               </div>
               <div className="flex items-center gap-2">
-                <span className="inline-flex text-xs font-medium px-2.5 py-1 bg-blue-50 text-blue-600 rounded-full">
+                <span className="inline-flex text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(10, 102, 194, 0.1)', color: '#0A66C2' }}>
                   {contact.source}
                 </span>
                 {contact.contactInfo.linkedinUrl && (
                   <button
                     onClick={handleLinkedInClick}
-                    className="inline-flex items-center text-blue-600 hover:text-blue-700 cursor-pointer transition-colors"
+                    className="inline-flex items-center cursor-pointer transition-colors"
+                    style={{ color: '#0A66C2' }}
                     title="Open LinkedIn Profile"
                   >
                     <ExternalLink className="w-4 h-4" />
@@ -110,19 +111,19 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
           {contact.role && (
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-900">{contact.role}</span>
+              <span className="text-sm font-medium" style={{ color: '#111827' }}>{contact.role}</span>
             </div>
           )}
           {contact.company && (
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-700">{contact.company}</span>
+              <span className="text-sm" style={{ color: '#6B7280' }}>{contact.company}</span>
             </div>
           )}
           {contact.location && (
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">{contact.location}</span>
+              <span className="text-sm" style={{ color: '#6B7280' }}>{contact.location}</span>
             </div>
           )}
         </div>
@@ -158,7 +159,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         {contact.notes && (
           <div className="space-y-2 mb-4">
             <div className="bg-gray-50 p-3 rounded-lg border border-gray-100">
-              <div className="text-sm text-gray-700">
+              <div className="text-sm text-gray-900">
                 {(() => {
                   const noteLines = contact.notes.split('\n').filter(Boolean)
                   const isLong = noteLines.length > 3 || contact.notes.length > 150
@@ -215,7 +216,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         )}
 
         {/* Metadata - Footer */}
-        <div className="pt-2 text-xs text-gray-500">
+        <div className="pt-2 text-xs" style={{ color: '#9CA3AF' }}>
           Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}
         </div>
       </div>

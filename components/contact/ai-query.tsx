@@ -125,7 +125,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       <div className="ai-search-form fade-in">
         <div className="flex items-center gap-2 mb-4">
           <Sparkles className="h-5 w-5 text-primary" />
-          <h2 className="text-xl font-semibold text-gray-900">AI Contact Search</h2>
+          <h2 className="text-xl font-semibold">AI Contact Search</h2>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,11 +137,12 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               disabled={isSearching}
               className="flex-1 soft-input"
             />
-            <button 
-              type="submit" 
-              disabled={isSearching || !query.trim() || contacts.length === 0}
-              className="warm-button"
-            >
+            {query.trim() && (
+              <button 
+                type="submit" 
+                disabled={isSearching || contacts.length === 0}
+                className="warm-button"
+              >
               {isSearching ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
@@ -150,7 +151,8 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               ) : (
                 'Search'
               )}
-            </button>
+              </button>
+            )}
           </div>
           
           <div className="flex items-center gap-2 pt-2">
@@ -162,14 +164,14 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
             />
             <Label 
               htmlFor="ai-summary" 
-              className="text-sm font-normal text-gray-600 cursor-pointer"
+              className="text-sm font-normal cursor-pointer"
             >
               Generate AI summary after search
             </Label>
           </div>
           
           {contacts.length === 0 && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm opacity-70">
               Import contacts to use AI search.
             </p>
           )}
@@ -187,7 +189,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium">
                 {isProcessingResults ? 'Sorting and cleaning results...' : `Querying contacts in batches... (${formatElapsedTime(elapsedSeconds)})`}
               </span>
             </div>

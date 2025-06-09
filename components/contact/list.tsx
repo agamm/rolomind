@@ -214,7 +214,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="text-xl font-semibold text-gray-900 flex items-center gap-2">
+              <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: '#111827' }}>
                 {aiResults && aiResults.length > 0 ? 'AI Search Results' : 'All Contacts'} ({filteredContacts.length})
                 {aiResults && aiResults.length > 0 && (
                   <span className="relative flex h-2 w-2">
