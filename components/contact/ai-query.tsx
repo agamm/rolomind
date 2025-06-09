@@ -124,12 +124,12 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
     <div className="space-y-6">
       <div className="ai-search-form fade-in">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-primary" />
+          <Sparkles className="h-5 w-5 ai-icon" />
           <h2 className="text-xl font-semibold">AI Contact Search</h2>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
             <input
               placeholder="e.g., 'CEOs in Israel', 'software engineers at startups'"
               value={query}
@@ -141,7 +141,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               <button 
                 type="submit" 
                 disabled={isSearching || contacts.length === 0}
-                className="warm-button"
+                className="warm-button whitespace-nowrap"
               >
               {isSearching ? (
                 <>
@@ -199,10 +199,10 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
                   {progress.percent}% ({progress.completed} of {progress.total} complete)
                 </span>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={handleStop}
-                  className="h-7 px-3 cursor-pointer"
+                  className="h-7 px-3 cursor-pointer hover:bg-purple-100 hover:text-purple-700"
                   type="button"
                   disabled={isStopping}
                 >

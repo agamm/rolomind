@@ -4,7 +4,6 @@ import React from "react"
 import Link from "next/link"
 import { ImportButton } from "@/components/import"
 import { DeleteAllButton } from "@/components/delete"
-import { ExportButton } from "@/components/export/export-button"
 
 interface TopNavProps {
   contactCount: number
@@ -29,7 +28,6 @@ export function TopNav({
         <h1 className="display-text text-primary">Rolomind</h1>
       </Link>
       <div className="flex items-center gap-3">
-        {contactCount > 0 && <ExportButton />}
         <DeleteAllButton
           onDeleteAll={onDeleteAll}
           isDeleting={isDeleting}

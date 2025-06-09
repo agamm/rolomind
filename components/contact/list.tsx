@@ -10,7 +10,7 @@ import { PaginationControls } from "@/components/pagination-controls"
 import { DeleteConfirmationDialog } from "@/components/delete/delete-confirmation-dialog"
 import { BulkDeleteDialog } from "@/components/delete/bulk-delete-dialog"
 import { Card, CardContent } from "@/components/ui/card"
-import { Upload, Edit3, CheckSquare, Trash2 } from "lucide-react"
+import { Upload, Edit3, CheckSquare, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePagination } from "@/hooks/use-pagination"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
@@ -212,8 +212,8 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
       <div className="p-8">
         <div className="flex flex-col gap-4">
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <h3 className="text-xl font-semibold flex items-center gap-2" style={{ color: '#111827' }}>
                 {aiResults && aiResults.length > 0 ? 'AI Search Results' : 'All Contacts'} ({filteredContacts.length})
                 {aiResults && aiResults.length > 0 && (
@@ -229,68 +229,85 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
                   </span>
                 )}
               </h3>
-              {filteredContacts.length > 0 && (
-                <div className="flex items-center gap-2">
-                  {aiResults && aiResults.length > 0 && (
+              
+              <div className="flex items-center gap-3">
+                {filteredContacts.length > 0 && !showCheckboxes && (
+                  <div className="flex items-center gap-2">
                     <ExportQueryButton contacts={filteredContacts} />
-                  )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setShowCheckboxes(!showCheckboxes)
+                        if (showCheckboxes) {
+                          setSelectedContacts(new Set())
+                        }
+                      }}
+                    >
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                      Select to Edit
+                    </Button>
+                  </div>
+                )}
+                
+                {showCheckboxes && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowCheckboxes(false)
+                        setSelectedContacts(new Set())
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-2" />
+                      Cancel Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleSelectAll}
+                    >
+                      {selectedContacts.size === filteredContacts.length ? 'Deselect All' : 'Select All'}
+                    </Button>
+                  </div>
+                )}
+                
+                <div className="w-full sm:w-64">
+                  <SearchInput onSearch={handleSearch} disabled={false} />
+                </div>
+              </div>
+            </div>
+            
+            {/* Selection actions row */}
+            {showCheckboxes && selectedContacts.size > 0 && (
+              <div className="flex justify-end">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <ExportQueryButton contacts={selectedContactsArray} />
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      setShowCheckboxes(!showCheckboxes)
-                      if (showCheckboxes) {
-                        setSelectedContacts(new Set())
-                      }
+                      setShowBulkEdit(true)
                     }}
                   >
-                    <CheckSquare className="h-4 w-4 mr-2" />
-                    {showCheckboxes ? 'Cancel Selection' : 'Select'}
+                    <Edit3 className="h-4 w-4 mr-2" />
+                    Edit ({selectedContacts.size})
                   </Button>
                   
-                  {showCheckboxes && (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={handleSelectAll}
-                      >
-                        {selectedContacts.size === filteredContacts.length ? 'Deselect All' : 'Select All'}
-                      </Button>
-                      
-                      {selectedContacts.size > 0 && (
-                        <>
-                          <Button
-                            variant="default"
-                            size="sm"
-                            onClick={() => {
-                              setShowBulkEdit(true)
-                            }}
-                          >
-                            <Edit3 className="h-4 w-4 mr-2" />
-                            Edit Selected ({selectedContacts.size})
-                          </Button>
-                          
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => {
-                              setShowBulkDelete(true)
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Selected ({selectedContacts.size})
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowBulkDelete(true)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete ({selectedContacts.size})
+                  </Button>
                 </div>
-              )}
-            </div>
-            <div className="w-64">
-              <SearchInput onSearch={handleSearch} disabled={false} />
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Status message when still searching/processing */}

@@ -139,7 +139,7 @@
 
 /* Modern primary button */
 .warm-button {
-  @apply font-medium px-6 py-3 rounded-xl;
+  @apply font-medium px-4 py-2 rounded-md;
   background: var(--primary);
   color: var(--primary-foreground);
   position: relative;
@@ -212,59 +212,55 @@
 
 /* AI search form inputs */
 .ai-search-form .soft-input {
-  background: rgba(255, 255, 255, 0.9);
-  border-color: rgba(139, 92, 246, 0.3);
-  color: var(--text-primary);
+  background: #FFFFFF;
+  border-color: #E9D5FF;
+  color: #1E1B4B;
+  font-weight: 500;
 }
 
 .ai-search-form .soft-input:focus {
-  background: rgba(255, 255, 255, 0.95);
-  border-color: var(--primary);
+  background: #FFFFFF;
+  border-color: #8B5CF6;
   box-shadow: 
-    0 0 0 4px rgba(139, 92, 246, 0.15),
+    0 0 0 4px rgba(139, 92, 246, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .ai-search-form .soft-input::placeholder {
-  color: var(--text-placeholder);
+  color: #9333EA;
+  font-weight: 400;
+  opacity: 0.7;
 }
 
-/* AI search form - purple gradient design */
+/* AI search form - light gradient design */
 .ai-search-form {
   @apply rounded-2xl p-6;
-  background: linear-gradient(135deg, 
-    rgba(251, 248, 255, 1) 0%,
-    rgba(245, 240, 255, 1) 35%,
-    rgba(240, 235, 255, 1) 65%,
-    rgba(235, 230, 255, 1) 100%);
+  background: linear-gradient(135deg, #F0F9FF 0%, #EDE9FE 100%);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(139, 92, 246, 0.2);
+  border: 1px solid rgba(233, 213, 255, 0.5);
   position: relative;
   overflow: hidden;
   box-shadow: 
-    0 1px 3px rgba(139, 92, 246, 0.1),
-    0 10px 15px -3px rgba(139, 92, 246, 0.08),
-    0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    0 4px 6px -1px rgba(139, 92, 246, 0.08),
+    0 2px 4px -1px rgba(139, 92, 246, 0.04);
   transition: all 0.3s ease;
-  color: var(--text-primary);
 }
 
 .ai-search-form:hover {
-  background: linear-gradient(135deg, 
-    rgba(248, 245, 255, 1) 0%,
-    rgba(240, 235, 255, 1) 35%,
-    rgba(235, 228, 255, 1) 65%,
-    rgba(230, 220, 255, 1) 100%);
   box-shadow: 
-    0 1px 3px rgba(139, 92, 246, 0.15),
-    0 20px 25px -5px rgba(139, 92, 246, 0.12),
-    0 10px 10px -5px rgba(0, 0, 0, 0.08);
+    0 10px 15px -3px rgba(139, 92, 246, 0.1),
+    0 4px 6px -2px rgba(139, 92, 246, 0.06);
   transform: translateY(-1px);
-  border-color: rgba(139, 92, 246, 0.3);
+  border-color: rgba(233, 213, 255, 0.7);
 }
 
 .ai-search-form h2 {
-  color: var(--text-primary);
+  color: #1E1B4B;
+  font-weight: 600;
+}
+
+.ai-search-form .ai-icon {
+  color: #8B5CF6;
 }
 
 .ai-search-form::before {
@@ -276,9 +272,9 @@
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(124, 58, 237, 0.3) 25%, 
-    rgba(168, 85, 247, 0.3) 50%, 
-    rgba(124, 58, 237, 0.3) 75%, 
+    rgba(139, 92, 246, 0.3) 25%, 
+    rgba(147, 51, 234, 0.3) 50%, 
+    rgba(139, 92, 246, 0.3) 75%, 
     transparent 100%);
   opacity: 0;
   transition: opacity 0.3s ease;
@@ -315,29 +311,20 @@
 .display-text {
   @apply text-4xl font-bold tracking-tight;
   position: relative;
-  color: var(--primary);
+  background: linear-gradient(135deg, var(--primary), var(--primary));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   transition: all 0.3s ease;
-}
-
-.display-text::before {
-  content: '';
-  position: absolute;
-  inset: -10px;
-  background: linear-gradient(135deg, #A78BFA, #E879F9, #7C3AED);
-  background-size: 200% 200%;
-  border-radius: 8px;
-  opacity: 0;
-  filter: blur(15px);
-  z-index: -1;
-  transition: opacity 0.3s ease;
 }
 
 .display-text:hover {
   transform: scale(1.05);
-}
-
-.display-text:hover::before {
-  opacity: 0.5;
+  background: linear-gradient(135deg, #A78BFA, #E879F9, #7C3AED);
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
   animation: gradient-shift 3s ease infinite;
 }
 
@@ -371,7 +358,7 @@
   box-shadow: 
     0 10px 15px -3px rgba(0, 0, 0, 0.08),
     0 4px 6px -2px rgba(0, 0, 0, 0.04);
-  border-color: var(--primary);
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 
@@ -477,5 +464,70 @@
     0 4px 12px rgba(139, 92, 246, 0.04),
     0 2px 4px rgba(0, 0, 0, 0.02),
     inset 0 1px 2px rgba(255, 255, 255, 0.9);
+}
+
+/* Edit Modal Styles */
+[role="dialog"] {
+  background: linear-gradient(135deg, 
+    rgba(249, 250, 251, 1) 0%,
+    rgba(243, 244, 246, 1) 100%);
+  border: 1px solid rgba(209, 213, 219, 0.8);
+}
+
+[role="dialog"] input[type="text"],
+[role="dialog"] input[type="email"],
+[role="dialog"] input[type="url"],
+[role="dialog"] input:not([type]),
+[role="dialog"] textarea {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(209, 213, 219, 0.8);
+  color: var(--text-primary);
+}
+
+[role="dialog"] input[type="text"]:focus,
+[role="dialog"] input[type="email"]:focus,
+[role="dialog"] input[type="url"]:focus,
+[role="dialog"] input:not([type]):focus,
+[role="dialog"] textarea:focus {
+  background: rgba(255, 255, 255, 1);
+  border-color: var(--primary);
+  box-shadow: 
+    0 0 0 3px rgba(139, 92, 246, 0.1),
+    0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+[role="dialog"] label {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+[role="dialog"] h2 {
+  color: var(--text-primary);
+}
+
+/* Dialog buttons */
+[role="dialog"] button {
+  font-weight: 500;
+}
+
+/* Voice recorder section in modal */
+[role="dialog"] .ai-glow {
+  background: linear-gradient(135deg, 
+    rgba(237, 233, 254, 0.4) 0%,
+    rgba(221, 214, 254, 0.3) 100%);
+  border: 1px solid rgba(196, 181, 253, 0.3);
+}
+
+/* AI search form toggle/switch */
+.ai-search-form [role="switch"] {
+  background-color: #E5E7EB;
+}
+
+.ai-search-form [role="switch"][data-state="checked"] {
+  background-color: #8B5CF6;
+}
+
+.ai-search-form label {
+  color: #1E1B4B;
 }
 

@@ -20,3 +20,4 @@ Shadcn and designing:
   - Relying more on Tailwind utilities
   - Avoiding global style overrides
   - Keeping animations simple and performant
+  - Split complex compoennts to sub components in the same component file.
