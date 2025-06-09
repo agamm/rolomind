@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
     })
 
     const { object: response } = await generateObject({
-      model: openrouter('anthropic/claude-3.5-sonnet'),
+      model: openrouter('anthropic/claude-3.7-sonnet'),
       schema: responseSchema,
       prompt: `You are an AI assistant that helps sort and clean contact search results based on user queries.
     

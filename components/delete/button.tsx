@@ -45,7 +45,7 @@ export function DeleteAllButton({
         size="sm"
         onClick={handleClick}
         disabled={disabled || isDeleting}
-        className="text-gray-600 hover:text-red-600 hover:border-red-300"
+        className=""
       >
         {isDeleting ? (
           <Loader2 className="w-4 h-4 animate-spin mr-1" />

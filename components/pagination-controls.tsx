@@ -66,7 +66,7 @@ export function PaginationControls({
         {visiblePages.map((page, index) => (
           <React.Fragment key={index}>
             {page === "..." ? (
-              <span className="px-3 py-2 text-gray-500">...</span>
+              <span className="px-3 py-2 text-gray-400">...</span>
             ) : (
               <Button
                 variant={currentPage === page ? "default" : "outline"}

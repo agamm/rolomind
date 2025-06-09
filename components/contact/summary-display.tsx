@@ -19,10 +19,10 @@ export function SummaryDisplay({ summary, isGenerating, error }: SummaryDisplayP
 
   if (isGenerating) {
     return (
-      <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+      <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
         <div className="flex items-center gap-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <p className="text-yellow-800">Generating summary...</p>
+          <Loader2 className="h-4 w-4 animate-spin text-primary" />
+          <p className="text-purple-800">Generating summary...</p>
         </div>
       </div>
     )
@@ -35,39 +35,40 @@ export function SummaryDisplay({ summary, isGenerating, error }: SummaryDisplayP
   const highlightNumbers = (text: string) => {
     return text.split(/(\d+%?|\b\d+\b)/g).map((part, index) => {
       if (/^\d+%?$/.test(part)) {
-        return <span key={index} className="font-semibold text-blue-600">{part}</span>
+        return <span key={index} className="font-semibold text-primary">{part}</span>
       }
       return part
     })
   }
 
   return (
-    <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-lg shadow-sm border border-purple-200 p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="h-5 w-5 text-purple-600" />
-        <h3 className="text-lg font-semibold text-gray-900">AI Summary</h3>
-        <span className="ml-auto text-sm text-gray-600 font-medium">
-          {summary.totalMatches} matches found
-        </span>
-      </div>
-      
-      <div className="bg-white/70 rounded-lg p-4">
-        <p className="text-gray-800 leading-relaxed font-medium">
-          {highlightNumbers(summary.summary)}
-        </p>
-      </div>
+    <div className="ai-glow fade-in">
+      <div className="relative z-10">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h3 className="heading-text">AI Summary</h3>
+          <span className="ml-auto text-subtle">
+            {summary.totalMatches} matches found
+          </span>
+        </div>
+        
+        <div className="neu-card p-4">
+          <p className="body-text">
+            {highlightNumbers(summary.summary)}
+          </p>
+        </div>
       
       {summary.keyInsights.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center gap-2 mb-2">
-            <TrendingUp className="h-4 w-4 text-purple-600" />
-            <h4 className="font-semibold text-gray-900">Key Insights</h4>
+            <TrendingUp className="h-4 w-4 text-primary" />
+            <h4 className="font-semibold">Key Insights</h4>
           </div>
           <div className="space-y-2">
             {summary.keyInsights.map((insight, index) => (
-              <div key={index} className="flex items-start gap-2 bg-white/50 rounded-lg p-3">
-                <span className="text-purple-600 font-bold mt-0.5">•</span>
-                <p className="text-gray-700 text-sm leading-relaxed flex-1">
+              <div key={index} className="flex items-start gap-2 neu-card p-3">
+                <span className="text-primary font-bold mt-0.5">•</span>
+                <p className="body-text flex-1">
                   {highlightNumbers(insight)}
                 </p>
               </div>
@@ -75,6 +76,7 @@ export function SummaryDisplay({ summary, isGenerating, error }: SummaryDisplayP
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

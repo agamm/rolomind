@@ -64,11 +64,11 @@ export function ImportProgressModal({
         return {
           icon: isCustom ? (
             <div className="relative h-16 w-16 flex items-center justify-center">
-              <div className="absolute inset-0 animate-spin rounded-full border-4 border-purple-200 border-t-purple-600" />
-              <Sparkles className="h-8 w-8 text-purple-500 animate-pulse relative z-10" />
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-gray-200 border-t-primary border-r-primary" />
+              <Sparkles className="h-8 w-8 text-primary animate-pulse relative z-10" />
             </div>
           ) : (
-            <FileText className="h-8 w-8 text-blue-500 animate-pulse" />
+            <FileText className="h-8 w-8 text-primary animate-pulse" />
           ),
           title: isCustom ? 'AI-Powered Normalization' : 
                  isRolodex ? 'Processing Rolodex Export' : 
@@ -85,7 +85,7 @@ export function ImportProgressModal({
       
       case 'checking-duplicates':
         return {
-          icon: <Loader2 className="h-8 w-8 text-yellow-500 animate-spin" />,
+          icon: <Loader2 className="h-8 w-8 text-amber-500 animate-spin" />,
           title: 'Checking for Duplicates',
           description: 'Searching for existing contacts with matching information...'
         }
@@ -151,7 +151,7 @@ export function ImportProgressModal({
         
         {showProgress && (
           <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-gray-600">
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
               <span>{progress.message || 'Processing...'}</span>
               <span className="font-medium">
                 {progressPercent}% ({progress.current} / {progress.total})
@@ -202,7 +202,7 @@ export function ImportProgressModal({
         
         {parserType && ['processing', 'normalizing', 'saving'].includes(status) && (
           <div className="mt-4 flex flex-col items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-gray-50 border border-gray-200 px-3 py-1 text-xs">
+            <span className="inline-flex items-center gap-2 rounded-full bg-muted border border-border px-3 py-1 text-xs">
               {parserType === 'rolodex' ? (
                 <>
                   <FileText className="h-3 w-3 text-green-500" />
@@ -226,7 +226,7 @@ export function ImportProgressModal({
               )}
             </span>
             {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && (
-              <div className="text-xs text-gray-500 animate-pulse">
+              <div className="text-xs text-muted-foreground animate-pulse">
                 AI is analyzing field patterns and data structure...
               </div>
             )}
@@ -252,10 +252,10 @@ function FormatOption({
   baseColor: 'blue' | 'purple' | 'green' | 'red'
 }) {
   const bgClasses = {
-    blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-gray-50 border border-gray-200',
-    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-gray-50 border border-gray-200',
-    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-gray-50 border border-gray-200',
-    red: isSelected ? 'bg-red-100 border-2 border-red-500 scale-105' : 'bg-gray-50 border border-gray-200'
+    blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-muted border border-border',
+    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-muted border border-border',
+    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-muted border border-border',
+    red: isSelected ? 'bg-red-100 border-2 border-red-500 scale-105' : 'bg-muted border border-border'
   }
   
   const iconClasses = {

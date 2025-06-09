@@ -156,15 +156,16 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
   })
 
   const filteredContacts = React.useMemo(() => {
-    // If we have AI results, show those instead of all contacts
-    if (aiResults && aiResults.length > 0) {
-      return aiResults.map(result => result.contact)
-    }
+    // Start with either AI results or all contacts
+    const baseContacts = aiResults && aiResults.length > 0 
+      ? aiResults.map(result => result.contact)
+      : contacts
     
-    if (!searchQuery.trim()) return contacts
+    // Apply search filter if there's a query
+    if (!searchQuery.trim()) return baseContacts
     
     const query = searchQuery.toLowerCase()
-    return contacts.filter(contact =>
+    return baseContacts.filter(contact =>
       contact.name.toLowerCase().includes(query) ||
       contact.contactInfo.emails.some(email => email.toLowerCase().includes(query)) ||
       contact.notes.toLowerCase().includes(query)
@@ -182,6 +183,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
 
   const handleSearch = (query: string) => {
     setSearchQuery(query)
+    goToPage(1) // Reset to first page when searching
     if (onSearch) onSearch(query)
   }
 
@@ -206,20 +208,20 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
   const selectedContactsArray = contacts.filter(c => selectedContacts.has(c.id))
 
   return (
-    <Card>
-      <CardContent className="p-4">
+    <div className="contact-list-container">
+      <div className="p-8">
         <div className="flex flex-col gap-4">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
+              <h3 className="heading-text flex items-center gap-2">
                 {aiResults && aiResults.length > 0 ? 'AI Search Results' : 'All Contacts'} ({filteredContacts.length})
                 {aiResults && aiResults.length > 0 && (
                   <span className="relative flex h-2 w-2">
                     {isAISearching ? (
                       <>
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
                       </>
                     ) : (
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -287,16 +289,16 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
               )}
             </div>
             <div className="w-64">
-              <SearchInput onSearch={handleSearch} disabled={aiResults && aiResults.length > 0} />
+              <SearchInput onSearch={handleSearch} disabled={false} />
             </div>
           </div>
 
           {/* Status message when still searching/processing */}
           {isAISearching && aiResults && aiResults.length > 0 && (
-            <div className="text-xs text-blue-600 bg-blue-50 px-3 py-1 rounded-full inline-flex items-center gap-2 self-start">
+            <div className="text-xs text-primary bg-primary/10 px-3 py-1 rounded-full inline-flex items-center gap-2 self-start">
               <span className="relative flex h-1.5 w-1.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-blue-500"></span>
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-primary"></span>
               </span>
               <span>
                 Still searching • Results will be sorted when complete
@@ -332,19 +334,26 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {paginatedContacts.map((contact) => {
+                {paginatedContacts.map((contact, index) => {
                   const aiResult = aiResults?.find(result => result.contact.id === contact.id)
                   return (
-                    <ContactCard
+                    <div 
                       key={contact.id}
-                      contact={contact}
-                      aiReason={aiResult?.reason}
-                      onEdit={setEditingContact}
-                      onDelete={setDeletingContact}
-                      showCheckbox={showCheckboxes}
-                      isSelected={selectedContacts.has(contact.id)}
-                      onSelectToggle={handleSelectToggle}
-                    />
+                      className={aiResults ? 'contact-card-animated' : ''}
+                      style={{ 
+                        animationDelay: aiResults ? `${index * 0.08}s` : '0s' 
+                      }}
+                    >
+                      <ContactCard
+                        contact={contact}
+                        aiReason={aiResult?.reason}
+                        onEdit={setEditingContact}
+                        onDelete={setDeletingContact}
+                        showCheckbox={showCheckboxes}
+                        isSelected={selectedContacts.has(contact.id)}
+                        onSelectToggle={handleSelectToggle}
+                      />
+                    </div>
                   )
                 })}
               </div>
@@ -362,7 +371,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
             </>
           )}
         </div>
-      </CardContent>
+      </div>
       
       <EditContactModal
         contact={editingContact}
@@ -399,6 +408,6 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
         onCancel={() => setShowBulkDelete(false)}
         isDeleting={bulkDeleteMutation.isPending}
       />
-    </Card>
+    </div>
   )
 }

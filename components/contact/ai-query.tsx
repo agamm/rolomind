@@ -122,24 +122,25 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
   return (
     <div className="space-y-6">
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      <div className="ai-glow fade-in">
         <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="h-5 w-5 text-blue-500" />
-          <h2 className="text-lg font-semibold">AI Contact Search</h2>
+          <Sparkles className="h-5 w-5 text-primary" />
+          <h2 className="text-xl font-semibold text-gray-900">AI Contact Search</h2>
         </div>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2">
-            <Input
+            <input
               placeholder="e.g., 'CEOs in Israel', 'software engineers at startups'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching}
-              className="flex-1"
+              className="flex-1 soft-input"
             />
-            <Button 
+            <button 
               type="submit" 
               disabled={isSearching || !query.trim() || contacts.length === 0}
+              className="warm-button"
             >
               {isSearching ? (
                 <>
@@ -149,7 +150,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               ) : (
                 'Search'
               )}
-            </Button>
+            </button>
           </div>
           
           <div className="flex items-center gap-2 pt-2">
@@ -168,7 +169,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           
           {contacts.length === 0 && (
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-muted-foreground">
               Import contacts to use AI search.
             </p>
           )}
@@ -176,30 +177,30 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       </div>
 
       {error && error.message !== 'Search aborted' && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-700">{error.message}</p>
+        <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
+          <p className="text-destructive">{error.message}</p>
         </div>
       )}
 
       {(isSearching || isProcessingResults) && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin text-blue-700" />
-              <span className="text-sm font-medium text-blue-900">
+              <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <span className="text-sm font-medium text-gray-700">
                 {isProcessingResults ? 'Sorting and cleaning results...' : `Querying contacts in batches... (${formatElapsedTime(elapsedSeconds)})`}
               </span>
             </div>
             {isSearching && (
               <div className="flex items-center gap-3">
-                <span className="text-sm text-blue-700">
+                <span className="text-sm text-primary font-medium">
                   {progress.percent}% ({progress.completed} of {progress.total} complete)
                 </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleStop}
-                  className="h-7 px-3 cursor-pointer hover:bg-gray-100"
+                  className="h-7 px-3 cursor-pointer"
                   type="button"
                   disabled={isStopping}
                 >
@@ -220,14 +221,14 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           {isSearching && (
             <>
-              <div className="relative h-3 w-full overflow-hidden rounded-full bg-blue-200">
+              <div className="relative h-2 w-full overflow-hidden rounded-full bg-primary/10">
                 <div 
-                  className="h-full bg-blue-600 transition-all duration-300 ease-out"
+                  className="h-full bg-primary transition-all duration-300 ease-out"
                   style={{ width: `${progress.percent}%` }}
                 />
               </div>
               {results.length > 0 && (
-                <p className="text-sm text-blue-700">
+                <p className="text-sm text-gray-600">
                   Found {results.length} matches so far...
                 </p>
               )}
@@ -237,8 +238,8 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       )}
 
       {!isSearching && !isProcessingResults && results.length > 0 && (
-        <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-          <p className="text-green-800">
+        <div className="bg-primary/10 border border-primary/30 rounded-xl p-4">
+          <p className="text-primary font-semibold">
             ✓ Found {results.length} matches
           </p>
         </div>

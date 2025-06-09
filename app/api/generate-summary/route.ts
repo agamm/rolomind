@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     }))
     
     const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.5-sonnet'),
+      model: openrouter('anthropic/claude-3.7-sonnet'),
       schema: summarySchema,
       prompt: `Analyze these ${contacts.length} contacts that match the query "${query}".
       

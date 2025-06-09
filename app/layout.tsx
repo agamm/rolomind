@@ -1,15 +1,25 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Outfit, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/layout";
 
-const inter = Inter({ subsets: ["latin"] });
+const outfit = Outfit({ 
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-outfit"
+});
+
+const spaceMono = Space_Mono({ 
+  subsets: ["latin"],
+  weight: ["400", "700"],
+  variable: "--font-space-mono"
+});
 
 export const metadata: Metadata = {
   title: "Rolomind",
   description: "AI-powered contact management system",
   icons: {
-    icon: '/rolomind-modern.svg',
+    icon: '/favicon.svg',
   },
 };
 
@@ -20,7 +30,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${outfit.variable} ${spaceMono.variable} font-sans`}>
+        <div className="organic-bg" />
         <Providers>
           {children}
         </Providers>

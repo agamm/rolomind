@@ -49,7 +49,7 @@ export function ContactManager() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-red-600 mb-2">Error loading contacts</h1>
           <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
@@ -59,7 +59,7 @@ export function ContactManager() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <div className="max-w-7xl mx-auto p-6">
         <div className="flex flex-col gap-6">
           <TopNav

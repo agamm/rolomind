@@ -24,9 +24,9 @@ export function TopNav({
   disabled = false,
 }: TopNavProps) {
   return (
-    <div className="flex items-center justify-between">
-      <Link href="/" className="no-underline">
-        <h1 className="text-2xl font-bold text-gray-900 hover:text-gray-700 transition-colors cursor-pointer">Rolomind</h1>
+    <div className="flex items-center justify-between relative">
+      <Link href="/" className="no-underline relative" style={{ overflow: 'visible', padding: '20px 0' }}>
+        <h1 className="display-text text-primary">Rolomind</h1>
       </Link>
       <div className="flex items-center gap-3">
         {contactCount > 0 && <ExportButton />}

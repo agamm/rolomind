@@ -39,7 +39,7 @@ export function DeleteConfirmationDialog({
         </DialogHeader>
         
         <div className="py-4">
-          <div className="rounded-lg border bg-gray-50 p-4 space-y-2">
+          <div className="rounded-lg border bg-muted p-4 space-y-2">
             <p className="font-medium text-gray-900">{contact.name}</p>
             {contact.company && (
               <p className="text-sm text-gray-600">{contact.company}</p>
