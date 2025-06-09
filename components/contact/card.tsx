@@ -111,19 +111,19 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
           {contact.role && (
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium" style={{ color: '#111827' }}>{contact.role}</span>
+              <span className="text-sm font-medium text-gray-900">{contact.role}</span>
             </div>
           )}
           {contact.company && (
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-gray-400" />
-              <span className="text-sm" style={{ color: '#6B7280' }}>{contact.company}</span>
+              <span className="text-sm text-gray-600">{contact.company}</span>
             </div>
           )}
           {contact.location && (
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm" style={{ color: '#6B7280' }}>{contact.location}</span>
+              <span className="text-sm text-gray-600">{contact.location}</span>
             </div>
           )}
         </div>
@@ -216,7 +216,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         )}
 
         {/* Metadata - Footer */}
-        <div className="pt-2 text-xs" style={{ color: '#9CA3AF' }}>
+        <div className="pt-2 text-xs text-gray-400">
           Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}
         </div>
       </div>

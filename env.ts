@@ -11,6 +11,5 @@ export const env = createEnv({
   runtimeEnv: {
     OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY,
   },
-  skipValidation: !!process.env.SKIP_ENV_VALIDATION,
   emptyStringAsUndefined: true,
 });

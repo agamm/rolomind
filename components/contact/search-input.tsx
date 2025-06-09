@@ -38,7 +38,7 @@ export function SearchInput({
         value={query} 
         onChange={handleChange} 
         placeholder={disabled ? "Clear AI results to use search" : placeholder} 
-        className="w-full pl-10 pr-10 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed" 
+        className="w-full pl-10 pr-10 py-2 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed h-9" 
         disabled={disabled}
       />
       {query && !disabled && (

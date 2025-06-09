@@ -4,6 +4,7 @@ import React from "react"
 import Link from "next/link"
 import { ImportButton } from "@/components/import"
 import { DeleteAllButton } from "@/components/delete"
+import { ThemeToggle } from "./theme-toggle"
 
 interface TopNavProps {
   contactCount: number
@@ -38,6 +39,7 @@ export function TopNav({
           onFileSelect={onFileSelect}
           isImporting={isImporting}
         />
+        <ThemeToggle />
       </div>
     </div>
   )

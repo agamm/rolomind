@@ -81,24 +81,30 @@
 }
 
 .dark {
-  --background: #09090B;
-  --foreground: #FAFAFA;
-  --card: #18181B;
-  --card-foreground: #FAFAFA;
-  --popover: #18181B;
-  --popover-foreground: #FAFAFA;
-  --primary: #A78BFA;
-  --primary-foreground: #09090B;
-  --secondary: #27272A;
-  --secondary-foreground: #FAFAFA;
-  --muted: #27272A;
-  --muted-foreground: #A1A1AA;
-  --accent: #27272A;
-  --accent-foreground: #FAFAFA;
+  --background: #2A1F3D;
+  --foreground: #F8FAFC;
+  --card: #3D2F5B;
+  --card-foreground: #F8FAFC;
+  --popover: #3D2F5B;
+  --popover-foreground: #F8FAFC;
+  --primary: #B794F4;
+  --primary-foreground: #0A0A0F;
+  --secondary: #4A3B6B;
+  --secondary-foreground: #F8FAFC;
+  --muted: #564680;
+  --muted-foreground: #E5D5FF;
+  --accent: #4A3B6B;
+  --accent-foreground: #F8FAFC;
   --destructive: #F87171;
-  --border: #27272A;
-  --input: #27272A;
-  --ring: #A78BFA;
+  --border: #564680;
+  --input: #3D2F5B;
+  --ring: #B794F4;
+  
+  /* Dark mode specific colors */
+  --dark-gradient-start: #3D2F5B;
+  --dark-gradient-end: #2A1F3D;
+  --dark-card-hover: #4A3B6B;
+  --dark-purple-glow: rgba(183, 148, 244, 0.15);
 }
 
 @layer base {
@@ -136,6 +142,14 @@
     radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
 }
 
+.dark .organic-bg {
+  background: linear-gradient(135deg, #2A1F3D 0%, #3D2F5B 50%, #2A1F3D 100%);
+  background-image: 
+    radial-gradient(circle at 20% 80%, rgba(183, 148, 244, 0.08) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
+}
+
 
 /* Modern primary button */
 .warm-button {
@@ -149,6 +163,46 @@
     0 1px 2px rgba(0, 0, 0, 0.05);
   animation: slideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* Theme toggle button styling to match other buttons */
+button[aria-label="Toggle theme"] {
+  background: var(--card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--foreground) !important;
+  padding: 0.5rem !important;
+  height: 2.25rem !important;
+  width: 2.25rem !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 0.375rem !important;
+  transition: all 0.2s ease !important;
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+button[aria-label="Toggle theme"]:hover {
+  background: var(--accent) !important;
+  border-color: var(--primary) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 
+    0 4px 8px rgba(139, 92, 246, 0.2),
+    0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Dark mode specific overrides for theme toggle */
+.dark button[aria-label="Toggle theme"] {
+  background: rgba(61, 47, 91, 0.8) !important;
+  border: 1px solid rgba(196, 181, 253, 0.3) !important;
+  color: #E9D5FF !important;
+}
+
+.dark button[aria-label="Toggle theme"]:hover {
+  background: rgba(74, 59, 107, 0.9) !important;
+  border-color: rgba(196, 181, 253, 0.4) !important;
+  color: #F3E8FF !important;
+}
+
 
 /* AI search form button - bright white */
 .ai-search-form .warm-button {
@@ -168,6 +222,24 @@
   box-shadow: 
     0 4px 12px rgba(0, 0, 0, 0.15),
     0 2px 4px rgba(0, 0, 0, 0.08);
+}
+
+/* Dark mode AI search form button */
+.dark .ai-search-form .warm-button {
+  background: linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%);
+  color: #1F2937;
+  border: 1px solid rgba(233, 213, 255, 0.3);
+  box-shadow: 
+    0 2px 8px rgba(233, 213, 255, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.dark .ai-search-form .warm-button:hover:not(:disabled) {
+  background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+  border-color: rgba(233, 213, 255, 0.5);
+  box-shadow: 
+    0 4px 12px rgba(233, 213, 255, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 @keyframes slideIn {
@@ -202,12 +274,13 @@
 
 /* Soft inputs */
 .soft-input {
-  @apply border rounded-xl px-4 py-3 text-base;
+  @apply border rounded-xl px-4 py-2 text-sm;
   background: var(--input);
   border-color: var(--border);
   color: var(--foreground);
   transition: all 0.2s ease;
   box-shadow: none;
+  height: 40px;
 }
 
 .soft-input:focus {
@@ -253,10 +326,36 @@
   transform: translateY(-1px);
 }
 
+/* Dark mode AI search form inputs */
+.dark .ai-search-form .soft-input {
+  background: linear-gradient(135deg, rgba(233, 213, 255, 0.15) 0%, rgba(216, 180, 254, 0.2) 50%, rgba(196, 181, 253, 0.15) 100%);
+  border: 2px solid rgba(233, 213, 255, 0.3);
+  color: #FFFFFF;
+  font-weight: 500;
+  box-shadow: 
+    inset 0 1px 3px rgba(233, 213, 255, 0.2),
+    0 2px 8px rgba(183, 148, 244, 0.2);
+}
+
+.dark .ai-search-form .soft-input:focus {
+  background: linear-gradient(135deg, rgba(243, 232, 255, 0.25) 0%, rgba(233, 213, 255, 0.3) 50%, rgba(221, 214, 254, 0.25) 100%);
+  border-color: rgba(233, 213, 255, 0.5);
+  box-shadow: 
+    inset 0 1px 3px rgba(233, 213, 255, 0.3),
+    0 0 0 4px rgba(233, 213, 255, 0.2),
+    0 4px 12px rgba(183, 148, 244, 0.25);
+}
+
 .ai-search-form .soft-input::placeholder {
   color: #6B7280;
   font-weight: 400;
   opacity: 0.8;
+}
+
+.dark .ai-search-form .soft-input::placeholder {
+  color: #1F2937;
+  font-weight: 600;
+  opacity: 1;
 }
 
 /* AI search form - default subtle purple matching logo */
@@ -280,6 +379,35 @@
     0 4px 6px -2px rgba(139, 92, 246, 0.06);
   transform: translateY(-1px);
   border-color: rgba(233, 213, 255, 0.7);
+}
+
+/* Dark mode AI search form - softer gradients */
+.dark .ai-search-form {
+  background: linear-gradient(135deg, 
+    rgba(107, 70, 193, 0.7) 0%, 
+    rgba(99, 62, 185, 0.75) 25%, 
+    rgba(91, 54, 177, 0.7) 50%, 
+    rgba(99, 62, 185, 0.75) 75%, 
+    rgba(107, 70, 193, 0.7) 100%);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 
+    0 4px 12px rgba(107, 70, 193, 0.2),
+    0 2px 6px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(196, 181, 253, 0.1);
+}
+
+.dark .ai-search-form:hover {
+  background: linear-gradient(135deg, 
+    rgba(124, 58, 237, 0.75) 0%, 
+    rgba(115, 50, 229, 0.8) 25%, 
+    rgba(107, 70, 193, 0.75) 50%, 
+    rgba(115, 50, 229, 0.8) 75%, 
+    rgba(124, 58, 237, 0.75) 100%);
+  box-shadow: 
+    0 6px 16px rgba(124, 58, 237, 0.25),
+    0 3px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(196, 181, 253, 0.15);
+  border-color: rgba(139, 92, 246, 0.4);
 }
 
 .ai-search-form h2 {
@@ -376,8 +504,187 @@
 }
 
 .dark .contact-card {
-  @apply bg-zinc-900/80;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.25) 0%, rgba(107, 90, 151, 0.3) 50%, rgba(87, 73, 131, 0.25) 100%);
+  border: 1px solid rgba(196, 181, 253, 0.4);
+  box-shadow: 
+    0 4px 12px rgba(0, 0, 0, 0.25),
+    0 2px 4px rgba(139, 92, 246, 0.2),
+    inset 0 1px 0 rgba(196, 181, 253, 0.1);
+  backdrop-filter: blur(12px);
+  color: #FFFFFF;
+}
+
+.dark .contact-card:hover {
+  background: linear-gradient(135deg, rgba(167, 139, 250, 0.3) 0%, rgba(139, 92, 246, 0.35) 50%, rgba(107, 90, 151, 0.3) 100%);
+  border-color: rgba(196, 181, 253, 0.5);
+  box-shadow: 
+    0 8px 20px rgba(139, 92, 246, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(196, 181, 253, 0.15);
+  transform: translateY(-2px);
+}
+
+/* Contact card text styling in dark mode */
+.dark .contact-card h3,
+.dark .contact-card .text-gray-900 {
+  color: #FFFFFF !important;
+  font-weight: 600;
+}
+
+.dark .contact-card .text-sm {
+  color: #F3E8FF !important;
+  font-weight: 500;
+}
+
+.dark .contact-card .text-gray-500,
+.dark .contact-card .text-gray-600,
+.dark .contact-card .text-muted-foreground {
+  color: #E9D5FF !important;
+  font-weight: 500;
+}
+
+.dark .contact-card .text-gray-400 {
+  color: #D8B4FE !important;
+}
+
+/* Notes section in dark mode */
+.dark .contact-card .bg-zinc-50 {
+  background: rgba(196, 181, 253, 0.15) !important;
+  border-color: rgba(196, 181, 253, 0.3) !important;
+  color: #F8FAFC !important;
+}
+
+.dark .contact-card .border-gray-100 {
+  border-color: rgba(196, 181, 253, 0.2) !important;
+}
+
+/* Notes text content in dark mode */
+.dark .contact-card .bg-zinc-50 .text-gray-900 {
+  color: #F8FAFC !important;
+  font-weight: 500;
+}
+
+/* Footer metadata text */
+.dark .contact-card [style*="#9CA3AF"] {
+  color: #C4B5FD !important;
+  font-weight: 500;
+}
+
+/* LinkedIn source badge styling in dark mode - override inline styles */
+.dark .contact-card span[style*="rgba(10, 102, 194"] {
+  background: rgba(139, 92, 246, 0.25) !important;
+  color: #E9D5FF !important;
+  border: 1px solid rgba(139, 92, 246, 0.4) !important;
+  font-weight: 600 !important;
+}
+
+/* LinkedIn external link button in dark mode */
+.dark .contact-card button[style*="#0A66C2"] {
+  color: #C4B5FD !important;
+}
+
+.dark .contact-card button[style*="#0A66C2"]:hover {
+  color: #E9D5FF !important;
+}
+
+/* All text content in contact cards should be readable in dark mode */
+.dark .contact-card * {
+  color: inherit;
+}
+
+/* Ensure all contact card text is bright in dark mode */
+.dark .contact-card .text-gray-900,
+.dark .contact-card .whitespace-pre-wrap {
+  color: #F8FAFC !important;
+  font-weight: 500;
+}
+
+/* Fix contact list heading visibility in dark mode */
+.dark h3 {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+/* Filter search input dark mode styling */
+.dark input[placeholder*="Filter results"] {
+  background: rgba(61, 47, 91, 0.8) !important;
+  border: 1px solid rgba(196, 181, 253, 0.3) !important;
+  color: #F8FAFC !important;
+}
+
+.dark input[placeholder*="Filter results"]:focus {
+  background: rgba(61, 47, 91, 0.9) !important;
+  border-color: rgba(196, 181, 253, 0.5) !important;
+  box-shadow: 0 0 0 3px rgba(196, 181, 253, 0.2) !important;
+}
+
+.dark input[placeholder*="Filter results"]::placeholder {
+  color: #C4B5FD !important;
+  opacity: 0.8;
+}
+
+/* Filter search icon in dark mode */
+.dark .text-gray-400 {
+  color: #C4B5FD !important;
+}
+
+/* Clear button in search input dark mode */
+.dark button .text-gray-400 {
+  color: #C4B5FD !important;
+}
+
+.dark button:hover .text-gray-600 {
+  color: #E9D5FF !important;
+}
+
+/* Contact card action buttons (edit/delete) dark mode */
+.dark .contact-card button[title="Edit contact"] {
+  background: rgba(139, 92, 246, 0.15) !important;
+  border: 1px solid rgba(139, 92, 246, 0.3) !important;
+  color: #E9D5FF !important;
+}
+
+.dark .contact-card button[title="Edit contact"]:hover {
+  background: rgba(139, 92, 246, 0.25) !important;
+  border-color: rgba(139, 92, 246, 0.4) !important;
+  color: #F3E8FF !important;
+}
+
+.dark .contact-card button[title="Delete contact"] {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.3) !important;
+  color: #FCA5A5 !important;
+}
+
+.dark .contact-card button[title="Delete contact"]:hover {
+  background: rgba(239, 68, 68, 0.25) !important;
+  border-color: rgba(239, 68, 68, 0.4) !important;
+  color: #FEB2B2 !important;
+}
+
+/* Main action buttons dark mode */
+.dark button:not(.warm-button):not([aria-label="Toggle theme"]) {
+  background: rgba(61, 47, 91, 0.8) !important;
+  border: 1px solid rgba(196, 181, 253, 0.3) !important;
+  color: #E9D5FF !important;
+}
+
+.dark button:not(.warm-button):not([aria-label="Toggle theme"]):hover {
+  background: rgba(74, 59, 107, 0.9) !important;
+  border-color: rgba(196, 181, 253, 0.4) !important;
+  color: #F3E8FF !important;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2) !important;
+}
+
+/* Improve job titles and company names visibility */
+.dark .contact-card div:has(svg) {
+  color: #F1E7FF;
+}
+
+.dark .contact-card span,
+.dark .contact-card p {
+  color: #E5D5FF;
 }
 
 .contact-card:hover {
@@ -486,12 +793,24 @@
     rgba(255, 255, 255, 0.95) 0%,
     rgba(252, 251, 255, 0.9) 100%);
   backdrop-filter: blur(20px);
-  border: 1px solid rgba(229, 231, 235, 0.6);
+  border: 1px solid rgba(139, 92, 246, 0.15);
   border-radius: 1.5rem;
   box-shadow: 
-    0 4px 12px rgba(139, 92, 246, 0.04),
-    0 2px 4px rgba(0, 0, 0, 0.02),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+    0 4px 16px rgba(139, 92, 246, 0.08),
+    0 2px 8px rgba(0, 0, 0, 0.04),
+    0 1px 2px rgba(139, 92, 246, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.dark .contact-list-container {
+  background: rgba(61, 47, 91, 0.4);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+  box-shadow: 
+    0 4px 20px rgba(0, 0, 0, 0.25),
+    0 2px 8px rgba(139, 92, 246, 0.15),
+    inset 0 1px 0 rgba(196, 181, 253, 0.1),
+    inset 0 -1px 0 rgba(75, 0, 130, 0.2);
 }
 
 /* Edit Modal Styles */
@@ -500,6 +819,17 @@
     rgba(249, 250, 251, 1) 0%,
     rgba(243, 244, 246, 1) 100%);
   border: 1px solid rgba(209, 213, 219, 0.8);
+}
+
+/* Dark mode dialog */
+.dark [role="dialog"] {
+  background: linear-gradient(135deg, 
+    rgba(26, 26, 36, 0.98) 0%,
+    rgba(31, 31, 46, 0.98) 100%);
+  border: 1px solid rgba(183, 148, 244, 0.2);
+  box-shadow: 
+    0 25px 50px -12px rgba(0, 0, 0, 0.5),
+    0 10px 25px rgba(183, 148, 244, 0.1);
 }
 
 [role="dialog"] input[type="text"],
@@ -522,6 +852,29 @@
   box-shadow: 
     0 0 0 3px rgba(139, 92, 246, 0.1),
     0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+/* Dark mode dialog inputs */
+.dark [role="dialog"] input[type="text"],
+.dark [role="dialog"] input[type="email"],
+.dark [role="dialog"] input[type="url"],
+.dark [role="dialog"] input:not([type]),
+.dark [role="dialog"] textarea {
+  background: rgba(31, 31, 46, 0.8);
+  border-color: rgba(183, 148, 244, 0.2);
+  color: #FAFAFA;
+}
+
+.dark [role="dialog"] input[type="text"]:focus,
+.dark [role="dialog"] input[type="email"]:focus,
+.dark [role="dialog"] input[type="url"]:focus,
+.dark [role="dialog"] input:not([type]):focus,
+.dark [role="dialog"] textarea:focus {
+  background: rgba(45, 45, 66, 0.9);
+  border-color: #B794F4;
+  box-shadow: 
+    0 0 0 3px rgba(183, 148, 244, 0.2),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 [role="dialog"] label {
@@ -555,6 +908,17 @@
 .ai-search-form [role="switch"][data-state="checked"] {
   background-color: rgba(255, 255, 255, 0.9);
   border: 1px solid rgba(255, 255, 255, 1);
+}
+
+/* Dark mode toggle */
+.dark .ai-search-form [role="switch"] {
+  background-color: rgba(31, 31, 46, 0.6);
+  border: 1px solid rgba(183, 148, 244, 0.2);
+}
+
+.dark .ai-search-form [role="switch"][data-state="checked"] {
+  background-color: #B794F4;
+  border: 1px solid #9F7AEA;
 }
 
 .ai-search-form label {
