@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server"
-import { readFile } from "fs/promises"
-import path from "path"
 import { Contact } from "@/types/contact"
+import { getAllContacts } from "@/db"
 
 function escapeCsvField(field: string | undefined): string {
   if (!field) return ''
@@ -14,9 +13,7 @@ function escapeCsvField(field: string | undefined): string {
 
 export async function GET() {
   try {
-    const filePath = path.join(process.cwd(), 'data', 'contacts.json')
-    const fileContent = await readFile(filePath, 'utf-8')
-    const contacts: Contact[] = JSON.parse(fileContent)
+    const contacts: Contact[] = await getAllContacts()
     
     // Create CSV header
     const headers = [

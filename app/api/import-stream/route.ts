@@ -4,7 +4,7 @@ import * as linkedinParser from "../import/parsers/linkedin-parser"
 import * as rolodexParser from "../import/parsers/rolodex-parser"
 import * as googleParser from "../import/parsers/google-parser"
 import { Contact } from '@/types/contact'
-import { loadExistingContacts } from '@/lib/contacts-storage'
+import { getAllContacts } from '@/db'
 import { findDuplicates } from '@/lib/contact-merger'
 import { createJsonStream } from '@/lib/stream-utils'
 
@@ -85,7 +85,7 @@ export async function POST(request: NextRequest) {
       }
       
       // Load existing contacts and find duplicates
-      const existingContacts = await loadExistingContacts()
+      const existingContacts = await getAllContacts()
       
       const contactsWithDuplicates = normalizedContacts.map(contact => {
         const duplicates = findDuplicates(existingContacts, contact)
@@ -129,7 +129,7 @@ export async function POST(request: NextRequest) {
     contacts = googleParser.parse(text)
   }
   
-  const existingContacts = await loadExistingContacts()
+  const existingContacts = await getAllContacts()
   
   const contactsWithDuplicates = contacts.map(contact => {
     const duplicates = findDuplicates(existingContacts, contact)

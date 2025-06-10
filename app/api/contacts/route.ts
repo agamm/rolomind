@@ -1,19 +1,12 @@
 import type { Contact } from "@/types/contact"
 import { NextRequest } from "next/server"
-import { readContacts, writeContacts, deleteContact, updateContact } from "@/lib/contacts-file-lock"
+import { getAllContacts, createContact, deleteContact, deleteAllContacts, updateContact } from "@/db"
 
 export async function GET() {
   try {
-    const contacts = await readContacts()
+    const contacts = await getAllContacts()
 
-    // Convert string dates back to Date objects
-    const processedContacts = contacts.map((contact) => ({
-      ...contact,
-      createdAt: new Date(contact.createdAt),
-      updatedAt: new Date(contact.updatedAt),
-    }))
-
-    return Response.json({ contacts: processedContacts, success: true })
+    return Response.json({ contacts, success: true })
   } catch (error) {
     console.error("Error loading contacts:", error)
     return Response.json({ contacts: [], success: false, error: "Failed to load contacts" }, { status: 500 })
@@ -28,7 +21,10 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: "Invalid contacts data" }, { status: 400 })
     }
 
-    await writeContacts(contacts)
+    // Save each contact to database
+    for (const contact of contacts) {
+      await createContact(contact)
+    }
     
     return Response.json({ success: true })
   } catch (error) {
@@ -44,18 +40,11 @@ export async function DELETE(request: NextRequest) {
     
     if (!contactId) {
       // If no ID provided, delete all contacts
-      await writeContacts([])
+      await deleteAllContacts()
       return Response.json({ success: true, message: "All contacts deleted" })
     }
     
-    const deleted = await deleteContact(contactId)
-    
-    if (!deleted) {
-      return Response.json(
-        { success: false, error: "Contact not found" },
-        { status: 404 }
-      )
-    }
+    await deleteContact(contactId)
     
     return Response.json({ success: true, message: "Contact deleted successfully" })
   } catch (error) {
@@ -75,18 +64,11 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    const updatedContact = await updateContact(contact)
-    
-    if (!updatedContact) {
-      return Response.json(
-        { success: false, error: "Contact not found" },
-        { status: 404 }
-      )
-    }
+    await updateContact(contact)
 
     return Response.json({
       success: true,
-      contact: updatedContact
+      contact
     })
   } catch (error) {
     console.error("Error updating contact:", error)

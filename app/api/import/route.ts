@@ -1,6 +1,4 @@
 import { NextRequest, NextResponse } from "next/server"
-import { promises as fs } from "fs"
-import path from "path"
 import Papa from 'papaparse'
 import * as linkedinParser from "./parsers/linkedin-parser"
 import * as rolodexParser from "./parsers/rolodex-parser"
@@ -8,22 +6,7 @@ import * as googleParser from "./parsers/google-parser"
 import * as customParser from "./parsers/custom-parser"
 import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
-
-const dataFilePath = path.join(process.cwd(), "data", "contacts.json")
-
-async function loadExistingContacts(): Promise<Contact[]> {
-  try {
-    const dataDir = path.dirname(dataFilePath)
-    await fs.mkdir(dataDir, { recursive: true })
-    const data = await fs.readFile(dataFilePath, "utf-8")
-    return JSON.parse(data) as Contact[]
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") {
-      return []
-    }
-    throw error
-  }
-}
+import { getAllContacts, createContact } from "@/db"
 
 
 export async function POST(request: NextRequest) {
@@ -109,7 +92,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Load existing contacts
-    const existingContacts = await loadExistingContacts()
+    const existingContacts = await getAllContacts()
 
     // Find duplicates
     const contactsWithDuplicates = normalizedContacts.map(contact => {
@@ -160,29 +143,13 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Load existing contacts
-    const existingContacts = await loadExistingContacts()
-    
-    // Create a map for faster lookup
-    const existingMap = new Map(existingContacts.map(c => [c.id, c]))
-    
-    // Process contacts (either new or merged)
+    // Save each contact to database
     for (const contact of contacts) {
-      // Simply set by ID - merged contacts will replace existing ones
-      existingMap.set(contact.id, contact)
+      await createContact(contact)
     }
-    
-    // Convert back to array
-    const finalContacts = Array.from(existingMap.values())
-    
-    // Save to file
-    const dataDir = path.dirname(dataFilePath)
-    await fs.mkdir(dataDir, { recursive: true })
-    await fs.writeFile(dataFilePath, JSON.stringify(finalContacts, null, 2))
     
     return NextResponse.json({ 
       success: true,
-      totalContacts: finalContacts.length,
       saved: contacts.length
     })
   } catch (error) {
