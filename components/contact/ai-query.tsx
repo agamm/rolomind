@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Contact } from "@/types/contact"
 import { Loader2, Sparkles, X } from "lucide-react"
 import { useSummaryGeneration } from "@/hooks/use-summary-generation"
