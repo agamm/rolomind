@@ -6,9 +6,12 @@ import type { Contact } from '@/types/contact';
 import { contacts } from './schema';
 import { env } from '@/lib/env';
 
+// For local development with SQLite, we don't need authToken
+const isLocalSqlite = env.DATABASE_URL?.startsWith('file:');
+
 const client = createClient({
   url: env.DATABASE_URL!,
-  authToken: env.DATABASE_AUTH_TOKEN,
+  authToken: isLocalSqlite ? undefined : env.DATABASE_AUTH_TOKEN,
 });
 
 export const db = drizzle(client, { schema });

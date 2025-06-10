@@ -30,6 +30,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
   const [isStopping, setIsStopping] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
   const timerRef = React.useRef<NodeJS.Timeout | null>(null)
+  const inputRef = React.useRef<HTMLInputElement>(null)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
   const { processResults, isProcessing: isProcessingResults, reset: resetProcessing } = useResultsProcessing()
   
@@ -64,6 +65,11 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
     setTimeout(() => setIsStopping(false), 500)
   }
   
+  // Focus input on mount
+  useEffect(() => {
+    inputRef.current?.focus()
+  }, [])
+
   // Timer effect
   useEffect(() => {
     if (isSearching) {
@@ -103,6 +109,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
       // Search just completed, process results
       processResults(query, results).then(processedResults => {
         if (processedResults) {
+          // Process results already returns the sorted results with reasons preserved
           onResults?.(processedResults)
           if (enableSummary) {
             generateSummary(processedResults, query)
@@ -130,6 +137,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2 items-center">
             <input
+              ref={inputRef}
               placeholder="e.g., 'CEOs in Israel', 'software engineers at startups'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
@@ -140,7 +148,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               <button 
                 type="submit" 
                 disabled={isSearching || contacts.length === 0}
-                className="warm-button whitespace-nowrap px-6 h-[50px] flex items-center justify-center"
+                className="warm-button whitespace-nowrap px-4 h-[42px] flex items-center justify-center text-sm"
               >
               {isSearching ? (
                 <>
