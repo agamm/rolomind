@@ -1,6 +1,6 @@
 # Rolomind - AI-Powered Contact Management
 
-A modern contact management system with AI-powered features including smart search, voice notes, and intelligent contact merging.
+AI contact management system (Rolodex) including AI search, contact voice edits, and intelligent contact import.
 
 ## Features
 
@@ -10,6 +10,10 @@ A modern contact management system with AI-powered features including smart sear
 - 🔄 **Intelligent Merging** - AI-powered duplicate detection and smart contact merging
 - 📥 **CSV Import** - Import contacts from LinkedIn and other CSV formats
 - 📤 **Export Functionality** - Export your contacts back to CSV (use anywhere, ChatGPT/Claude/Gemini...)
+
+## Rolomind.com
+Instead of installing and running the app locally, you can use [rolomind.com](https://rolomind.com?ref=github).
+Pricing is usage-based + % fee, so you pay only for the AI costs you incur.
 
 ## Prerequisites
 
@@ -21,128 +25,56 @@ A modern contact management system with AI-powered features including smart sear
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/rolomind.git
+   git clone https://github.com/agamm/rolomind.git
    cd rolomind
    ```
 
 2. **Install dependencies**
    ```bash
-   npm install
-   # or
-   yarn install
+   npm install --force
    ```
 
 3. **Set up environment variables**
    
    Create a `.env` file in the root directory:
-   ```env
-   # Required: OpenRouter API Key for AI features
-   # Get your key at: https://openrouter.ai/api-keys
-   OPENROUTER_API_KEY=sk-...
+   ```bash
+   mv .env.example .env
    ```
 
-## Getting API Keys
-
-### OpenRouter API Key (Required)
-1. Go to [OpenRouter](https://openrouter.ai/)
-2. Sign up or log in to your account
-3. Navigate to [API Keys](https://openrouter.ai/api-keys)
-4. Click "Create Key"
-5. Copy the key and add it to your `.env` file
-
-Note: Voice transcription features are currently disabled as OpenRouter doesn't support Whisper models.
+   Edit the `.env` file and add your API keys:
+   - AI LLM (OpenRouter): https://openrouter.ai/api-keys
+   - Voice LLM (OpenAI): https://platform.openai.com/api-keys
 
 ## Running the Application
 
 1. **Start the development server**
    ```bash
    npm run dev
-   # or
-   yarn dev
    ```
 
 2. **Open your browser**
    
    Navigate to [http://localhost:3000](http://localhost:3000)
 
-## Usage Guide
-
-### Importing Contacts
-
-1. Click the "Import CSV" button in the top navigation
-2. Select a CSV file (supports LinkedIn exports and general CSV formats)
-3. The AI will automatically detect the format and normalize the data
-4. Review and merge any duplicate contacts
-
-### AI-Powered Search
-
-1. Use the AI Contact Search box at the top of the page
-2. Enter natural language queries like:
-   - "CEOs in tech companies"
-   - "Marketing managers in New York"
-   - "People I connected with last month"
-3. Toggle "Generate AI summary after search" for insights about your search results
-
-### Adding Voice Notes
-
-1. Click the edit icon on any contact card
-2. Click the microphone button
-3. Record your note (e.g., "Just had coffee with John, he's interested in our new product")
-4. The AI will transcribe and intelligently merge the information
-
-### Managing Duplicates
-
-When importing contacts, the system will:
-- Automatically detect duplicates by email, phone, or name
-- Show you a side-by-side comparison
-- Provide an AI-powered merge preview
-- Let you choose to merge, skip, or keep both
-
-## Project Structure
-
-```
-rolodex/
-├── app/                    # Next.js app directory
-│   ├── api/               # API routes
-│   ├── page.tsx           # Main page
-│   └── layout.tsx         # Root layout
-├── components/            # React components
-│   ├── contact/          # Contact-related components
-│   ├── import/           # Import flow components
-│   └── ui/               # Shadcn UI components
-├── lib/                   # Utility functions
-│   ├── csv-parsers/      # CSV parsing logic
-│   └── contact-merger.ts # Contact merging logic
-├── hooks/                 # Custom React hooks
-└── types/                 # TypeScript type definitions
-```
-
-## Development
-
-### Available Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run type-check` - Run TypeScript compiler check
 
 ### Technology Stack
 
-- **Framework**: Next.js 14 with App Router
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS
-- **UI Components**: Shadcn/ui
-- **AI Integration**: Vercel AI SDK
+- **Framework**: Next.js 15 with App Router
+- **Styling/UI**: Tailwind CSS / Shadcn
+- **AI Integration**: Vercel AI SDK via openrouter.
 - **AI Models**: Anthropic Claude (primary), OpenAI Whisper (voice)
 - **State Management**: React Query (TanStack Query)
-- **Notifications**: Sonner
+- **Authentication**: Better-auth
+- **Database**: DrizzleORM with libsql, production Turso.
+- **Deployment**: Vercel
+- **Testing**: Vitest
+- **Payment**: Polar
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **"ANTHROPIC_API_KEY is not set" error**
+1. **"OPENROUTER_API_KEY is not set" error**
    - Make sure you've created a `.env` file in the root directory
    - Verify your API key is correct and active
 
@@ -158,6 +90,8 @@ rolodex/
 
 Contributions are welcome! Please feel free to submit a Pull Request.
 
+See NEXT-STEPS.md for next steps I plan to tackle.
+
 ## License
 
-This project is licensed under the MIT License.
+This project is licensed under the GNU AFFERO GENERAL PUBLIC LICENSE v3 License. See LICENSE for details about commercial use.
