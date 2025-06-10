@@ -105,7 +105,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // Use streaming for custom parser (AI)
       if (parserType === 'custom' || parserType === 'llm-normalizer') {
-        const processResponse = await fetch('/api/import-stream?phase=process', {
+        const processResponse = await fetch('/api/import-ai-stream?phase=process', {
           method: 'POST',
           body: formData
         })

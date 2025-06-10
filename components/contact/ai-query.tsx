@@ -138,7 +138,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           <div className="flex gap-2 items-center">
             <input
               ref={inputRef}
-              placeholder="e.g., 'CEOs in Israel', 'software engineers at startups'"
+              placeholder="e.g., 'CEOs in Dallas', 'software engineers at startups'"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               disabled={isSearching}

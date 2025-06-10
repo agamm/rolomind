@@ -62,7 +62,7 @@ LinkedIn dates format: "LinkedIn connected: DD-Mon-YY" where YY = 20YY (25=2025,
 
 KEY EXAMPLES:
 1. "non descriptive contact names" → Match placeholders like "tmp", "Contact 123", NOT real names like "John Smith"
-2. "CEOs in Israel" → BOTH role=CEO AND location contains Israel
+2. "CEOs in Dallas" → BOTH role=CEO AND location contains Dallas
 3. "connected before 2024" → LinkedIn date in 2023 or earlier (NOT "9-May-25" which is 2025!)
 4. "developers before 2024 from linkedin" → developer role AND LinkedIn date before 2024
 
