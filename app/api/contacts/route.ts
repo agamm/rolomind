@@ -1,6 +1,6 @@
 import type { Contact } from "@/types/contact"
 import { NextRequest } from "next/server"
-import { getAllContacts, createContact, deleteContact, deleteAllContacts, updateContact } from "@/db"
+import { getAllContacts, createContactsBatch, deleteContact, deleteAllContacts, updateContact } from "@/db"
 
 export async function GET() {
   try {
@@ -21,10 +21,8 @@ export async function POST(request: NextRequest) {
       return Response.json({ success: false, error: "Invalid contacts data" }, { status: 400 })
     }
 
-    // Save each contact to database
-    for (const contact of contacts) {
-      await createContact(contact)
-    }
+    // Save all contacts in a single batch
+    await createContactsBatch(contacts)
     
     return Response.json({ success: true })
   } catch (error) {

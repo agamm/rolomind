@@ -6,7 +6,7 @@ import * as googleParser from "./parsers/google-parser"
 import * as customParser from "./parsers/custom-parser"
 import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
-import { getAllContacts, createContact } from "@/db"
+import { getAllContacts, createContactsBatch } from "@/db"
 
 
 export async function POST(request: NextRequest) {
@@ -143,10 +143,8 @@ export async function PUT(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Save each contact to database
-    for (const contact of contacts) {
-      await createContact(contact)
-    }
+    // Save all contacts in a single batch
+    await createContactsBatch(contacts)
     
     return NextResponse.json({ 
       success: true,

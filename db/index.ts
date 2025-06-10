@@ -76,8 +76,14 @@ export async function getContactById(id: string): Promise<Contact | null> {
   return dbContact ? dbToContact(dbContact) : null;
 }
 
-export async function createContact(contact: Contact): Promise<void> {
-  await db.insert(contacts).values(contactToDb(contact));
+export async function createContactsBatch(contactList: Contact[]): Promise<void> {
+  if (contactList.length === 0) return;
+  
+  // Convert all contacts to database format
+  const dbContacts = contactList.map(contact => contactToDb(contact));
+  
+  // Insert all contacts in a single query
+  await db.insert(contacts).values(dbContacts);
 }
 
 export async function updateContact(contact: Contact): Promise<void> {
