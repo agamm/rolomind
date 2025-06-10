@@ -2,25 +2,31 @@ import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
 
 export function isApplicableParser(headers: string[]): boolean {
-  // Check if this is a Rolomind export by looking for our specific headers
-  const requiredHeaders = [
-    'Name', 
-    'Company', 
-    'Role', 
-    'Location', 
-    'Emails', 
-    'Phones', 
-    'LinkedIn URL',
-    'Other URLs',
-    'Notes',
-    'Source',
-    'Created Date',
-    'Updated Date'
+  // Check if this is a simple contacts CSV with common headers
+  // This parser handles CSVs with Name, Company, Title/Role, Email, etc.
+  // Also handles the app's own export format with plural fields
+  
+  // Check for required fields - must have Name and either Email/Emails
+  const hasName = headers.some(h => h.toLowerCase() === 'name')
+  const hasEmail = headers.some(h => h.toLowerCase() === 'email' || h.toLowerCase() === 'emails')
+  const hasCompany = headers.some(h => h.toLowerCase() === 'company')
+  
+  // Must have name and email at minimum
+  if (!hasName || !hasEmail) return false
+  
+  // Check for optional headers that indicate this is a Rolodex-style CSV
+  const optionalHeaders = [
+    'title', 'role', 'phone', 'phones', 'linkedin', 'linkedin url', 
+    'location', 'notes', 'other urls', 'source', 'created date', 'updated date'
   ]
   
-  // All headers must match exactly (order doesn't matter)
-  return requiredHeaders.every(header => headers.includes(header)) && 
-         headers.length === requiredHeaders.length
+  // Should have at least one optional header to distinguish from too-simple CSVs
+  const hasOptionalHeaders = optionalHeaders.some(header =>
+    headers.some(h => h.toLowerCase() === header)
+  )
+  
+  // If it has Company and at least one optional field, it's likely a Rolodex CSV
+  return hasCompany && hasOptionalHeaders
 }
 
 export function parse(csvContent: string): Contact[] {
@@ -35,12 +41,14 @@ export function parse(csvContent: string): Contact[] {
   }
 
   return parseResult.data.map((row, index) => {
-      // Parse semi-colon separated values
-      const emails = row["Emails"] ? row["Emails"].split(';').map(e => e.trim()).filter(Boolean) : []
-      const phones = row["Phones"] ? row["Phones"].split(';').map(p => p.trim()).filter(Boolean) : []
+      // Handle single values (simple CSV format)
+      const emails = row["Email"] ? [row["Email"].trim()] : 
+                    (row["Emails"] ? row["Emails"].split(';').map(e => e.trim()).filter(Boolean) : [])
+      const phones = row["Phone"] ? [row["Phone"].trim()] :
+                    (row["Phones"] ? row["Phones"].split(';').map(p => p.trim()).filter(Boolean) : [])
       
-      // Parse LinkedIn URL
-      const linkedinUrl = row["LinkedIn URL"] || undefined
+      // Parse LinkedIn URL - handle both "LinkedIn" and "LinkedIn URL" columns
+      const linkedinUrl = row["LinkedIn URL"] || row["LinkedIn"] || undefined
       
       // Parse other URLs
       const otherUrlsString = row["Other URLs"] || ""
@@ -65,7 +73,7 @@ export function parse(csvContent: string): Contact[] {
         id: `rolodex-${Date.now()}-${index}-${Math.random().toString(36).substring(2, 11)}`,
         name: row["Name"] || `Contact ${index + 1}`,
         company: row["Company"] || undefined,
-        role: row["Role"] || undefined,
+        role: row["Role"] || row["Title"] || undefined,
         location: row["Location"] || undefined,
         contactInfo: {
           emails,

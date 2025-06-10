@@ -2,21 +2,34 @@ import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
 
 export function isApplicableParser(headers: string[]): boolean {
-  // Google Contacts CSV has very specific headers
-  const requiredHeaders = ['First Name', 'Last Name', 'Organization Name', 'E-mail 1 - Value']
-  const googleSpecificHeaders = ['Phonetic First Name', 'Organization Title', 'E-mail 1 - Label', 'Phone 1 - Label']
+  // Google Contacts CSV has very specific headers with numbered patterns
+  const googlePatterns = [
+    'E-mail \\d+ - Value',
+    'Phone \\d+ - Value',
+    'Organization \\d+ - Name',
+    'Address \\d+ - Formatted',
+    'Website \\d+ - Value',
+    'Relation \\d+ - Value'
+  ]
   
-  // Check if we have the core Google headers
-  const hasRequiredHeaders = requiredHeaders.some(header => 
-    headers.some(h => h.includes(header))
+  // Also check for name fields (either old or new format)
+  const hasNameFields = (
+    headers.includes('First Name') && headers.includes('Last Name')
+  ) || (
+    headers.includes('Given Name') && headers.includes('Family Name')
   )
   
-  // Check if we have some Google-specific headers
-  const hasGoogleHeaders = googleSpecificHeaders.some(header =>
-    headers.some(h => h.includes(header))
-  )
+  // Count how many Google-specific patterns we match
+  let matchCount = 0
+  for (const pattern of googlePatterns) {
+    const regex = new RegExp(pattern)
+    if (headers.some(h => regex.test(h))) {
+      matchCount++
+    }
+  }
   
-  return hasRequiredHeaders && hasGoogleHeaders
+  // If we have name fields and match at least 2 Google patterns, it's likely a Google CSV
+  return hasNameFields && matchCount >= 2
 }
 
 export function parse(csvContent: string): Contact[] {
@@ -31,31 +44,33 @@ export function parse(csvContent: string): Contact[] {
   }
 
   return parseResult.data.map((row, index) => {
-      // Build full name from parts
+      // Build full name from parts or use Name field directly
       const nameParts = [
         row["Name Prefix"],
-        row["First Name"],
-        row["Middle Name"],
-        row["Last Name"],
+        row["First Name"] || row["Given Name"],
+        row["Middle Name"] || row["Additional Name"],
+        row["Last Name"] || row["Family Name"], 
         row["Name Suffix"]
       ].filter(Boolean).join(' ').trim()
       
-      const fullName = nameParts || row["Nickname"] || `Contact ${index + 1}`
+      const fullName = row["Name"] || nameParts || row["Nickname"] || `Contact ${index + 1}`
 
       // Extract emails
       const emails: string[] = []
-      if (row["E-mail 1 - Value"]) emails.push(row["E-mail 1 - Value"])
-      if (row["E-mail 2 - Value"]) emails.push(row["E-mail 2 - Value"])
+      for (let i = 1; i <= 5; i++) {
+        if (row[`E-mail ${i} - Value`]) emails.push(row[`E-mail ${i} - Value`])
+      }
 
       // Extract phones
       const phones: string[] = []
-      if (row["Phone 1 - Value"]) phones.push(row["Phone 1 - Value"])
-      if (row["Phone 2 - Value"]) phones.push(row["Phone 2 - Value"])
+      for (let i = 1; i <= 5; i++) {
+        if (row[`Phone ${i} - Value`]) phones.push(row[`Phone ${i} - Value`])
+      }
 
       // Extract company and role
-      const company = row["Organization Name"] || undefined
-      const role = row["Organization Title"] || undefined
-      const department = row["Organization Department"]
+      const company = row["Organization Name"] || row["Organization 1 - Name"] || undefined
+      const role = row["Organization Title"] || row["Organization 1 - Title"] || undefined
+      const department = row["Organization Department"] || row["Organization 1 - Department"]
       
       // Extract location from address
       const location = row["Address 1 - City"] || row["Address 1 - Formatted"] || undefined
