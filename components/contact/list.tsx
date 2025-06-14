@@ -12,9 +12,10 @@ import { BulkDeleteDialog } from "@/components/delete/bulk-delete-dialog"
 import { Upload, Edit3, CheckSquare, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePagination } from "@/hooks/use-pagination"
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
+import { useUpdateContact, useDeleteContact } from "@/hooks/use-local-contacts"
 import { ExportQueryButton } from "@/components/export/export-query-button"
+import { deleteContactsBatch } from "@/db/local/contacts"
 
 interface ContactListProps {
   contacts: Contact[]
@@ -32,127 +33,48 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
   const [showCheckboxes, setShowCheckboxes] = useState(false)
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
-  const queryClient = useQueryClient()
+  const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  
+  const updateContactMutation = useUpdateContact()
+  const deleteContactMutation = useDeleteContact()
 
-  const deleteContactMutation = useMutation({
-    mutationFn: async (contactId: string) => {
-      const response = await fetch(`/api/contacts?id=${contactId}`, {
-        method: 'DELETE',
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete contact')
-      }
-      
-      return response.json()
-    },
-    onSuccess: async () => {
-      // Immediately update the cache before refetching
-      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
-        if (!oldData) return []
-        return oldData.filter(c => c.id !== deletingContact?.id)
-      })
-      
-      // Then invalidate to ensure we get fresh data from server
-      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success('Contact deleted successfully')
-      setDeletingContact(null)
-    },
-    onError: (error) => {
-      toast.error('Failed to delete contact')
-      console.error('Delete error:', error)
-    }
-  })
-
-  const bulkDeleteMutation = useMutation({
-    mutationFn: async (contactIds: string[]) => {
-      let deleted = 0
-      let failed = 0
-      
-      // Delete contacts sequentially to avoid file lock issues
-      for (const id of contactIds) {
-        try {
-          const response = await fetch(`/api/contacts?id=${id}`, { method: 'DELETE' })
-          if (response.ok) {
-            deleted++
-          } else {
-            failed++
-          }
-        } catch (error) {
-          console.error(`Failed to delete contact ${id}:`, error)
-          failed++
-        }
-      }
-      
-      if (failed > 0 && deleted === 0) {
-        throw new Error(`Failed to delete all ${failed} contacts`)
-      }
-      
-      return { deleted, failed }
-    },
-    onSuccess: async (data) => {
-      // Immediately update the cache before refetching
-      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
-        if (!oldData) return []
-        return oldData.filter(c => !selectedContacts.has(c.id))
-      })
-      
-      // Then invalidate to ensure we get fresh data from server
-      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
-      
-      if (data.failed > 0) {
-        toast.warning(`Deleted ${data.deleted} contacts, ${data.failed} failed`)
-      } else {
-        toast.success(`Successfully deleted ${data.deleted} contacts`)
-      }
-      
-      setSelectedContacts(new Set())
-      setShowCheckboxes(false)
-      setShowBulkDelete(false)
-    },
-    onError: (error) => {
-      toast.error(error.message || 'Failed to delete contacts')
-      console.error('Bulk delete error:', error)
-      setShowBulkDelete(false)
-    }
-  })
-
-  const updateContactMutation = useMutation({
-    mutationFn: async (updatedContact: Contact) => {
-      const response = await fetch('/api/contacts', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedContact)
-      })
-      
-      if (!response.ok) {
-        throw new Error('Failed to update contact')
-      }
-      
-      const data = await response.json()
-      return data.contact // Return the actual contact from the response
-    },
-    onSuccess: async (returnedContact) => {
-      // Immediately update the cache with the returned contact
-      queryClient.setQueryData(['contacts'], (oldData: Contact[] | undefined) => {
-        if (!oldData) return []
-        return oldData.map(c => c.id === returnedContact.id ? {
-          ...returnedContact,
-          createdAt: new Date(returnedContact.createdAt),
-          updatedAt: new Date(returnedContact.updatedAt)
-        } : c)
-      })
-      
-      // Then invalidate to ensure we get fresh data from server
-      await queryClient.invalidateQueries({ queryKey: ['contacts'] })
+  const handleUpdateContact = async (updatedContact: Contact) => {
+    try {
+      await updateContactMutation.mutateAsync(updatedContact)
       toast.success('Contact updated successfully')
       setEditingContact(null)
-    },
-    onError: (error) => {
+    } catch (error) {
       toast.error('Failed to update contact')
       console.error('Update error:', error)
     }
-  })
+  }
+
+  const handleDeleteContact = async (contactId: string) => {
+    try {
+      await deleteContactMutation.mutateAsync(contactId)
+      toast.success('Contact deleted successfully')
+      setDeletingContact(null)
+    } catch (error) {
+      toast.error('Failed to delete contact')
+      console.error('Delete error:', error)
+    }
+  }
+
+  const handleBulkDelete = async (contactIds: string[]) => {
+    setIsBulkDeleting(true)
+    try {
+      await deleteContactsBatch(contactIds)
+      toast.success(`Deleted ${contactIds.length} contacts`)
+      setSelectedContacts(new Set())
+      setShowCheckboxes(false)
+      setShowBulkDelete(false)
+    } catch (error) {
+      toast.error('Failed to delete contacts')
+      console.error('Bulk delete error:', error)
+    } finally {
+      setIsBulkDeleting(false)
+    }
+  }
 
   const filteredContacts = React.useMemo(() => {
     // Start with either AI results or all contacts
@@ -393,7 +315,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
         contact={editingContact}
         isOpen={!!editingContact}
         onClose={() => setEditingContact(null)}
-        onSave={updateContactMutation.mutate}
+        onSave={handleUpdateContact}
         onDelete={setDeletingContact}
       />
       
@@ -405,24 +327,24 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
           setSelectedContacts(new Set())
           setShowCheckboxes(false)
         }}
-        onSave={updateContactMutation.mutate}
+        onSave={handleUpdateContact}
         onDelete={setDeletingContact}
       />
       
       <DeleteConfirmationDialog
         isOpen={!!deletingContact}
         contact={deletingContact}
-        onConfirm={() => deletingContact && deleteContactMutation.mutate(deletingContact.id)}
+        onConfirm={() => deletingContact && handleDeleteContact(deletingContact.id)}
         onCancel={() => setDeletingContact(null)}
-        isDeleting={deleteContactMutation.isPending}
+        isDeleting={false}
       />
       
       <BulkDeleteDialog
         isOpen={showBulkDelete}
         count={selectedContacts.size}
-        onConfirm={() => bulkDeleteMutation.mutate(Array.from(selectedContacts))}
+        onConfirm={() => handleBulkDelete(Array.from(selectedContacts))}
         onCancel={() => setShowBulkDelete(false)}
-        isDeleting={bulkDeleteMutation.isPending}
+        isDeleting={isBulkDeleting}
       />
     </div>
   )

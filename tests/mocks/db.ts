@@ -16,6 +16,15 @@ mockDeleteContact.mockResolvedValue(undefined)
 mockDeleteAllContacts.mockResolvedValue(undefined)
 
 // Mock the db module
+vi.mock('@/db/local/contacts', () => ({
+  getAllContacts: mockGetAllContacts,
+  createContactsBatch: mockCreateContactsBatch,
+  updateContact: mockUpdateContact,
+  deleteContact: mockDeleteContact,
+  deleteAllContacts: mockDeleteAllContacts
+}))
+
+// Also mock the old path for backward compatibility
 vi.mock('@/db', () => ({
   getAllContacts: mockGetAllContacts,
   createContactsBatch: mockCreateContactsBatch,

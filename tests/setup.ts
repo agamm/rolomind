@@ -1,8 +1,4 @@
 import { beforeEach, afterEach, vi } from 'vitest'
-import { createClient } from '@libsql/client'
-import { drizzle } from 'drizzle-orm/libsql'
-import { migrate } from 'drizzle-orm/libsql/migrator'
-import * as schema from '@/db/schema'
 
 // Mock environment variables
 vi.mock('@/lib/env', () => ({
@@ -25,33 +21,50 @@ vi.mock('next/navigation', () => ({
   }),
 }))
 
-// Global test database instance
-let testDb: ReturnType<typeof drizzle>
+// Mock Dexie for tests
+vi.mock('dexie', () => {
+  const mockDb = {
+    contacts: {
+      toArray: vi.fn().mockResolvedValue([]),
+      get: vi.fn().mockResolvedValue(undefined),
+      add: vi.fn().mockResolvedValue('mock-id'),
+      bulkAdd: vi.fn().mockResolvedValue(undefined),
+      put: vi.fn().mockResolvedValue(undefined),
+      bulkPut: vi.fn().mockResolvedValue(undefined),
+      delete: vi.fn().mockResolvedValue(undefined),
+      bulkDelete: vi.fn().mockResolvedValue(undefined),
+      clear: vi.fn().mockResolvedValue(undefined),
+      count: vi.fn().mockResolvedValue(0),
+      where: vi.fn().mockReturnThis(),
+      equals: vi.fn().mockReturnThis(),
+      filter: vi.fn().mockReturnThis(),
+    }
+  }
+  
+  return {
+    default: class Dexie {
+      contacts = mockDb.contacts
+      version() { return this }
+      stores() { return this }
+    }
+  }
+})
+
+// Mock dexie-react-hooks
+vi.mock('dexie-react-hooks', () => ({
+  useLiveQuery: vi.fn((fn) => {
+    // Return undefined on first render, then the result
+    return undefined
+  })
+}))
 
 beforeEach(async () => {
-  // Create in-memory SQLite for tests
-  const client = createClient({
-    url: ':memory:'
-  })
-  
-  testDb = drizzle(client, { schema })
-  
-  // Run migrations
-  await migrate(testDb, {
-    migrationsFolder: './migrations'
-  })
-  
-  // Make test database available globally
-  global.testDb = testDb
+  // Clear all mocks before each test
+  vi.clearAllMocks()
 })
 
 afterEach(async () => {
-  // Clean up database
-  if (testDb) {
-    await testDb.delete(schema.contacts).execute()
-  }
-  
-  // Clear all mocks
+  // Clear all mocks after each test
   vi.clearAllMocks()
 })
 

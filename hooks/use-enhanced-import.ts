@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import { DuplicateMatch, areContactsIdentical } from '@/lib/contact-merger'
+import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
+import { getAllContacts, createContactsBatch, updateContact } from '@/db/local/contacts'
 
 interface ImportResponse {
   success: boolean
@@ -10,20 +11,10 @@ interface ImportResponse {
   processed?: {
     total: number
     normalized: number
-    unique: number
-    duplicates: number
   }
-  uniqueContacts?: Contact[]
-  duplicates?: DuplicateMatch[]
+  contacts?: Contact[]
   parserUsed?: string
   rowCount?: number
-  error?: string
-}
-
-interface SaveResponse {
-  success: boolean
-  totalContacts: number
-  saved: number
   error?: string
 }
 
@@ -164,27 +155,48 @@ export function useEnhancedImport(onComplete?: () => void) {
         status: 'checking-duplicates',
         parserType: importProgress.parserType,
         progress: {
-          current: data.processed?.unique || 0,
+          current: 0,
           total: data.processed?.normalized || 0,
           message: 'Checking for duplicate contacts...'
         }
       })
       
+      // Get existing contacts from local database
+      const existingContacts = await getAllContacts()
+      
+      // Find duplicates
+      const contactsWithDuplicates = (data.contacts || []).map(contact => {
+        const duplicateMatches = findDuplicates(existingContacts, contact)
+        return { contact, duplicates: duplicateMatches }
+      })
+      
+      const uniqueContacts = contactsWithDuplicates
+        .filter(item => item.duplicates.length === 0)
+        .map(item => item.contact)
+      
+      const duplicatesFound = contactsWithDuplicates
+        .filter(item => item.duplicates.length > 0)
+        .map(item => ({
+          existing: item.duplicates[0].existing,
+          incoming: item.contact,
+          score: item.duplicates[0].score
+        }))
+      
       // Longer delay to show the checking phase properly
       await new Promise(resolve => setTimeout(resolve, 1500))
       
       // Initialize with unique contacts
-      setResolvedContacts(data.uniqueContacts || [])
+      setResolvedContacts(uniqueContacts)
       
       // If there are duplicates, start resolution
-      if (data.duplicates && data.duplicates.length > 0) {
+      if (duplicatesFound.length > 0) {
         // Filter out duplicates that are identical
-        const meaningfulDuplicates = data.duplicates.filter((dup: DuplicateMatch) => {
+        const meaningfulDuplicates = duplicatesFound.filter((dup: DuplicateMatch) => {
           // Skip if contacts are identical
           return !areContactsIdentical(dup.existing, dup.incoming)
         })
         
-        const skippedCount = data.duplicates.length - meaningfulDuplicates.length
+        const skippedCount = duplicatesFound.length - meaningfulDuplicates.length
         if (skippedCount > 0) {
           toast.info(`Auto-skipped ${skippedCount} duplicate${skippedCount > 1 ? 's' : ''} with no new information`)
         }
@@ -198,11 +210,11 @@ export function useEnhancedImport(onComplete?: () => void) {
           setCurrentDuplicate(meaningfulDuplicates[0])
         } else {
           // No meaningful duplicates, save unique contacts
-          saveMutation.mutate(data.uniqueContacts || [])
+          await saveContacts(uniqueContacts)
         }
       } else {
         // No duplicates, save immediately
-        saveMutation.mutate(data.uniqueContacts || [])
+        await saveContacts(uniqueContacts)
       }
     },
     onError: (error) => {
@@ -213,59 +225,46 @@ export function useEnhancedImport(onComplete?: () => void) {
     }
   })
   
-  // Save mutation
-  const saveMutation = useMutation({
-    mutationFn: async (contacts: Contact[]): Promise<SaveResponse> => {
-      setImportProgress({
-        status: 'saving',
-        parserType: importProgress.parserType,
-        progress: {
-          current: 0,
-          total: contacts.length,
-          message: 'Saving contacts to database...'
-        }
-      })
-      const response = await fetch('/api/import', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contacts })
-      })
-      
-      const data = await response.json()
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Save failed')
+  // Save contacts to local database
+  const saveContacts = async (contacts: Contact[]) => {
+    setImportProgress({
+      status: 'saving',
+      parserType: importProgress.parserType,
+      progress: {
+        current: 0,
+        total: contacts.length,
+        message: 'Saving contacts to database...'
       }
+    })
+    
+    try {
+      await createContactsBatch(contacts)
       
-      return data
-    },
-    onSuccess: (data) => {
       setImportProgress({
         status: 'complete',
         parserType: importProgress.parserType,
         progress: {
-          current: data.saved,
-          total: data.saved,
+          current: contacts.length,
+          total: contacts.length,
           message: 'Import completed successfully!'
         }
       })
       
       queryClient.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success(`Successfully imported ${data.saved} contacts`)
+      toast.success(`Successfully imported ${contacts.length} contacts`)
       
       // Reset after delay
       setTimeout(() => {
         setImportProgress({ status: 'idle' })
         onComplete?.()
       }, 2000)
-    },
-    onError: (error) => {
+    } catch (error) {
       setImportProgress({
         status: 'error',
         error: error instanceof Error ? error.message : 'Save failed'
       })
     }
-  })
+  }
   
   const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
     if (!currentDuplicate) return
@@ -294,7 +293,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           }
         })
         
-        // Process merges in batches directly from client
+        // Process merges in batches
         const BATCH_SIZE = 20
         const allMergedContacts: Contact[] = []
         let totalProcessed = 0
@@ -357,16 +356,13 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         // Save all merged contacts
         if (allMergedContacts.length > 0) {
-          const response = await fetch('/api/import', {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contacts: allMergedContacts })
-          })
-          
-          if (response.ok) {
-            toast.success(`Successfully merged ${allMergedContacts.length} contacts`)
-            queryClient.invalidateQueries({ queryKey: ['contacts'] })
+          // Update existing contacts in local database
+          for (const contact of allMergedContacts) {
+            await updateContact(contact)
           }
+          
+          toast.success(`Successfully merged ${allMergedContacts.length} contacts`)
+          queryClient.invalidateQueries({ queryKey: ['contacts'] })
         }
         
         // Clear duplicates and finish
@@ -375,7 +371,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         // Save any remaining unique contacts
         if (resolvedContacts.length > 0) {
-          saveMutation.mutate(resolvedContacts)
+          await saveContacts(resolvedContacts)
         } else {
           setImportProgress({
             status: 'complete',
@@ -439,15 +435,11 @@ export function useEnhancedImport(onComplete?: () => void) {
     // Save immediately if we have a contact to save
     if (contactToSave) {
       try {
-        // Save this single contact immediately
-        const response = await fetch('/api/import', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contacts: [contactToSave] })
-        })
-        
-        if (!response.ok) {
-          throw new Error('Failed to save contact')
+        // Save to local database
+        if (action === 'merge') {
+          await updateContact(contactToSave)
+        } else {
+          await createContactsBatch([contactToSave])
         }
         
         // Refresh contacts list
@@ -476,7 +468,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       // All duplicates handled, now save any remaining unique contacts
       setCurrentDuplicate(null)
       if (resolvedContacts.length > 0) {
-        saveMutation.mutate(resolvedContacts)
+        await saveContacts(resolvedContacts)
       } else {
         // No more contacts to save, we're done
         setImportProgress({
@@ -510,7 +502,6 @@ export function useEnhancedImport(onComplete?: () => void) {
   const cancelImport = () => {
     // Cancel any pending mutations
     importMutation.reset()
-    saveMutation.reset()
     
     // Reset state
     resetImport()
@@ -525,11 +516,11 @@ export function useEnhancedImport(onComplete?: () => void) {
       importMutation.mutate(file)
     },
     isImporting: importMutation.isPending,
-    isSaving: saveMutation.isPending,
+    isSaving: false,
     currentDuplicate,
     duplicatesCount: duplicates.length,
     handleDuplicateDecision,
-    error: importMutation.error || saveMutation.error,
+    error: importMutation.error,
     importProgress,
     resetImport,
     cancelImport

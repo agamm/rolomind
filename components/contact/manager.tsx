@@ -5,14 +5,15 @@ import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
-import { useContacts, useDeleteAllContacts } from "@/hooks/use-contacts-api"
+import { useContacts, useDeleteAllContacts } from "@/hooks/use-local-contacts"
 import { useEnhancedImport } from "@/hooks/use-enhanced-import"
 import { Contact } from "@/types/contact"
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
 import { ImportProgressModal } from "@/components/import/import-progress-modal"
 
 export function ContactManager() {
-  const { data: contacts = [], isLoading, error } = useContacts()
+  const [searchQuery, setSearchQuery] = React.useState('')
+  const { data: contacts = [], isLoading, error } = useContacts(searchQuery)
   const deleteAllMutation = useDeleteAllContacts()
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)
@@ -87,6 +88,7 @@ export function ContactManager() {
                 contacts={contacts}
                 aiResults={aiResults}
                 isAISearching={isAISearching || isProcessing}
+                onSearch={setSearchQuery}
               />
             </>
           )}

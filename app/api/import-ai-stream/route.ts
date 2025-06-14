@@ -4,8 +4,6 @@ import * as linkedinParser from "../import/parsers/linkedin-parser"
 import * as rolodexParser from "../import/parsers/rolodex-parser"
 import * as googleParser from "../import/parsers/google-parser"
 import { Contact } from '@/types/contact'
-import { getAllContacts } from '@/db'
-import { findDuplicates } from '@/lib/contact-merger'
 import { createJsonStream } from '@/lib/stream-utils'
 
 export async function POST(request: NextRequest) {
@@ -84,33 +82,14 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      // Load existing contacts and find duplicates
-      const existingContacts = await getAllContacts()
-      
-      const contactsWithDuplicates = normalizedContacts.map(contact => {
-        const duplicates = findDuplicates(existingContacts, contact)
-        return { contact, duplicates }
-      })
-      
-      const uniqueContacts = contactsWithDuplicates
-        .filter(item => item.duplicates.length === 0)
-        .map(item => item.contact)
-      
-      const duplicatesFound = contactsWithDuplicates
-        .filter(item => item.duplicates.length > 0)
-        .flatMap(item => item.duplicates)
-      
-      // Yield final result
+      // Yield final result with normalized contacts
       yield {
         type: 'complete',
         processed: {
           total: totalRows,
-          normalized: normalizedContacts.length,
-          unique: uniqueContacts.length,
-          duplicates: duplicatesFound.length
+          normalized: normalizedContacts.length
         },
-        uniqueContacts,
-        duplicates: duplicatesFound,
+        contacts: normalizedContacts,
         parserUsed
       }
     }
@@ -129,32 +108,14 @@ export async function POST(request: NextRequest) {
     contacts = googleParser.parse(text)
   }
   
-  const existingContacts = await getAllContacts()
-  
-  const contactsWithDuplicates = contacts.map(contact => {
-    const duplicates = findDuplicates(existingContacts, contact)
-    return { contact, duplicates }
-  })
-  
-  const uniqueContacts = contactsWithDuplicates
-    .filter(item => item.duplicates.length === 0)
-    .map(item => item.contact)
-  
-  const duplicatesFound = contactsWithDuplicates
-    .filter(item => item.duplicates.length > 0)
-    .flatMap(item => item.duplicates)
-  
   return new Response(JSON.stringify({
     success: true,
     phase: 'complete',
     processed: {
       total: rows.length,
-      normalized: contacts.length,
-      unique: uniqueContacts.length,
-      duplicates: duplicatesFound.length
+      normalized: contacts.length
     },
-    uniqueContacts,
-    duplicates: duplicatesFound,
+    contacts,
     parserUsed
   }))
 }

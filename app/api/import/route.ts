@@ -4,10 +4,7 @@ import * as linkedinParser from "./parsers/linkedin-parser"
 import * as rolodexParser from "./parsers/rolodex-parser"
 import * as googleParser from "./parsers/google-parser"
 import * as customParser from "./parsers/custom-parser"
-import { findDuplicates } from "@/lib/contact-merger"
 import type { Contact, RawContactData } from "@/types/contact"
-import { getAllContacts, createContactsBatch } from "@/db"
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -91,35 +88,15 @@ export async function POST(request: NextRequest) {
       parserUsed = 'custom'
     }
 
-    // Load existing contacts
-    const existingContacts = await getAllContacts()
-
-    // Find duplicates
-    const contactsWithDuplicates = normalizedContacts.map(contact => {
-      const duplicates = findDuplicates(existingContacts, contact)
-      return { contact, duplicates }
-    })
-
-    // Return data for client-side duplicate resolution
-    const uniqueContacts = contactsWithDuplicates
-      .filter(item => item.duplicates.length === 0)
-      .map(item => item.contact as Contact)
-    
-    const duplicatesFound = contactsWithDuplicates
-      .filter(item => item.duplicates.length > 0)
-      .flatMap(item => item.duplicates)
-
+    // Return normalized contacts for client-side duplicate checking
     return NextResponse.json({ 
       success: true,
       phase: 'complete',
       processed: {
         total: rows.length,
-        normalized: normalizedContacts.length,
-        unique: uniqueContacts.length,
-        duplicates: duplicatesFound.length
+        normalized: normalizedContacts.length
       },
-      uniqueContacts,
-      duplicates: duplicatesFound,
+      contacts: normalizedContacts,
       parserUsed
     })
   } catch (error) {
@@ -131,30 +108,10 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// New endpoint to save contacts after duplicate resolution
-export async function PUT(request: NextRequest) {
-  try {
-    const { contacts } = await request.json()
-    
-    if (!Array.isArray(contacts)) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Invalid contacts data" 
-      }, { status: 400 })
-    }
-
-    // Save all contacts in a single batch
-    await createContactsBatch(contacts)
-    
-    return NextResponse.json({ 
-      success: true,
-      saved: contacts.length
-    })
-  } catch (error) {
-    console.error("Error saving contacts:", error)
-    return NextResponse.json({ 
-      success: false, 
-      error: error instanceof Error ? error.message : "Failed to save contacts" 
-    }, { status: 500 })
-  }
+// This endpoint is no longer needed - saving happens client-side
+export async function PUT() {
+  return NextResponse.json({ 
+    success: false, 
+    error: "This endpoint is deprecated. Use client-side storage instead." 
+  }, { status: 410 })
 }

@@ -6,6 +6,7 @@
 - NEVER say something works if you didn't check via the browser that it really worked!
 - Always remove old unused code/componentes/files that isn't needed anymore.
 - Don't add test files unless I ask you to.
+- Add --force to npm installs in this project
 
 App functionality:
 - Searching "CEOs in Texas" then submitting should show loading (this should always return N>20 results).
