@@ -224,6 +224,13 @@ button[aria-label="Toggle theme"]:hover {
     0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
+.ai-search-form .warm-button:disabled {
+  background: rgba(255, 255, 255, 0.6);
+  color: #8B5CF6;
+  opacity: 0.8;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 /* Dark mode AI search form button */
 .dark .ai-search-form .warm-button {
   background: linear-gradient(135deg, #E9D5FF 0%, #D8B4FE 100%);
@@ -240,6 +247,13 @@ button[aria-label="Toggle theme"]:hover {
   box-shadow: 
     0 4px 12px rgba(233, 213, 255, 0.3),
     0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.dark .ai-search-form .warm-button:disabled {
+  background: rgba(233, 213, 255, 0.6);
+  color: #4B5563;
+  opacity: 0.9;
+  border-color: rgba(233, 213, 255, 0.3);
 }
 
 @keyframes slideIn {
@@ -268,8 +282,8 @@ button[aria-label="Toggle theme"]:hover {
 .warm-button:disabled {
   @apply cursor-not-allowed;
   background: rgba(139, 92, 246, 0.3);
-  color: rgba(139, 92, 246, 0.8);
-  opacity: 1;
+  color: #FFFFFF;
+  opacity: 0.9;
 }
 
 /* Soft inputs */

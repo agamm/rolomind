@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
-import { generateObject } from 'ai'
+import { generateObject, experimental_transcribe } from 'ai'
+import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 import { openrouter } from '@/lib/openrouter-config'
@@ -142,10 +143,25 @@ Examples of what to extract:
   }
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function transcribeAudio(audioFile: File): Promise<string> {
-  // OpenRouter doesn't support Whisper transcription models
-  // For now, voice transcription is disabled
-  console.warn('Voice transcription is currently disabled as OpenRouter does not support Whisper models')
-  return "Voice transcription is temporarily unavailable. Please update contact information manually."
+  try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OpenAI API key is not configured. Voice transcription requires OPENAI_API_KEY.')
+    }
+
+    // Use the AI SDK's experimental transcribe function with OpenAI's Whisper
+    const arrayBuffer = await audioFile.arrayBuffer()
+    const audio = new Uint8Array(arrayBuffer)
+    
+    const { text } = await experimental_transcribe({
+      model: openai.transcription('whisper-1'),
+      audio: audio,
+    })
+
+    return text
+  } catch (error) {
+    console.error('Transcription error:', error)
+    throw new Error(error instanceof Error ? error.message : 'Failed to transcribe audio')
+  }
 }

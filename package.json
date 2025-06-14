@@ -17,6 +17,7 @@
     "test:e2e": "vitest run tests/e2e"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^1.3.22",
     "@libsql/client": "^0.15.9",
     "@openrouter/ai-sdk-provider": "^0.7.1",
     "@radix-ui/react-dialog": "^1.1.14",
@@ -47,6 +48,7 @@
     "@tailwindcss/postcss": "^4",
     "@testing-library/react": "^16.3.0",
     "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20.19.0",
     "@types/papaparse": "^5.3.16",
     "@types/react": "^19",

@@ -94,13 +94,20 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
         const audioBlob = await stopRecording()
         if (!audioBlob || !contact) return
 
-        const formData = new FormData()
-        formData.append('audio', audioBlob, 'recording.webm')
-        formData.append('contact', JSON.stringify(contact))
+        const formDataToSend = new FormData()
+        formDataToSend.append('audio', audioBlob, 'recording.webm')
+        
+        // Use current form data with in-memory values instead of saved contact
+        const currentContact: Contact = {
+          ...contact,
+          ...formData,
+          updatedAt: contact.updatedAt
+        }
+        formDataToSend.append('contact', JSON.stringify(currentContact))
 
         const response = await fetch('/api/voice-to-contact', {
           method: 'POST',
-          body: formData
+          body: formDataToSend
         })
 
         if (!response.ok) {
@@ -113,12 +120,12 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
         // Track which fields were updated
         const newUpdatedFields = new Set<string>()
         
-        // Check for changes and update form data
-        if (changes.name && changes.name !== contact.name) newUpdatedFields.add('name')
-        if (changes.company && changes.company !== contact.company) newUpdatedFields.add('company')
-        if (changes.role && changes.role !== contact.role) newUpdatedFields.add('role')
-        if (changes.location && changes.location !== contact.location) newUpdatedFields.add('location')
-        if (changes.linkedinUrl && changes.linkedinUrl !== contact.contactInfo.linkedinUrl) newUpdatedFields.add('linkedinUrl')
+        // Check for changes and update form data - compare against current form data
+        if (changes.name && changes.name !== formData.name) newUpdatedFields.add('name')
+        if (changes.company && changes.company !== formData.company) newUpdatedFields.add('company')
+        if (changes.role && changes.role !== formData.role) newUpdatedFields.add('role')
+        if (changes.location && changes.location !== formData.location) newUpdatedFields.add('location')
+        if (changes.linkedinUrl && changes.linkedinUrl !== formData.contactInfo?.linkedinUrl) newUpdatedFields.add('linkedinUrl')
         if (changes.emails?.length) {
           changes.emails.forEach((_: string, index: number) => {
             newUpdatedFields.add(`email-${updatedContact.contactInfo.emails.length - changes.emails.length + index}`)
