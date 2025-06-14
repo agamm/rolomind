@@ -10,20 +10,32 @@ import {
 } from '@/db/local/contacts';
 import type { Contact } from '@/types/contact';
 import Papa from 'papaparse';
+import { useState, useEffect } from 'react';
 
 // Hook to get all contacts with real-time updates
 export function useContacts(searchQuery?: string) {
-  const contacts = useLiveQuery(async () => {
-    if (searchQuery && searchQuery.trim()) {
-      return await searchContacts(searchQuery);
-    }
-    return await db.contacts.toArray();
-  }, [searchQuery]);
+  const [error, setError] = useState<Error | null>(null);
+  
+  const contacts = useLiveQuery(
+    async () => {
+      try {
+        setError(null);
+        if (searchQuery && searchQuery.trim()) {
+          return await searchContacts(searchQuery);
+        }
+        return await db.contacts.toArray();
+      } catch (err) {
+        setError(err instanceof Error ? err : new Error('Failed to load contacts'));
+        return [];
+      }
+    },
+    [searchQuery]
+  );
 
   return {
     data: contacts || [],
     isLoading: contacts === undefined,
-    error: null
+    error
   };
 }
 
@@ -97,7 +109,8 @@ export function useDeleteAllContacts() {
     },
     mutate: () => {
       deleteAllContacts().catch(console.error);
-    }
+    },
+    isPending: false
   };
 }
 

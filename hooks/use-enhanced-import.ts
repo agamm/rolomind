@@ -179,7 +179,8 @@ export function useEnhancedImport(onComplete?: () => void) {
         .map(item => ({
           existing: item.duplicates[0].existing,
           incoming: item.contact,
-          score: item.duplicates[0].score
+          matchType: item.duplicates[0].matchType,
+          matchValue: item.duplicates[0].matchValue
         }))
       
       // Longer delay to show the checking phase properly

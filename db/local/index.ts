@@ -1,12 +1,8 @@
 import Dexie, { type Table } from 'dexie';
 import type { Contact } from '@/types/contact';
 
-export interface DexieContact extends Contact {
-  // Contact already has all fields we need
-}
-
 class ContactsDatabase extends Dexie {
-  contacts!: Table<DexieContact>;
+  contacts!: Table<Contact>;
 
   constructor() {
     super('RolomindContacts');

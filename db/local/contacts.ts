@@ -81,12 +81,12 @@ export async function searchContacts(query: string): Promise<Contact[]> {
   const lowercaseQuery = query.toLowerCase();
   
   return await db.contacts
-    .filter(contact => 
-      contact.name.toLowerCase().includes(lowercaseQuery) ||
-      (contact.company && contact.company.toLowerCase().includes(lowercaseQuery)) ||
-      (contact.role && contact.role.toLowerCase().includes(lowercaseQuery)) ||
-      (contact.location && contact.location.toLowerCase().includes(lowercaseQuery))
-    )
+    .filter(contact => {
+      return contact.name.toLowerCase().includes(lowercaseQuery) ||
+        (contact.company?.toLowerCase().includes(lowercaseQuery) ?? false) ||
+        (contact.role?.toLowerCase().includes(lowercaseQuery) ?? false) ||
+        (contact.location?.toLowerCase().includes(lowercaseQuery) ?? false);
+    })
     .toArray();
 }
 
