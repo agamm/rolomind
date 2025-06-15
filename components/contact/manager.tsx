@@ -83,6 +83,7 @@ export function ContactManager() {
                 onResults={handleAiResults}
                 onSearchingChange={setIsAISearching}
                 onProcessingChange={setIsProcessing}
+                onReset={() => setAiResults(undefined)}
               />
               <ContactList
                 contacts={contacts}

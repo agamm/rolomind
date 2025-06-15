@@ -21,10 +21,11 @@ interface AIQueryProps {
   onResults?: (results: ContactMatch[]) => void
   onSearchingChange?: (isSearching: boolean) => void
   onProcessingChange?: (isProcessing: boolean) => void
+  onReset?: () => void
 }
 
 
-export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingChange }: AIQueryProps) {
+export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingChange, onReset }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [enableSummary, setEnableSummary] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
@@ -257,11 +258,26 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
       {!isSearching && !isProcessingResults && hasSearched && query && (
         <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
-          <p className="text-primary font-semibold">
-            {results.length > 0 
-              ? `✓ Found ${results.length} matches`
-              : '✗ No contacts found matching your search criteria'}
-          </p>
+          <div className="flex items-center justify-between">
+            <p className="text-primary font-semibold">
+              {results.length > 0 
+                ? `✓ Found ${results.length} matches`
+                : '✗ No contacts found matching your search criteria'}
+            </p>
+            {results.length > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setQuery('')
+                  setHasSearched(false)
+                  onReset?.()
+                }}
+              >
+                Reset
+              </Button>
+            )}
+          </div>
         </div>
       )}
       
