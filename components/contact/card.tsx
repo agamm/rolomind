@@ -40,7 +40,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
 
 
   return (
-    <div className={`contact-card group ${isSelected ? 'ring-2 ring-gray-900' : ''}`}>
+    <div className={`contact-card group ${isSelected ? 'ring-2 ring-gray-900 dark:ring-gray-100' : ''}`}>
       <div className="relative">
         {/* Action buttons - show on hover */}
         <div className="absolute -top-2 -right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
@@ -49,7 +49,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
               variant="ghost"
               size="sm"
               onClick={() => onEdit(contact)}
-              className="h-8 w-8 p-0 cursor-pointer text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+              className="h-8 w-8 p-0 cursor-pointer text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               title="Edit contact"
             >
               <Edit2 className="h-4 w-4" />
@@ -61,7 +61,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
               variant="ghost"
               size="sm"
               onClick={() => onDelete(contact)}
-              className="h-8 w-8 p-0 text-red-400 hover:text-red-500 hover:bg-red-50 cursor-pointer"
+              className="h-8 w-8 p-0 text-red-400 dark:text-red-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 cursor-pointer"
               title="Delete contact"
             >
               <Trash2 className="h-4 w-4" />
@@ -77,13 +77,13 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
                 type="checkbox"
                 checked={isSelected || false}
                 onChange={() => onSelectToggle?.(contact)}
-                className="mt-1 h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                className="mt-1 h-4 w-4 rounded border-gray-300 dark:border-gray-600 text-gray-900 dark:text-gray-100 focus:ring-gray-900 dark:focus:ring-gray-100"
                 onClick={(e) => e.stopPropagation()}
               />
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-xl font-semibold text-gray-900">{contact.name}</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{contact.name}</h3>
               </div>
               <div className="flex items-center gap-2">
                 <span className="inline-flex text-xs font-medium px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(10, 102, 194, 0.1)', color: '#0A66C2' }}>
@@ -109,33 +109,33 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
           {contact.role && (
             <div className="flex items-center gap-2">
               <Briefcase className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-900">{contact.role}</span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{contact.role}</span>
             </div>
           )}
           {contact.company && (
             <div className="flex items-center gap-2">
               <Building2 className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">{contact.company}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{contact.company}</span>
             </div>
           )}
           {contact.location && (
             <div className="flex items-center gap-2">
               <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600">{contact.location}</span>
+              <span className="text-sm text-gray-600 dark:text-gray-400">{contact.location}</span>
             </div>
           )}
         </div>
 
         {/* Show contact info and notes if they exist */}
         {(contact.contactInfo.emails.length > 0 || contact.contactInfo.phones.length > 0) && (
-          <div className="mb-3 pt-3 border-t border-gray-100">
+          <div className="mb-3 pt-3 border-t border-gray-100 dark:border-gray-800">
             <div className="space-y-1.5">
               {contact.contactInfo.emails.length > 0 && (
                 <button
                   onClick={handleEmailClick}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors w-full text-left group"
+                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full text-left group"
                 >
-                  <Mail className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                  <Mail className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                   <span className="text-sm truncate">{contact.contactInfo.emails[0]}</span>
                 </button>
               )}
@@ -143,9 +143,9 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
               {contact.contactInfo.phones.length > 0 && (
                 <button
                   onClick={handlePhoneClick}
-                  className="flex items-center gap-2 text-gray-600 hover:text-blue-600 transition-colors w-full text-left group"
+                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full text-left group"
                 >
-                  <Phone className="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-600" />
+                  <Phone className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                   <span className="text-sm">{contact.contactInfo.phones[0]}</span>
                 </button>
               )}
@@ -156,8 +156,8 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         {/* Notes section - Expandable */}
         {contact.notes && (
           <div className="space-y-2 mb-4">
-            <div className="bg-zinc-50 p-3 rounded-lg border border-gray-100">
-              <div className="text-sm text-gray-900">
+            <div className="bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-gray-100 dark:border-zinc-700">
+              <div className="text-sm text-gray-900 dark:text-zinc-100">
                 {(() => {
                   const noteLines = contact.notes.split('\n').filter(Boolean)
                   const isLong = noteLines.length > 3 || contact.notes.length > 150
@@ -182,7 +182,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
               {(contact.notes.split('\n').filter(Boolean).length > 3 || contact.notes.length > 150) && (
                 <button
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className="mt-2 text-xs text-gray-600 hover:text-gray-900 flex items-center gap-1 cursor-pointer"
+                  className="mt-2 text-xs text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 flex items-center gap-1 cursor-pointer"
                 >
                   {isExpanded ? (
                     <>
@@ -204,17 +204,17 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         {aiReason && (
           <div className="ai-glow mb-4">
             <div className="flex items-start gap-2 relative z-10">
-              <Sparkles className="w-4 h-4 text-purple-600 flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-xs font-medium text-purple-900 mb-1">AI Match</p>
-                <p className="text-xs text-purple-700">{aiReason}</p>
+                <p className="text-xs font-medium text-purple-900 dark:text-purple-200 mb-1">AI Match</p>
+                <p className="text-xs text-purple-700 dark:text-purple-300">{aiReason}</p>
               </div>
             </div>
           </div>
         )}
 
         {/* Metadata - Footer */}
-        <div className="pt-2 text-xs text-gray-400">
+        <div className="pt-2 text-xs text-gray-400 dark:text-gray-500">
           Added {contact.createdAt instanceof Date ? contact.createdAt.toLocaleDateString() : new Date(contact.createdAt).toLocaleDateString()}
         </div>
       </div>

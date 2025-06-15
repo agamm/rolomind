@@ -156,7 +156,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
                 // Reset search state when user modifies the query
                 if (hasSearched) {
                   setHasSearched(false)
-                  onResults?.(undefined as any)
+                  onResults?.([])
                 }
               }}
               disabled={isSearching}
@@ -196,7 +196,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
           </div>
           
           {contacts.length === 0 && (
-            <p className="text-sm text-white/80">
+            <p className="text-sm text-muted-foreground">
               Import contacts to use AI search.
             </p>
           )}

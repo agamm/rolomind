@@ -925,6 +925,10 @@ button[aria-label="Toggle theme"]:hover {
   color: var(--text-primary);
 }
 
+.dark [role="dialog"] h2 {
+  color: #F8FAFC;
+}
+
 /* Dialog buttons */
 [role="dialog"] button {
   font-weight: 500;

@@ -91,11 +91,11 @@ export function MergeConfirmationModal({
           <DialogDescription asChild>
             <div className="text-center space-y-2">
               <div className="flex items-center justify-center gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-500" />
-                <span>Match found by <strong>{matchType}</strong>: {matchValue}</span>
+                <AlertCircle className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
+                <span className="text-foreground">Match found by <strong>{matchType}</strong>: {matchValue}</span>
               </div>
               {remainingCount && remainingCount > 0 && (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {remainingCount} more duplicate{remainingCount > 1 ? 's' : ''} to review
                 </p>
               )}
@@ -106,33 +106,33 @@ export function MergeConfirmationModal({
         <div className="grid grid-cols-3 gap-4 my-6">
           {/* Existing Contact */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-gray-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-gray-400 rounded-full"></div>
+            <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
+              <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
               Current Contact
             </h3>
-            <div className="border-2 border-gray-200 rounded-2xl">
+            <div className="border-2 border-border rounded-2xl">
               <ContactCard contact={existing} />
             </div>
           </div>
           
           {/* Incoming Contact */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-blue-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+            <h3 className="font-semibold text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
+              <div className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full"></div>
               New Contact
             </h3>
-            <div className="border-2 border-blue-200 rounded-2xl">
+            <div className="border-2 border-blue-200 dark:border-blue-700 rounded-2xl">
               <ContactCard contact={incoming as Contact} />
             </div>
           </div>
           
           {/* Merged Preview */}
           <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-green-700 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+            <h3 className="font-semibold text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
               After Merge
             </h3>
-            <div className="border-2 border-green-300 rounded-2xl bg-green-50">
+            <div className="border-2 border-green-300 dark:border-green-700 rounded-2xl bg-green-50 dark:bg-green-950/20">
               {isLoadingPreview ? (
                 <div className="flex items-center justify-center h-48">
                   <Loader2 className="h-6 w-6 animate-spin text-green-600" />
@@ -140,7 +140,7 @@ export function MergeConfirmationModal({
               ) : mergedPreview ? (
                 <ContactCard contact={mergedPreview} />
               ) : (
-                <div className="p-4 text-center text-gray-500">
+                <div className="p-4 text-center text-muted-foreground">
                   Unable to preview merge
                 </div>
               )}
@@ -180,7 +180,7 @@ export function MergeConfirmationModal({
             </Button>
             <Button 
               onClick={() => handleDecision('merge')} 
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
               disabled={isProcessing}
             >
               {isProcessing && actionType === 'merge' ? (
@@ -197,7 +197,7 @@ export function MergeConfirmationModal({
               variant="default" 
               onClick={() => handleDecision('merge-all')}
               disabled={isProcessing}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
             >
               {isProcessing && actionType === 'merge-all' ? (
                 <>

@@ -40,12 +40,12 @@ export function DeleteConfirmationDialog({
         
         <div className="py-4">
           <div className="rounded-lg border bg-muted p-4 space-y-2">
-            <p className="font-medium text-gray-900">{contact.name}</p>
+            <p className="font-medium text-foreground">{contact.name}</p>
             {contact.company && (
-              <p className="text-sm text-gray-600">{contact.company}</p>
+              <p className="text-sm text-muted-foreground">{contact.company}</p>
             )}
             {contact.contactInfo.emails.length > 0 && (
-              <p className="text-sm text-gray-600">{contact.contactInfo.emails[0]}</p>
+              <p className="text-sm text-muted-foreground">{contact.contactInfo.emails[0]}</p>
             )}
           </div>
         </div>

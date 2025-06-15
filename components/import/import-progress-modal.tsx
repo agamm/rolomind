@@ -49,7 +49,7 @@ export function ImportProgressModal({
         return {
           icon: showFormatSelected 
             ? <CheckCircle className="h-8 w-8 text-green-500 animate-in zoom-in duration-300" />
-            : <FileText className="h-8 w-8 text-gray-500 animate-pulse" />,
+            : <FileText className="h-8 w-8 text-muted-foreground animate-pulse" />,
           title: showFormatSelected ? 'Format Detected!' : 'Analyzing CSV Format',
           description: showFormatSelected 
             ? `Using ${parserType === 'linkedin' ? 'LinkedIn' : parserType === 'rolodex' ? 'Rolodex' : parserType === 'google' ? 'Google' : 'Custom (AI)'} parser`
@@ -64,7 +64,7 @@ export function ImportProgressModal({
         return {
           icon: isCustom ? (
             <div className="relative h-16 w-16 flex items-center justify-center">
-              <div className="absolute inset-0 animate-spin rounded-full border-4 border-gray-200 border-t-primary border-r-primary" />
+              <div className="absolute inset-0 animate-spin rounded-full border-4 border-muted border-t-primary border-r-primary" />
               <Sparkles className="h-8 w-8 text-primary animate-pulse relative z-10" />
             </div>
           ) : (
@@ -113,7 +113,7 @@ export function ImportProgressModal({
       
       default:
         return {
-          icon: <Loader2 className="h-8 w-8 text-gray-500 animate-spin" />,
+          icon: <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />,
           title: 'Processing',
           description: 'Working on your import...'
         }
@@ -159,7 +159,7 @@ export function ImportProgressModal({
             </div>
             <Progress value={progressPercent} className="h-2" />
             {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && progressPercent > 0 && (
-              <div className="flex items-center justify-center gap-2 text-xs text-purple-600">
+              <div className="flex items-center justify-center gap-2 text-xs text-purple-600 dark:text-purple-400">
                 <Sparkles className="h-3 w-3 animate-pulse" />
                 <span>AI is extracting names, emails, phones, and other contact details...</span>
               </div>
@@ -252,24 +252,24 @@ function FormatOption({
   baseColor: 'blue' | 'purple' | 'green' | 'red'
 }) {
   const bgClasses = {
-    blue: isSelected ? 'bg-blue-100 border-2 border-blue-500 scale-105' : 'bg-muted border border-border',
-    purple: isSelected ? 'bg-purple-100 border-2 border-purple-500 scale-105' : 'bg-muted border border-border',
-    green: isSelected ? 'bg-green-100 border-2 border-green-500 scale-105' : 'bg-muted border border-border',
-    red: isSelected ? 'bg-red-100 border-2 border-red-500 scale-105' : 'bg-muted border border-border'
+    blue: isSelected ? 'bg-blue-100 dark:bg-blue-950/30 border-2 border-blue-500 dark:border-blue-400 scale-105' : 'bg-muted border border-border',
+    purple: isSelected ? 'bg-purple-100 dark:bg-purple-950/30 border-2 border-purple-500 dark:border-purple-400 scale-105' : 'bg-muted border border-border',
+    green: isSelected ? 'bg-green-100 dark:bg-green-950/30 border-2 border-green-500 dark:border-green-400 scale-105' : 'bg-muted border border-border',
+    red: isSelected ? 'bg-red-100 dark:bg-red-950/30 border-2 border-red-500 dark:border-red-400 scale-105' : 'bg-muted border border-border'
   }
   
   const iconClasses = {
-    blue: isSelected ? 'text-blue-600' : 'text-gray-500',
-    purple: isSelected ? 'text-purple-600' : 'text-gray-500',
-    green: isSelected ? 'text-green-600' : 'text-gray-500',
-    red: isSelected ? 'text-red-600' : 'text-gray-500'
+    blue: isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground',
+    purple: isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground',
+    green: isSelected ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground',
+    red: isSelected ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'
   }
   
   const textClasses = {
-    blue: isSelected ? 'text-blue-700' : 'text-gray-600',
-    purple: isSelected ? 'text-purple-700' : 'text-gray-600',
-    green: isSelected ? 'text-green-700' : 'text-gray-600',
-    red: isSelected ? 'text-red-700' : 'text-gray-600'
+    blue: isSelected ? 'text-blue-700 dark:text-blue-300' : 'text-muted-foreground',
+    purple: isSelected ? 'text-purple-700 dark:text-purple-300' : 'text-muted-foreground',
+    green: isSelected ? 'text-green-700 dark:text-green-300' : 'text-muted-foreground',
+    red: isSelected ? 'text-red-700 dark:text-red-300' : 'text-muted-foreground'
   }
   
   return (

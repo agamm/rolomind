@@ -122,7 +122,7 @@ export function BulkEditModal({ contacts, isOpen, onClose, onSave, onDelete }: B
 
               <div className="px-4 text-center">
                 <p className="font-medium">{currentContact.name}</p>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-muted-foreground">
                   {currentContact.company || 'No company'}
                 </p>
               </div>
@@ -137,7 +137,7 @@ export function BulkEditModal({ contacts, isOpen, onClose, onSave, onDelete }: B
               </Button>
             </div>
 
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <Check className="h-4 w-4 text-green-500" />
               <span>Changes are saved automatically after each edit</span>
             </div>

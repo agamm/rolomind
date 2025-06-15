@@ -37,13 +37,13 @@ export function VoiceRecorder({
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 space-y-3 border border-blue-100">
+    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-4 space-y-3 border border-blue-100 dark:border-blue-900">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Volume2 className="h-4 w-4 text-blue-600" />
+          <Volume2 className="h-4 w-4 text-blue-600 dark:text-blue-400" />
           <div>
-            <span className="text-sm font-medium text-gray-700">AI Voice</span>
-            <span className="text-xs text-gray-500 ml-2">Updates fields automatically</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">AI Voice</span>
+            <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">Updates fields automatically</span>
           </div>
         </div>
 
@@ -93,7 +93,7 @@ export function VoiceRecorder({
                   key={i}
                   className={cn(
                     "w-0.5 bg-blue-400 rounded-full transition-all duration-100",
-                    i < (audioLevel / 3.5) ? "bg-blue-600" : "bg-blue-200"
+                    i < (audioLevel / 3.5) ? "bg-blue-600 dark:bg-blue-400" : "bg-blue-200 dark:bg-blue-800"
                   )}
                   style={{
                     height: `${Math.max(2, Math.random() * (audioLevel / 3) + 6)}px`,
@@ -102,7 +102,7 @@ export function VoiceRecorder({
               ))}
             </div>
             
-            <span className="font-mono text-xs text-gray-600 ml-2">
+            <span className="font-mono text-xs text-gray-600 dark:text-gray-400 ml-2">
               {formatTime(recordingTime)}
             </span>
             
@@ -133,7 +133,7 @@ export function VoiceRecorder({
 
       {/* Error Message */}
       {error && (
-        <div className="flex items-center gap-2 text-xs text-red-600">
+        <div className="flex items-center gap-2 text-xs text-red-600 dark:text-red-400">
           <MicOff className="h-3 w-3" />
           <span>{error}</span>
         </div>

@@ -31,18 +31,18 @@ export function ConfirmationDialog({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <Card className="w-full max-w-md mx-4">
+    <div className="fixed inset-0 bg-black/50 dark:bg-black/80 flex items-center justify-center z-50">
+      <Card className="w-full max-w-md mx-4 border-border">
         <CardContent className="p-6">
           <div className="flex items-start gap-4">
             <div className="flex-shrink-0">
-              <AlertTriangle className={`w-6 h-6 ${isDestructive ? 'text-red-500' : 'text-yellow-500'}`} />
+              <AlertTriangle className={`w-6 h-6 ${isDestructive ? 'text-destructive' : 'text-yellow-500 dark:text-yellow-400'}`} />
             </div>
             <div className="flex-1">
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              <h3 className="text-lg font-semibold text-foreground mb-2">
                 {title}
               </h3>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 {message}
               </p>
               <div className="flex gap-3 justify-end">
@@ -65,7 +65,7 @@ export function ConfirmationDialog({
             <button
               onClick={onCancel}
               disabled={isLoading}
-              className="flex-shrink-0 text-gray-400 hover:text-gray-600 disabled:opacity-50"
+              className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50"
             >
               <X className="w-5 h-5" />
             </button>

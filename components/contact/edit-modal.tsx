@@ -289,7 +289,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
               className={cn(
-                updatedFields.has('name') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('name') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>
@@ -301,7 +301,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               value={formData.company || ''}
               onChange={(e) => setFormData({ ...formData, company: e.target.value })}
               className={cn(
-                updatedFields.has('company') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('company') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>
@@ -313,7 +313,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               value={formData.role || ''}
               onChange={(e) => setFormData({ ...formData, role: e.target.value })}
               className={cn(
-                updatedFields.has('role') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('role') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>
@@ -325,7 +325,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               value={formData.location || ''}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               className={cn(
-                updatedFields.has('location') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('location') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>
@@ -340,7 +340,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
                   onChange={(e) => handleArrayFieldChange('emails', index, e.target.value)}
                   placeholder="email@example.com"
                   className={cn(
-                    updatedFields.has(`email-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                    updatedFields.has(`email-${index}`) && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
                   )}
                 />
                 <Button
@@ -375,7 +375,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
                   onChange={(e) => handleArrayFieldChange('phones', index, e.target.value)}
                   placeholder="+1 (555) 123-4567"
                   className={cn(
-                    updatedFields.has(`phone-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                    updatedFields.has(`phone-${index}`) && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
                   )}
                 />
                 <Button
@@ -415,7 +415,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               }))}
               placeholder="https://linkedin.com/in/username"
               className={cn(
-                updatedFields.has('linkedinUrl') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('linkedinUrl') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>
@@ -431,7 +431,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
                   placeholder="Platform (e.g., Twitter)"
                   className={cn(
                     "w-1/3",
-                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
                   )}
                 />
                 <Input
@@ -440,7 +440,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
                   placeholder="URL"
                   className={cn(
                     "flex-1",
-                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                    updatedFields.has(`otherUrl-${index}`) && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
                   )}
                 />
                 <Button
@@ -473,7 +473,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               rows={4}
               placeholder="Add any additional notes about this contact..."
               className={cn(
-                updatedFields.has('notes') && "bg-green-50 border-green-300 ring-1 ring-green-200"
+                updatedFields.has('notes') && "bg-green-50 dark:bg-green-950/20 border-green-300 dark:border-green-700 ring-1 ring-green-200 dark:ring-green-800"
               )}
             />
           </div>

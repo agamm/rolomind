@@ -38,8 +38,8 @@ export function BulkDeleteDialog({
         </DialogHeader>
         
         <div className="py-4">
-          <div className="rounded-lg border bg-yellow-50 border-yellow-200 p-4">
-            <p className="text-sm text-yellow-800">
+          <div className="rounded-lg border bg-yellow-50 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-800 p-4">
+            <p className="text-sm text-yellow-800 dark:text-yellow-200">
               You are about to permanently delete <span className="font-semibold">{count}</span> contact{count > 1 ? 's' : ''}. This action cannot be undone.
             </p>
           </div>
