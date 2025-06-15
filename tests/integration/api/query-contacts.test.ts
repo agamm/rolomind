@@ -116,7 +116,7 @@ describe('Query Contacts API', () => {
     )
   })
 
-  it('should use RELAXED mode with specific keywords', async () => {
+  it('should handle queries with specific keywords like "might"', async () => {
     const { mockGenerateObject } = await import('../../mocks/ai')
     const handler = await import('@/app/api/query-contacts/route')
     
@@ -133,7 +133,7 @@ describe('Query Contacts API', () => {
 
     expect(mockGenerateObject).toHaveBeenCalledWith(
       expect.objectContaining({
-        prompt: expect.stringContaining('RELAXED mode if query contains: "might"')
+        prompt: expect.stringContaining('might know investors')
       })
     )
   })

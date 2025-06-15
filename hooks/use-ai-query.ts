@@ -38,6 +38,10 @@ async function queryBatch(
     
     if (!response.ok) {
       const error = await response.json()
+      // Check for credit limit error (402 status)
+      if (response.status === 402 || error.statusCode === 402) {
+        throw new Error('API credit limit reached. Please check your API credits or try again later.')
+      }
       throw new Error(error.message || 'Query failed')
     }
     

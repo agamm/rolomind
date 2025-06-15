@@ -37,11 +37,6 @@ export async function POST(req: Request) {
       source: c.source
     }));
 
-    // Log for debugging
-    console.log('Query:', query);
-    console.log('Batch size:', batch.length);
-    console.log('Sample contact:', batch[0]);
-
     const { object: matches } = await generateObject({
       model: openrouter('anthropic/claude-sonnet-4'),
       output: 'array',
@@ -61,6 +56,7 @@ Matching rules:
       - Every contact is a separate entity, don't combine or merge information from multiple contacts
 - Empty/null location = automatic fail for location queries
 - Check ONLY explicit field values, never infer
+- The only time you can include matches that don't satisfy every part of the query is if the query includes relaxed keywords like "might" or "could".
 
 Contacts to analyze:
 ${JSON.stringify(batch)}
@@ -73,9 +69,6 @@ For each matching contact, return:
 
 ONLY include contacts that match ALL conditions. Return empty array [] if none match.`
     });
-
-    // Log results for debugging
-    console.log('Matches found:', matches.length);
 
     return Response.json({ matches });
   } catch (error) {

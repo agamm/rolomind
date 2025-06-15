@@ -63,7 +63,28 @@ export function handleAIError(error: unknown): Response {
       );
     }
     
-    // Handle non-retryable API errors
+    // Check for credit limit errors (usually 402 Payment Required or specific error messages)
+    if (apiError.statusCode === 402 || 
+        (apiError.responseBody && typeof apiError.responseBody === 'string' && 
+         (apiError.responseBody.toLowerCase().includes('credit') || 
+          apiError.responseBody.toLowerCase().includes('insufficient funds') ||
+          apiError.responseBody.toLowerCase().includes('quota exceeded')))) {
+      const errorResponse: ErrorResponse = {
+        error: 'Insufficient credits',
+        message: 'API credit limit reached. Please check your API credits or try again later.',
+        statusCode: 402
+      };
+      
+      return new Response(
+        JSON.stringify(errorResponse),
+        { 
+          status: 402,
+          headers: { 'Content-Type': 'application/json' }
+        }
+      );
+    }
+    
+    // Handle other non-retryable API errors
     const errorResponse: ErrorResponse = {
       error: 'API error',
       message: 'An error occurred while processing your request.',

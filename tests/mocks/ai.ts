@@ -2,8 +2,8 @@ import { vi } from 'vitest'
 
 export const mockGenerateObject = vi.fn().mockImplementation(({ schema, prompt }) => {
   // For query-contacts - matching contacts
-  if (prompt.includes('Find contacts matching')) {
-    const query = prompt.match(/QUERY: "([^"]+)"/)?.[1] || ''
+  if (prompt.includes('Find all contacts that match the query')) {
+    const query = prompt.match(/Query: "([^"]+)"/)?.[1] || ''
     
     // Mock different responses based on query
     if (query.toLowerCase().includes('ceos in usa')) {

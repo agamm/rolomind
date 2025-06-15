@@ -10,6 +10,7 @@ import { useResultsProcessing } from "@/hooks/use-results-processing"
 import { SummaryDisplay } from "./summary-display"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
+import { toast } from "sonner"
 
 interface ContactMatch {
   contact: Contact
@@ -105,6 +106,13 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
   useEffect(() => {
     onProcessingChange?.(isProcessingResults)
   }, [isProcessingResults, onProcessingChange])
+  
+  // Show toast for errors
+  useEffect(() => {
+    if (error && error.message !== 'Search aborted') {
+      toast.error(error.message)
+    }
+  }, [error])
   
   // Handle post-processing when search completes
   useEffect(() => {
