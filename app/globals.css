@@ -466,6 +466,27 @@ button[aria-label="Toggle theme"]:hover {
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }
 
+/* Dark mode AI glow box */
+.dark .ai-glow {
+  background: linear-gradient(135deg, 
+    rgba(139, 92, 246, 0.15) 0%, 
+    rgba(167, 139, 250, 0.1) 100%);
+  border: 1px solid rgba(196, 181, 253, 0.3);
+}
+
+/* AI Match text in dark mode */
+.dark .ai-glow .text-purple-900 {
+  color: #E9D5FF !important;
+}
+
+.dark .ai-glow .text-purple-700 {
+  color: #F3E8FF !important;
+}
+
+.dark .ai-glow .text-purple-600 {
+  color: #D8B4FE !important;
+}
+
 /* Modern badges */
 .organic-badge {
   @apply rounded-full px-3 py-1 text-xs font-medium;
@@ -489,7 +510,6 @@ button[aria-label="Toggle theme"]:hover {
 }
 
 .display-text:hover {
-  transform: scale(1.05);
   background: linear-gradient(135deg, #A78BFA, #E879F9, #7C3AED);
   background-size: 200% 200%;
   background-clip: text;
@@ -576,6 +596,11 @@ button[aria-label="Toggle theme"]:hover {
 .dark .contact-card .bg-zinc-50 .text-gray-900 {
   color: #F8FAFC !important;
   font-weight: 500;
+}
+
+/* Ensure notes with whitespace-pre-wrap are visible */
+.dark .contact-card .bg-zinc-50 .whitespace-pre-wrap {
+  color: #F8FAFC !important;
 }
 
 /* Footer metadata text */

@@ -37,53 +37,45 @@ export async function POST(req: Request) {
       source: c.source
     }));
 
+    // Log for debugging
+    console.log('Query:', query);
+    console.log('Batch size:', batch.length);
+    console.log('Sample contact:', batch[0]);
+
     const { object: matches } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
+      model: openrouter('anthropic/claude-sonnet-4'),
       output: 'array',
       schema: matchSchema,
       maxRetries: 4,
-      prompt: `Find contacts matching the user's search query.
+      prompt: `Query: "${query}"
 
-QUERY: "${query}"
-TODAY: ${new Date().toISOString()}
+Instructions:
+Find all contacts that match the query.
+1. Return an EMPTY array [] if no contacts match ALL conditions
+2. ONLY include contacts that satisfy EVERY part of the query
 
-MATCHING MODES:
-• RELAXED mode if query contains: "might", "could", "possibly", "potential", "maybe", "perhaps", "probably"
-• STRICT mode (default) for all other queries
+Matching rules:
+- "CEOs in XYZ" → role MUST contain "CEO" AND location MUST contain "XYZ"
+      - Don't infer, invent or make up any information that isn't explicitly written
+      - Don't use "other contacts suggest" or "network indicates" reasoning
+      - Every contact is a separate entity, don't combine or merge information from multiple contacts
+- Empty/null location = automatic fail for location queries
+- Check ONLY explicit field values, never infer
 
-STRICT: Only match explicit evidence (e.g., "connection to John" requires John mentioned in notes)
-RELAXED: Allow reasonable inferences (e.g., "might know Elon" matches senior Tesla employees)
-
-TEMPORAL QUERIES:
-LinkedIn dates format: "LinkedIn connected: DD-Mon-YY" where YY = 20YY (25=2025, 24=2024)
-• "before 2024" = 2023 or earlier
-• "after 2024" = 2025 or later
-• "in 2024" = only during 2024
-
-KEY EXAMPLES:
-1. "non descriptive contact names" → Match placeholders like "tmp", "Contact 123", NOT real names like "John Smith"
-2. "CEOs in Dallas" → BOTH role=CEO AND location contains Dallas
-3. "connected before 2024" → LinkedIn date in 2023 or earlier (NOT "9-May-25" which is 2025!)
-4. "developers before 2024 from linkedin" → developer role AND LinkedIn date before 2024
-
-RULES:
-• Match ALL conditions in compound queries
-• Empty fields cannot satisfy conditions
-• Never assume connections/relationships without explicit evidence
-• "Stealth" company = stealth startup
-• For each match, explain which fields matched and why
-
-CONTACTS:
+Contacts to analyze:
 ${JSON.stringify(batch)}
 
-Output format:
-"""
-${JSON.stringify(matchSchema)}
-"""
-Where id is the contact id and reason is a clear explanation of why the contact matches the query.
+For each matching contact, return:
+{
+  "id": "contact-id",
+  "reason": "Concise explanation quoting the exact field values that match, e.g., 'Role is CEO and location is Dallas, TX'"
+}
 
-Return only matching contacts with clear explanations.`
+ONLY include contacts that match ALL conditions. Return empty array [] if none match.`
     });
+
+    // Log results for debugging
+    console.log('Matches found:', matches.length);
 
     return Response.json({ matches });
   } catch (error) {

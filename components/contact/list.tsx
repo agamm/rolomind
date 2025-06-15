@@ -23,9 +23,10 @@ interface ContactListProps {
   aiResults?: Array<{ contact: Contact; reason: string }>
   isAISearching?: boolean
   loadingMessage?: string
+  onResetAISearch?: () => void
 }
 
-export function ContactList({ contacts, onSearch, aiResults, isAISearching }: ContactListProps) {
+export function ContactList({ contacts, onSearch, aiResults, isAISearching, onResetAISearch }: ContactListProps) {
   const [searchQuery, setSearchQuery] = React.useState("")
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [deletingContact, setDeletingContact] = useState<Contact | null>(null)
@@ -76,7 +77,13 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
     }
   }
 
+  // Check if AI search was performed but returned no results
+  const hasAISearchNoResults = aiResults !== undefined && aiResults.length === 0 && !isAISearching
+
   const filteredContacts = React.useMemo(() => {
+    // If AI search returned no results, don't show any contacts
+    if (hasAISearchNoResults) return []
+    
     // Start with either AI results or all contacts
     const baseContacts = aiResults && aiResults.length > 0 
       ? aiResults.map(result => result.contact)
@@ -91,7 +98,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
       contact.contactInfo.emails.some(email => email.toLowerCase().includes(query)) ||
       contact.notes.toLowerCase().includes(query)
     )
-  }, [contacts, searchQuery, aiResults])
+  }, [contacts, searchQuery, aiResults, hasAISearchNoResults])
 
   const {
     paginatedItems: paginatedContacts,
@@ -260,13 +267,34 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching }: Co
           ) : filteredContacts.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500">
-                <Upload className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                <div className="text-lg font-medium mb-2">
-                  {contacts.length === 0 ? "No contacts yet" : "No matches found"}
-                </div>
-                <p>
-                  {contacts.length === 0 ? "Import a CSV file to get started!" : "Try a different search term"}
-                </p>
+                {hasAISearchNoResults ? (
+                  <>
+                    <X className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <div className="text-lg font-medium mb-2">
+                      No contacts found matching AI search
+                    </div>
+                    <p className="mb-4">
+                      Try a different search query or reset to view all contacts
+                    </p>
+                    <Button
+                      variant="outline"
+                      onClick={() => onResetAISearch?.()}
+                      className="mx-auto"
+                    >
+                      Reset to All Contacts
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                    <div className="text-lg font-medium mb-2">
+                      {contacts.length === 0 ? "No contacts yet" : "No matches found"}
+                    </div>
+                    <p>
+                      {contacts.length === 0 ? "Import a CSV file to get started!" : "Try a different search term"}
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           ) : (

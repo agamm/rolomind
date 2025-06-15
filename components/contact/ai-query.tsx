@@ -29,6 +29,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
   const [enableSummary, setEnableSummary] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const [hasSearched, setHasSearched] = useState(false)
   const timerRef = React.useRef<NodeJS.Timeout | null>(null)
   const inputRef = React.useRef<HTMLInputElement>(null)
   const { summary, isGenerating, error: summaryError, generateSummary, reset: resetSummary } = useSummaryGeneration()
@@ -55,6 +56,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
     resetProcessing()
     setIsStopping(false)
     setElapsedSeconds(0)
+    setHasSearched(true)
     searchContacts(query)
   }
   
@@ -140,7 +142,14 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               ref={inputRef}
               placeholder="e.g., 'CEOs in Dallas', 'software engineers at startups'"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
+              onChange={(e) => {
+                setQuery(e.target.value)
+                // Reset search state when user modifies the query
+                if (hasSearched) {
+                  setHasSearched(false)
+                  onResults?.(undefined as any)
+                }
+              }}
               disabled={isSearching}
               className="flex-1 soft-input"
             />
@@ -246,10 +255,12 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
         </div>
       )}
 
-      {!isSearching && !isProcessingResults && results.length > 0 && (
+      {!isSearching && !isProcessingResults && hasSearched && query && (
         <div className="rounded-xl p-4" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', borderColor: 'rgba(139, 92, 246, 0.3)', borderWidth: '1px', borderStyle: 'solid' }}>
           <p className="text-primary font-semibold">
-            ✓ Found {results.length} matches
+            {results.length > 0 
+              ? `✓ Found ${results.length} matches`
+              : '✗ No contacts found matching your search criteria'}
           </p>
         </div>
       )}

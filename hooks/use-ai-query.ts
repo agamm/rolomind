@@ -65,7 +65,7 @@ async function queryBatch(
   }
 }
 
-async function processInParallel(
+async function processWithSemaphore(
   batches: Contact[][], 
   query: string, 
   signal: AbortSignal,
@@ -73,58 +73,74 @@ async function processInParallel(
 ) {
   const allResults: ContactMatch[] = []
   let completed = 0
-  let parallelLimit = PARALLEL_LIMIT
-  
-  // Process batches in chunks
+  let semaphoreLimit = PARALLEL_LIMIT
+  let activeBatches = 0
   let batchIndex = 0
+  let hasRateLimit = false
   
-  while (batchIndex < batches.length) {
+  // Create a queue to process batches
+  const processBatch = async (batch: Contact[], index: number): Promise<void> => {
+    try {
+      const matches = await queryBatch(batch, query, signal)
+      allResults.push(...matches)
+      
+      // Update progress immediately when this batch completes
+      completed++
+      onProgress(completed, batches.length, allResults)
+      
+      // If successful and not rate limited, try increasing parallelism
+      if (!hasRateLimit && semaphoreLimit < 20) {
+        semaphoreLimit = Math.min(semaphoreLimit + 1, 20)
+      }
+    } catch (error) {
+      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Search aborted')) {
+        throw error
+      }
+      
+      const errorMessage = error instanceof Error ? error.message : ''
+      
+      if (errorMessage.includes('429') || errorMessage.includes('rate')) {
+        hasRateLimit = true
+        semaphoreLimit = Math.max(2, Math.floor(semaphoreLimit / 2))
+        console.log(`Rate limited. Reducing parallel requests to ${semaphoreLimit}`)
+        
+        // Retry this batch after delay
+        await new Promise(resolve => setTimeout(resolve, 3000))
+        await processBatch(batch, index)
+      } else {
+        // Skip failed batch
+        console.error('Batch failed:', error)
+        completed++
+        onProgress(completed, batches.length, allResults)
+      }
+    } finally {
+      activeBatches--
+    }
+  }
+  
+  // Process all batches with semaphore control
+  const promises: Promise<void>[] = []
+  
+  while (batchIndex < batches.length || activeBatches > 0) {
     // Check if aborted
     if (signal.aborted) {
       throw new Error('Search aborted')
     }
     
-    const chunk = batches.slice(batchIndex, batchIndex + parallelLimit)
-    
-    try {
-      const promises = chunk.map(batch => queryBatch(batch, query, signal))
-      const results = await Promise.all(promises)
-      
-      results.forEach(matches => allResults.push(...matches))
-      completed += chunk.length
-      batchIndex += chunk.length
-      
-      onProgress(completed, batches.length, allResults)
-      
-      // If successful, try increasing parallelism gradually
-      if (parallelLimit < 20) {
-        parallelLimit = Math.min(parallelLimit + 1, 20)
-      }
-    } catch (error) {
-      // Re-throw abort errors
-      if (error instanceof Error && (error.name === 'AbortError' || error.message === 'Search aborted')) {
-        throw error
-      }
-      
-      // Handle errors for individual batches
-      const errorMessage = error instanceof Error ? error.message : ''
-      
-      if (errorMessage.includes('429') || errorMessage.includes('rate')) {
-        // Reduce parallelism and continue with next chunk
-        parallelLimit = Math.max(2, Math.floor(parallelLimit / 2))
-        console.log(`Rate limited. Reducing parallel requests to ${parallelLimit}`)
-        
-        // Add a delay before retrying
-        await new Promise(resolve => setTimeout(resolve, 3000))
-      } else {
-        // For non-rate-limit errors, skip the failed batch and continue
-        console.error('Batch failed:', error)
-        completed += chunk.length
-        batchIndex += chunk.length
-        onProgress(completed, batches.length, allResults)
-      }
+    // Start new batches if under semaphore limit
+    while (activeBatches < semaphoreLimit && batchIndex < batches.length) {
+      const batch = batches[batchIndex]
+      activeBatches++
+      promises.push(processBatch(batch, batchIndex))
+      batchIndex++
     }
+    
+    // Wait a bit before checking again
+    await new Promise(resolve => setTimeout(resolve, 100))
   }
+  
+  // Wait for all promises to complete
+  await Promise.allSettled(promises)
   
   return allResults
 }
@@ -154,8 +170,8 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       setProgress({ completed: 0, total: batches.length })
       
       try {
-        // Process with adaptive parallelism
-        const allResults = await processInParallel(
+        // Process with semaphore-based parallelism
+        const allResults = await processWithSemaphore(
           batches,
           query,
           abortControllerRef.current.signal,

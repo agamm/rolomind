@@ -89,6 +89,7 @@ export function ContactManager() {
                 aiResults={aiResults}
                 isAISearching={isAISearching || isProcessing}
                 onSearch={setSearchQuery}
+                onResetAISearch={() => setAiResults(undefined)}
               />
             </>
           )}
