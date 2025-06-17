@@ -5,6 +5,7 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth-client";
 import { DemoImport, DemoSearch, DemoResults, DemoVoiceEdit, DemoProvider, DemoWrapper } from "@/components/landing";
+import { Header } from "@/components/layout/header";
 import { 
   Shield, 
   Search, 
@@ -90,7 +91,9 @@ export default function LandingPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
+    <>
+      <Header />
+      <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="text-center max-w-5xl mx-auto">
@@ -134,7 +137,7 @@ export default function LandingPage() {
             ) : (
               <>
                 <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg">
-                  <Link href="/api/auth/sign-in">
+                  <Link href="/sign-up">
                     Start Using Rolomind
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
@@ -378,7 +381,7 @@ export default function LandingPage() {
                     not managing infrastructure.
                   </p>
                   <Button asChild className="w-full" size="lg">
-                    <Link href="/api/auth/sign-in">
+                    <Link href="/sign-up">
                       Start Now
                     </Link>
                   </Button>
@@ -515,7 +518,7 @@ export default function LandingPage() {
                 </ul>
 
                 <Button asChild className="w-full" size="lg">
-                  <Link href="/api/auth/sign-in">
+                  <Link href="/sign-up">
                     Start Now
                   </Link>
                 </Button>
@@ -593,7 +596,7 @@ export default function LandingPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg">
-              <Link href="/api/auth/sign-in">
+              <Link href="/sign-up">
                 Start Using Rolomind
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Link>
@@ -616,7 +619,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="#features" className="hover:text-foreground">Features</Link></li>
                 <li><Link href="#pricing" className="hover:text-foreground">Pricing</Link></li>
-                <li><Link href="/api/auth/sign-in" className="hover:text-foreground">Sign In</Link></li>
+                <li><Link href="/sign-in" className="hover:text-foreground">Sign In</Link></li>
               </ul>
             </div>
             
@@ -671,6 +674,7 @@ export default function LandingPage() {
           </div>
         </div>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }

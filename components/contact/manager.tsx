@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
-import { useContacts, useDeleteAllContacts } from "@/hooks/use-local-contacts"
+import { useContacts } from "@/hooks/use-local-contacts"
 import { useEnhancedImport } from "@/hooks/use-enhanced-import"
 import { Contact } from "@/types/contact"
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
@@ -14,7 +14,6 @@ import { ImportProgressModal } from "@/components/import/import-progress-modal"
 export function ContactManager() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const { data: contacts = [], isLoading, error } = useContacts(searchQuery)
-  const deleteAllMutation = useDeleteAllContacts()
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)
   const [isProcessing, setIsProcessing] = React.useState(false)
@@ -38,16 +37,6 @@ export function ContactManager() {
     importFile(file)
   }
 
-  const handleDeleteAll = async () => {
-    try {
-      await deleteAllMutation.mutateAsync()
-      toast.success("All contacts deleted successfully")
-    } catch (error) {
-      console.error("Failed to delete all contacts:", error)
-      toast.error(`Failed to delete contacts: ${error instanceof Error ? error.message : "Please try again."}`)
-    }
-  }
-
   if (error) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -66,9 +55,7 @@ export function ContactManager() {
           <TopNav
             contactCount={contacts.length}
             onFileSelect={handleFileSelect}
-            onDeleteAll={handleDeleteAll}
             isImporting={isImporting || isSaving}
-            isDeleting={deleteAllMutation.isPending}
             disabled={isLoading}
           />
 

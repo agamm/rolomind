@@ -163,10 +163,10 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               className="flex-1 soft-input"
             />
             {query.trim() && (
-              <button 
+              <Button
                 type="submit" 
                 disabled={isSearching || contacts.length === 0}
-                className="warm-button whitespace-nowrap px-4 h-[42px] flex items-center justify-center text-sm"
+                className="h-[42px]"
               >
               {isSearching ? (
                 <>
@@ -176,7 +176,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
               ) : (
                 'Search'
               )}
-              </button>
+              </Button>
             )}
           </div>
           

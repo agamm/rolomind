@@ -42,12 +42,11 @@ export function ImportButton({
       />
       <Button
         variant="outline"
-        size="sm"
         onClick={handleClick}
         disabled={disabled || isImporting}
-        className="flex items-center gap-2"
+        className="h-9 px-3 cursor-pointer"
       >
-        {isImporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+        {isImporting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 mr-1.5" />}
         {isImporting ? "Importing..." : "Import CSV"}
       </Button>
     </>
