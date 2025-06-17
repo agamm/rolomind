@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
     "/api/auth",
     "/sign-in",
     "/sign-up",
+    "/terms",
+    "/privacy",
   ];
   
   // Check if the current route is public
