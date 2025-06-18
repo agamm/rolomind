@@ -33,14 +33,14 @@ describe('Database Contact Functions - Logic Testing', () => {
     }
     
     // Mock the db import
-    vi.doMock('@/db/local/index', () => ({
+    vi.doMock('@/db/indexdb/index', () => ({
       db: mockDb
     }))
   })
 
   describe('getAllContacts', () => {
     it('should call db.contacts.toArray()', async () => {
-      const { getAllContacts } = await import('@/db/local/contacts')
+      const { getAllContacts } = await import('@/db/indexdb/contacts')
       
       const mockContacts = [
         createTestContact({ id: '1', name: 'John' }),
@@ -57,7 +57,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('getContactById', () => {
     it('should call db.contacts.get with the provided id', async () => {
-      const { getContactById } = await import('@/db/local/contacts')
+      const { getContactById } = await import('@/db/indexdb/contacts')
       
       const mockContact = createTestContact({ id: 'test-123' })
       mockDb.contacts.get.mockResolvedValue(mockContact)
@@ -71,7 +71,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('createContact', () => {
     it('should generate an id if not provided', async () => {
-      const { createContact } = await import('@/db/local/contacts')
+      const { createContact } = await import('@/db/indexdb/contacts')
       
       const newContact = createTestContact({ id: undefined })
       const result = await createContact(newContact)
@@ -84,7 +84,7 @@ describe('Database Contact Functions - Logic Testing', () => {
     })
 
     it('should use provided id and add timestamps', async () => {
-      const { createContact } = await import('@/db/local/contacts')
+      const { createContact } = await import('@/db/indexdb/contacts')
       
       const newContact = createTestContact({ id: 'custom-id' })
       await createContact(newContact)
@@ -99,7 +99,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('createContactsBatch', () => {
     it('should call bulkAdd with contacts having ids and timestamps', async () => {
-      const { createContactsBatch } = await import('@/db/local/contacts')
+      const { createContactsBatch } = await import('@/db/indexdb/contacts')
       
       const contacts = [
         createTestContact({ id: undefined, name: 'Contact 1' }),
@@ -120,7 +120,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('updateContact', () => {
     it('should call put with updated timestamp', async () => {
-      const { updateContact } = await import('@/db/local/contacts')
+      const { updateContact } = await import('@/db/indexdb/contacts')
       
       const contact = createTestContact({ id: 'update-1' })
       const originalUpdatedAt = contact.updatedAt
@@ -141,7 +141,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('deleteContact', () => {
     it('should call delete with the provided id', async () => {
-      const { deleteContact } = await import('@/db/local/contacts')
+      const { deleteContact } = await import('@/db/indexdb/contacts')
       
       await deleteContact('delete-123')
       
@@ -152,7 +152,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('deleteContactsBatch', () => {
     it('should call bulkDelete with the provided ids', async () => {
-      const { deleteContactsBatch } = await import('@/db/local/contacts')
+      const { deleteContactsBatch } = await import('@/db/indexdb/contacts')
       
       const ids = ['id1', 'id2', 'id3']
       await deleteContactsBatch(ids)
@@ -164,7 +164,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('deleteAllContacts', () => {
     it('should call clear', async () => {
-      const { deleteAllContacts } = await import('@/db/local/contacts')
+      const { deleteAllContacts } = await import('@/db/indexdb/contacts')
       
       await deleteAllContacts()
       
@@ -174,7 +174,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('getContactsCount', () => {
     it('should call count and return the result', async () => {
-      const { getContactsCount } = await import('@/db/local/contacts')
+      const { getContactsCount } = await import('@/db/indexdb/contacts')
       
       mockDb.contacts.count.mockResolvedValue(42)
       
@@ -187,7 +187,7 @@ describe('Database Contact Functions - Logic Testing', () => {
 
   describe('searchContacts', () => {
     it('should filter contacts by query in multiple fields', async () => {
-      const { searchContacts } = await import('@/db/local/contacts')
+      const { searchContacts } = await import('@/db/indexdb/contacts')
       
       const mockFilteredContacts = [
         createTestContact({ name: 'John Doe' })

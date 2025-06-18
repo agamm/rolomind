@@ -1,6 +1,6 @@
-// Re-export local database operations
-export * from './local/contacts';
-export { db as localDb } from './local/index';
+// Re-export IndexDB database operations for contacts
+export * from './indexdb/contacts';
+export { db as indexDb } from './indexdb/index';
 
-// Re-export cloud database for future use
-export { db as cloudDb } from './cloud/index';
+// Re-export SQLite database for authentication
+export { db as sqliteDb } from './sqlite/index';

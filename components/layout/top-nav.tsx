@@ -7,7 +7,7 @@ import { ImportButton } from "@/components/import"
 import { ThemeToggle } from "./theme-toggle"
 import { useSession, signOut } from "@/lib/auth-client"
 import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
+import { LogOut, CreditCard } from "lucide-react"
 
 interface TopNavProps {
   contactCount: number
@@ -37,17 +37,27 @@ export function TopNav({
         />
         <ThemeToggle />
         {session?.user && (
-          <Button
-            variant="outline"
-            onClick={async () => {
-              await signOut();
-              router.push("/");
-            }}
-            className="h-9 px-3"
-          >
-            <LogOut className="h-4 w-4 mr-1.5" />
-            Sign Out
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              onClick={() => router.push("/app/billing")}
+              className="h-9 px-3"
+            >
+              <CreditCard className="h-4 w-4 mr-1.5" />
+              Billing
+            </Button>
+            <Button
+              variant="outline"
+              onClick={async () => {
+                await signOut();
+                router.push("/");
+              }}
+              className="h-9 px-3"
+            >
+              <LogOut className="h-4 w-4 mr-1.5" />
+              Sign Out
+            </Button>
+          </>
         )}
       </div>
     </div>

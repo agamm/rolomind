@@ -1,5 +1,5 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db/local';
+import { db } from '@/db/indexdb';
 import { 
   createContact, 
   createContactsBatch, 
@@ -7,7 +7,7 @@ import {
   deleteContact, 
   deleteAllContacts,
   searchContacts 
-} from '@/db/local/contacts';
+} from '@/db/indexdb/contacts';
 import type { Contact } from '@/types/contact';
 import Papa from 'papaparse';
 import { useState, useEffect } from 'react';

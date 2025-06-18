@@ -15,7 +15,7 @@ import { usePagination } from "@/hooks/use-pagination"
 import { toast } from "sonner"
 import { useUpdateContact, useDeleteContact } from "@/hooks/use-local-contacts"
 import { ExportQueryButton } from "@/components/export/export-query-button"
-import { deleteContactsBatch } from "@/db/local/contacts"
+import { deleteContactsBatch } from "@/db/indexdb/contacts"
 
 interface ContactListProps {
   contacts: Contact[]

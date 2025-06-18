@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
-import { getAllContacts, createContactsBatch, updateContact } from '@/db/local/contacts'
+import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
 
 interface ImportResponse {
   success: boolean
