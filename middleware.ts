@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { auth } from "@/lib/auth";
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   
-  // Whitelist of public routes
+  // Public routes that don't require authentication
   const publicRoutes = [
     "/",
     "/api/auth",
-    "/sign-in",
+    "/sign-in", 
     "/sign-up",
     "/terms",
     "/privacy",
@@ -24,21 +23,20 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // All other routes require authentication
-  const session = await auth.api.getSession({
-    headers: request.headers,
-  });
-
-  if (!session) {
+  // Check if user has a session cookie (simple check)
+  const sessionCookie = request.cookies.get("better-auth.session_token");
+  
+  if (!sessionCookie) {
     // For API routes, return 401
     if (pathname.startsWith("/api")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     
-    // For all other routes, redirect to landing page
-    return NextResponse.redirect(new URL("/", request.url));
+    // For all other routes, redirect to sign-in
+    return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
+  // Let the actual page/API route validate the session properly
   return NextResponse.next();
 }
 

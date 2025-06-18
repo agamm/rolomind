@@ -3,7 +3,7 @@
 import Link from "next/link";
 import React from "react";
 import { Button } from "@/components/ui/button";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/auth/auth-client";
 import { DemoImport, DemoSearch, DemoResults, DemoVoiceEdit, DemoProvider, DemoWrapper } from "@/components/landing";
 import { Header } from "@/components/layout/header";
 import { 

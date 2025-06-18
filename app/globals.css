@@ -127,28 +127,6 @@
   }
 }
 
-/* Background gradient */
-.organic-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: -1;
-  background-color: var(--background);
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
-}
-
-.dark .organic-bg {
-  background: linear-gradient(135deg, #2A1F3D 0%, #3D2F5B 50%, #2A1F3D 100%);
-  background-image: 
-    radial-gradient(circle at 20% 80%, rgba(183, 148, 244, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 80% 20%, rgba(167, 139, 250, 0.06) 0%, transparent 50%),
-    radial-gradient(circle at 50% 50%, rgba(139, 92, 246, 0.04) 0%, transparent 70%);
-}
 
 
 /* Modern primary button */

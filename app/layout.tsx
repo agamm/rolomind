@@ -31,7 +31,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} ${spaceMono.variable} font-sans`}>
-        <div className="organic-bg" />
         <Providers>
           {children}
         </Providers>

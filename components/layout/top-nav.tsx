@@ -5,7 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ImportButton } from "@/components/import"
 import { ThemeToggle } from "./theme-toggle"
-import { useSession, signOut } from "@/lib/auth-client"
+import { useSession, signOut } from "@/lib/auth/auth-client"
 import { Button } from "@/components/ui/button"
 import { LogOut, CreditCard } from "lucide-react"
 

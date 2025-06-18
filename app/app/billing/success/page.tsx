@@ -4,6 +4,7 @@ import { useSearchParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { CheckCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 export default function BillingSuccessPage() {
   const searchParams = useSearchParams();
@@ -34,6 +35,12 @@ export default function BillingSuccessPage() {
         <p className="text-sm text-muted-foreground">
           Redirecting to dashboard in 5 seconds...
         </p>
+        <Button
+          onClick={() => router.push("/app")}
+          className="mt-4"
+        >
+          Go to Dashboard
+        </Button>
       </div>
     </div>
   );
