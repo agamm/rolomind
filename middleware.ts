@@ -1,7 +1,8 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/lib/auth/auth";
 
 export async function middleware(request: NextRequest) {
+  // console.log(request)
   const pathname = request.nextUrl.pathname;
   
   // Public routes that don't require authentication
@@ -23,23 +24,33 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check if user has a session cookie (simple check)
-  const sessionCookie = request.cookies.get("better-auth.session_token");
-  
-  if (!sessionCookie) {
-    // For API routes, return 401
-    if (pathname.startsWith("/api")) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+  try {
+    // Check session using auth API
+    const session = await auth.api.getSession({
+      headers: request.headers
+    });
     
-    // For all other routes, redirect to sign-in
+    if (!session) {
+      // For API routes, return 401
+      if (pathname.startsWith("/api")) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      }
+      
+      // For all other routes, redirect to sign-in
+      return NextResponse.redirect(new URL("/sign-in", request.url));
+    }
+  } catch (error) {
+    console.error("Error checking session in middleware:", error);
+    // If there's an error, redirect to sign-in for safety
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
 
-  // Let the actual page/API route validate the session properly
+  // Let the actual page/API route validate subscription properly
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico).*)"
+  ],
 };

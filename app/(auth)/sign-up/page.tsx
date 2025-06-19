@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { signUp } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export default function SignUpPage() {
   const router = useRouter();
@@ -19,30 +20,43 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
     
     if (!acceptedTerms) {
-      toast.error("Please accept the terms of service to continue");
+      setError("Please accept the terms of service to continue");
       return;
     }
     
     setIsLoading(true);
 
     try {
-      await signUp.email({
+      const response = await signUp.email({
         email,
         password,
         name,
+      }, {
+        onRequest: () => {
+          // Called when the request is sent
+        },
+        onSuccess: () => {
+          toast.success("Account created successfully!");
+          router.push("/app/billing");
+        },
+        onError: (ctx) => {
+          console.error("Sign up error:", ctx.error);
+          const errorMessage = ctx.error.message || "Failed to create account. Please try again.";
+          setError(errorMessage);
+          setIsLoading(false);
+        },
       });
-      
-      toast.success("Account created successfully!");
-      router.push("/app/billing");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign up error:", error);
-      toast.error("Failed to create account. Please try again.");
-    } finally {
+      const errorMessage = error?.message || "Failed to create account. Please try again.";
+      setError(errorMessage);
       setIsLoading(false);
     }
   };
@@ -61,6 +75,12 @@ export default function SignUpPage() {
               </CardHeader>
               <form onSubmit={handleSubmit}>
                 <CardContent className="space-y-5">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
                   <div className="space-y-2">
                     <Label htmlFor="name" className="text-sm font-medium">Name</Label>
                     <Input

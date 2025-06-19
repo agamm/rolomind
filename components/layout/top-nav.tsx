@@ -27,7 +27,7 @@ export function TopNav({
   
   return (
     <div className="flex items-center justify-between relative">
-      <Link href="/" className="no-underline relative" style={{ overflow: 'visible', padding: '20px 0' }}>
+      <Link href="/app" className="no-underline relative" style={{ overflow: 'visible', padding: '20px 0' }}>
         <h1 className="display-text text-primary">Rolomind</h1>
       </Link>
       <div className="flex items-center gap-2">

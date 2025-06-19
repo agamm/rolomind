@@ -7,32 +7,45 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { signIn } from "@/lib/auth/auth-client";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 
 export default function SignInPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
     try {
-      await signIn.email({
+      const response = await signIn.email({
         email,
         password,
+        callbackURL: "/app",
+      }, {
+        onRequest: () => {
+          // Called when the request is sent
+        },
+        onSuccess: () => {
+          toast.success("Signed in successfully!");
+          router.push("/app");
+        },
+        onError: (ctx) => {
+          console.error("Sign in error:", ctx.error);
+          setError(ctx.error.message || "Invalid email or password");
+          setIsLoading(false);
+        },
       });
-      
-      toast.success("Signed in successfully!");
-      router.push("/app");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error:", error);
-      toast.error("Invalid email or password");
-    } finally {
+      setError(error?.message || "Invalid email or password");
       setIsLoading(false);
     }
   };
@@ -48,6 +61,12 @@ export default function SignInPage() {
           </CardHeader>
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-5">
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
               <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium">Email</Label>
               <Input
