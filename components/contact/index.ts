@@ -1,4 +1,5 @@
 export { ContactManager } from './manager'
+export { ContactManagerContent } from './manager-content'
 export { ContactList } from './list'
 export { ContactCard } from './card'
 export { SearchInput } from './search-input'

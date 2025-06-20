@@ -17,7 +17,7 @@ export function Header() {
           ) : session ? (
             <>
               <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground" asChild>
-                <Link href="/app">App</Link>
+                <Link href="/dashboard/app">App</Link>
               </Button>
               <Button
                 variant="ghost"

@@ -13,7 +13,7 @@ export default function BillingSuccessPage() {
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      router.push("/app");
+      router.push("/dashboard/app");
     }, 5000);
 
     return () => clearTimeout(timer);
@@ -25,7 +25,7 @@ export default function BillingSuccessPage() {
         <CheckCircle className="mx-auto h-16 w-16 text-green-600 mb-4" />
         <h1 className="text-2xl font-bold mb-2">Payment Successful!</h1>
         <p className="text-muted-foreground mb-4">
-          Thank you for your subscription. Your account has been upgraded.
+          Thank you for your subscription. Your account has been activated.
         </p>
         {checkoutId && (
           <p className="text-sm text-muted-foreground mb-4">
@@ -36,7 +36,7 @@ export default function BillingSuccessPage() {
           Redirecting to dashboard in 5 seconds...
         </p>
         <Button
-          onClick={() => router.push("/app")}
+          onClick={() => router.push("/dashboard/app")}
           className="mt-4"
         >
           Go to Dashboard

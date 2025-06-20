@@ -44,7 +44,7 @@ export default function SignUpPage() {
         },
         onSuccess: () => {
           toast.success("Account created successfully!");
-          router.push("/app/billing");
+          router.push("/subscribe");
         },
         onError: (ctx) => {
           console.error("Sign up error:", ctx.error);

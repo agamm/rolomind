@@ -28,14 +28,14 @@ export default function SignInPage() {
       const response = await signIn.email({
         email,
         password,
-        callbackURL: "/app",
+        callbackURL: "/dashboard/app",
       }, {
         onRequest: () => {
           // Called when the request is sent
         },
         onSuccess: () => {
           toast.success("Signed in successfully!");
-          router.push("/app");
+          router.push("/dashboard/app");
         },
         onError: (ctx) => {
           console.error("Sign in error:", ctx.error);

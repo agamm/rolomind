@@ -32,7 +32,7 @@ export const auth = betterAuth({
               slug: "rolomind-pro",
             }
           ],
-          successUrl: "/app/billing/success?checkout_id={CHECKOUT_ID}",
+          successUrl: "/subscribe/success?checkout_id={CHECKOUT_ID}",
           authenticatedUsersOnly: true,
         }),
         portal(),
