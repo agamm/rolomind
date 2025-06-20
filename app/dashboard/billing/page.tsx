@@ -3,6 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreditCard, Activity, CheckCircle } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
+import { 
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator 
+} from "@/components/ui/breadcrumb";
+import Link from "next/link";
 
 export default async function BillingPage() {
   const user = await getUser();
@@ -31,13 +40,20 @@ export default async function BillingPage() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto w-full">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold mb-4">Billing</h1>
-        <p className="text-muted-foreground">
-          Manage your subscription and billing details
-        </p>
-      </div>
+    <>
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink asChild>
+              <Link href="/dashboard/app">App</Link>
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Billing</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
       <div className="space-y-6">
         {hasActiveSubscription ? (
@@ -149,6 +165,6 @@ export default async function BillingPage() {
           </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }
