@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ExternalLink, CreditCard, Activity, CheckCircle } from "lucide-react";
+import { CreditCard, Activity, CheckCircle } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
 

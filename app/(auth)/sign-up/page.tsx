@@ -34,7 +34,7 @@ export default function SignUpPage() {
     setIsLoading(true);
 
     try {
-      const response = await signUp.email({
+      await signUp.email({
         email,
         password,
         name,
@@ -53,9 +53,9 @@ export default function SignUpPage() {
           setIsLoading(false);
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Sign up error:", error);
-      const errorMessage = error?.message || "Failed to create account. Please try again.";
+      const errorMessage = (error as Error)?.message || "Failed to create account. Please try again.";
       setError(errorMessage);
       setIsLoading(false);
     }
@@ -198,7 +198,7 @@ export default function SignUpPage() {
                 <div>
                   <h3 className="font-semibold mb-1">Private & Local-First</h3>
                   <p className="text-sm text-muted-foreground">
-                    Your contacts never leave your local browser. Big tech companies can't promise that.
+                    Your contacts never leave your local browser. Big tech companies can&apos;t promise that.
                   </p>
                 </div>
               </div>
@@ -230,7 +230,7 @@ export default function SignUpPage() {
             
             <div className="pt-6 border-t">
               <p className="text-sm text-muted-foreground italic">
-                "Open source, sustainably priced, built for people not profits. No VC funding, just honest software that works."
+                &ldquo;Open source, sustainably priced, built for people not profits. No VC funding, just honest software that works.&rdquo;
               </p>
             </div>
           </div>

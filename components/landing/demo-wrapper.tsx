@@ -11,7 +11,7 @@ interface DemoWrapperProps {
   demoId: string;
 }
 
-export function DemoWrapper({ children, title, demoId }: DemoWrapperProps) {
+export function DemoWrapper({ children, demoId }: DemoWrapperProps) {
   const { activeDemo, setActiveDemo } = useDemo();
   const isPlaying = activeDemo === demoId;
 

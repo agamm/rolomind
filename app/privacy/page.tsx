@@ -20,7 +20,7 @@ export default function PrivacyPage() {
             <section className="space-y-4">
               <h2 className="text-2xl font-semibold">1. Introduction</h2>
               <p className="text-muted-foreground">
-                Rolomind ("we," "our," or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, 
+                Rolomind (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, 
                 use, disclose, and safeguard your information when you use our contact management service.
               </p>
             </section>
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
                 <li>AI providers process this data according to their own privacy policies</li>
                 <li>These providers have committed to not use customer data to train or improve their models</li>
                 <li>AI providers may retain data for up to 30 days for abuse monitoring purposes</li>
-                <li>We do not store your raw contact data on our servers - it remains in your browser's local storage</li>
+                <li>We do not store your raw contact data on our servers - it remains in your browser&apos;s local storage</li>
               </ul>
             </section>
 
@@ -135,7 +135,7 @@ export default function PrivacyPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">10. Children's Privacy</h2>
+              <h2 className="text-2xl font-semibold">10. Children&apos;s Privacy</h2>
               <p className="text-muted-foreground">
                 Our Service is not intended for children under 18 years of age. We do not knowingly collect personal information from children under 18. 
                 If we learn that we have collected personal information from a child under 18, we will take steps to delete such information.
@@ -163,7 +163,7 @@ export default function PrivacyPage() {
               <h2 className="text-2xl font-semibold">13. Changes to This Privacy Policy</h2>
               <p className="text-muted-foreground">
                 We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page 
-                and updating the "Last updated" date. Your continued use of the Service after any changes indicates your acceptance of the updated Privacy Policy.
+                and updating the &ldquo;Last updated&rdquo; date. Your continued use of the Service after any changes indicates your acceptance of the updated Privacy Policy.
               </p>
             </section>
 

@@ -8,8 +8,6 @@ import { DemoImport, DemoSearch, DemoResults, DemoVoiceEdit, DemoProvider, DemoW
 import { Header } from "@/components/layout/header";
 import { 
   Shield, 
-  Search, 
-  Users, 
   GithubIcon, 
   DollarSign,
   Sparkles,
@@ -23,10 +21,7 @@ import {
   HeadphonesIcon,
   Server,
   Cloud,
-  Import,
   Brain,
-  Eye,
-  Zap,
   AlertCircle,
   ChevronDown,
   ChevronUp
@@ -61,7 +56,7 @@ export default function LandingPage() {
       question: "Can't OpenAI, Gemini, or Claude do the same?",
       answer: (
         <div className="space-y-4">
-          <p>Yes, they could do some of it in theory, but here's what makes Rolomind different:</p>
+          <p>Yes, they could do some of it in theory, but here&apos;s what makes Rolomind different:</p>
           <ul className="space-y-3 ml-6">
             <li className="flex items-start gap-3">
               <span className="text-primary mt-1">•</span>
@@ -69,7 +64,7 @@ export default function LandingPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="text-primary mt-1">•</span>
-              <span><strong>Private & local-first:</strong> Your contacts never leave your browser. Big tech companies can't promise that—their business model depends on your data.</span>
+              <span><strong>Private & local-first:</strong> Your contacts never leave your browser. Big tech companies can&apos;t promise that—their business model depends on your data.</span>
             </li>
             <li className="flex items-start gap-3">
               <span className="text-primary mt-1">•</span>
@@ -81,10 +76,10 @@ export default function LandingPage() {
             </li>
             <li className="flex items-start gap-3">
               <span className="text-primary mt-1">•</span>
-              <span><strong>No lock-in:</strong> Export everything anytime. Your contacts are yours, stored in your browser's database, not trapped in a chat history.</span>
+              <span><strong>No lock-in:</strong> Export everything anytime. Your contacts are yours, stored in your browser&apos;s database, not trapped in a chat history.</span>
             </li>
           </ul>
-          <p className="mt-4">Think of it this way: You wouldn't use ChatGPT as your CRM, right? Rolomind is purpose-built for one thing—managing contacts intelligently while respecting your privacy.</p>
+          <p className="mt-4">Think of it this way: You wouldn&apos;t use ChatGPT as your CRM, right? Rolomind is purpose-built for one thing—managing contacts intelligently while respecting your privacy.</p>
         </div>
       )
     }
@@ -328,7 +323,7 @@ export default function LandingPage() {
 
                 <div className="pt-6 border-t">
                   <p className="text-sm text-muted-foreground mb-4">
-                    <strong>⚠️ Not for beginners:</strong> You'll need to manage servers, 
+                    <strong>⚠️ Not for beginners:</strong> You&apos;ll need to manage servers, 
                     databases, SSL certificates, and handle updates yourself.
                   </p>
                   <Button variant="outline" asChild className="w-full">
@@ -422,7 +417,7 @@ export default function LandingPage() {
                 <Database className="h-8 w-8 text-primary mb-3 mx-auto" />
                 <h4 className="font-semibold mb-2">Local-First</h4>
                 <p className="text-sm text-muted-foreground">
-                  Contacts stored in your browser's IndexedDB
+                  Contacts stored in your browser&apos;s IndexedDB
                 </p>
               </div>
               <div className="bg-background rounded-xl p-6 border">
@@ -536,7 +531,7 @@ export default function LandingPage() {
                 margin. The $5/month keeps our servers running and support available.
               </p>
               <p className="text-sm text-muted-foreground mt-3">
-                Hopefully it could help me pay for tacos here and there—I've been freelancing 
+                Hopefully it could help me pay for tacos here and there—I&apos;ve been freelancing 
                 for the past 3 years, so using Rolomind is also a real help. 🌮
               </p>
             </div>

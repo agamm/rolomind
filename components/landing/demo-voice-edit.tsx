@@ -73,7 +73,7 @@ export function DemoVoiceEdit() {
           
           // Apply updates based on command
           const newUpdatedFields = new Set<string>();
-          let newFormData = { ...formData };
+          const newFormData = { ...formData };
           
           if (command.includes("company")) {
             newFormData.company = "TechStart Inc";
@@ -129,7 +129,7 @@ export function DemoVoiceEdit() {
           {(transcript || isProcessing) && (
             <div className="text-sm space-y-2">
               {transcript && (
-                <p className="italic text-muted-foreground">"{transcript}"</p>
+                <p className="italic text-muted-foreground">&ldquo;{transcript}&rdquo;</p>
               )}
               {isProcessing && (
                 <div className="flex items-center gap-2 text-muted-foreground">

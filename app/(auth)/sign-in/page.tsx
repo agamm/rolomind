@@ -25,7 +25,7 @@ export default function SignInPage() {
     setError(null);
 
     try {
-      const response = await signIn.email({
+      await signIn.email({
         email,
         password,
         callbackURL: "/dashboard/app",
@@ -43,9 +43,9 @@ export default function SignInPage() {
           setIsLoading(false);
         },
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error("Sign in error:", error);
-      setError(error?.message || "Invalid email or password");
+      setError((error as Error)?.message || "Invalid email or password");
       setIsLoading(false);
     }
   };

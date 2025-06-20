@@ -1,7 +1,6 @@
 "use client"
 
 import React from "react"
-import { toast } from "sonner"
 import { TopNav } from "@/components/layout"
 import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
