@@ -1,8 +1,9 @@
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, Activity, CheckCircle } from "lucide-react";
+import { CreditCard, CheckCircle } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
+import { CreditDisplay } from "./credit-display";
 import { 
   Breadcrumb,
   BreadcrumbList,
@@ -56,6 +57,8 @@ export default async function BillingPage() {
       </Breadcrumb>
 
       <div className="space-y-6">
+        <CreditDisplay />
+        
         {hasActiveSubscription ? (
           <>
             <Card>
@@ -96,25 +99,6 @@ export default async function BillingPage() {
               </CardContent>
             </Card>
 
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Activity className="h-5 w-5" />
-                  Usage This Period
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-muted-foreground">API Credits Used</span>
-                    <span className="font-medium">0 credits</span>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    Additional usage is billed at the end of each billing period
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
 
             <Card>
               <CardHeader>

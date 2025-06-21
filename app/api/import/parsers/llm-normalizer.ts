@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
 import { openrouter } from '@/lib/openrouter-config'
+import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
@@ -20,10 +21,7 @@ export async function normalizeContactWithLLM(
   headers: string[]
 ): Promise<Partial<Contact>> {
   try {
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
-      schema: normalizedContactSchema,
-      prompt: `Extract and normalize contact information from this CSV row data.
+    const promptText = `Extract and normalize contact information from this CSV row data.
 
 Headers: ${headers.join(', ')}
 Data: ${JSON.stringify(rawData, null, 2)}
@@ -38,7 +36,22 @@ Instructions:
 7. Extract location (city, state, country) if available
 8. Put any other relevant information into notes (but NOT company, role, or location)
 
-Be thorough in extracting all available contact information.`
+Be thorough in extracting all available contact information.`;
+
+    try {
+      checkTokenLimit(promptText, TOKEN_LIMITS.IMPORT_CONTACT.input, 'import-contact');
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Contact data too large: ${error.message}`);
+      }
+      throw error;
+    }
+
+    const { object } = await generateObject({
+      model: openrouter('anthropic/claude-3-haiku'),
+      schema: normalizedContactSchema,
+      maxTokens: TOKEN_LIMITS.IMPORT_CONTACT.output,
+      prompt: promptText
     })
 
     const contact: Partial<Contact> = {

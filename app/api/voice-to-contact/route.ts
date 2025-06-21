@@ -4,8 +4,9 @@ import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, trackCredits } from '@/lib/auth/server'
+import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
 import { CreditCost } from '@/lib/credit-costs'
+import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -36,6 +37,25 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check audio file size - estimate duration based on file size
+    // Typical audio bitrates:
+    // - webm/opus: ~32 kbps = ~240 KB per minute
+    // - mp3 128kbps: ~960 KB per minute  
+    // - wav: ~10 MB per minute
+    // Use conservative estimate of 1 MB max for ~1 minute
+    const MAX_AUDIO_SIZE = 1 * 1024 * 1024; // 1 MB
+    
+    if (audioFile.size > MAX_AUDIO_SIZE) {
+      const estimatedMinutes = Math.round(audioFile.size / (1024 * 1024));
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Audio file too long. Please keep recordings under 1 minute. Estimated duration: ${estimatedMinutes} minutes.` 
+        },
+        { status: 400 }
+      )
+    }
+
     const session = await getServerSession();
     
     if (!session?.user) {
@@ -45,14 +65,26 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Check if user has enough credits (Whisper + Haiku)
+    const totalCreditsNeeded = CreditCost.VOICE_TRANSCRIBE + CreditCost.VOICE_PROCESS;
+    const credits = await getUserCredits();
+    if (!credits || credits.remaining < totalCreditsNeeded) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Insufficient credits. Please add more credits to continue.',
+          required: totalCreditsNeeded,
+          remaining: credits?.remaining || 0
+        },
+        { status: 402 }
+      )
+    }
+
     const transcribedText = await transcribeAudio(audioFile)
     
-    await trackCredits(CreditCost.OPENAI_WHISPER);
+    await consumeCredits(CreditCost.VOICE_TRANSCRIBE);
 
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
-      schema: contactUpdateSchema,
-      prompt: `Extract contact information updates from this voice transcription about a contact.
+    const promptText = `Extract contact information updates from this voice transcription about a contact.
       
 Current contact information:
 ${JSON.stringify(currentContact, null, 2)}
@@ -78,10 +110,32 @@ Examples of what to extract:
 - "They're now the CTO" → role: "CTO"
 - "Remove their phone number" → fieldsToRemove: ["phones"]
 - "They mentioned they love hiking" → notesComplete: "[existing notes]\n\nLoves hiking"
-`
+`;
+
+    try {
+      checkTokenLimit(promptText, TOKEN_LIMITS.VOICE_TO_CONTACT.input, 'voice-to-contact');
+    } catch (error) {
+      if (error instanceof Error) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Voice transcription or contact data is too large to process.',
+            details: error.message
+          },
+          { status: 400 }
+        )
+      }
+      throw error;
+    }
+
+    const { object } = await generateObject({
+      model: openrouter('anthropic/claude-3-haiku'),
+      schema: contactUpdateSchema,
+      maxTokens: TOKEN_LIMITS.VOICE_TO_CONTACT.output,
+      prompt: promptText
     })
 
-    await trackCredits(CreditCost.CLAUDE_3_HAIKU);
+    await consumeCredits(CreditCost.VOICE_PROCESS);
 
     let mergedNotes = currentContact.notes || ''
     

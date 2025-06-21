@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
+import { checkQueryContactsTokens } from '@/lib/client-token-utils'
 
 interface ContactMatch {
   contact: Contact
@@ -21,6 +22,12 @@ async function queryBatch(
   signal?: AbortSignal,
   retries = 3
 ): Promise<ContactMatch[]> {
+  // Check token limits before sending
+  const tokenCheck = checkQueryContactsTokens(query, contacts);
+  if (!tokenCheck.isValid && !tokenCheck.needsChunking) {
+    throw new Error(tokenCheck.error || 'Token limit exceeded');
+  }
+  
   try {
     const response = await fetch('/api/query-contacts', {
       method: 'POST',
@@ -39,10 +46,10 @@ async function queryBatch(
     if (!response.ok) {
       const error = await response.json()
       // Check for credit limit error (402 status)
-      if (response.status === 402 || error.statusCode === 402) {
-        throw new Error('API credit limit reached. Please check your API credits or try again later.')
+      if (response.status === 402) {
+        throw new Error(error.error || 'Insufficient credits. Please add more credits to continue.')
       }
-      throw new Error(error.message || 'Query failed')
+      throw new Error(error.error || error.message || 'Query failed')
     }
     
     const { matches } = await response.json()

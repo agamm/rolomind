@@ -12,6 +12,8 @@ interface UseVoiceRecorderReturn {
   error: string | null
 }
 
+const MAX_RECORDING_TIME = 60; // 1 minute max
+
 export function useVoiceRecorder(): UseVoiceRecorderReturn {
   const [isRecording, setIsRecording] = useState(false)
   const [isPaused, setIsPaused] = useState(false)
@@ -52,9 +54,20 @@ export function useVoiceRecorder(): UseVoiceRecorderReturn {
       setIsRecording(true)
       setRecordingTime(0)
       
-      // Start timer
+      // Start timer with max duration check
       timerRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1)
+        setRecordingTime(prev => {
+          const newTime = prev + 1;
+          
+          // Auto-stop at max duration
+          if (newTime >= MAX_RECORDING_TIME) {
+            stopRecording();
+            setError(`Maximum recording time of ${MAX_RECORDING_TIME} seconds reached.`);
+            return MAX_RECORDING_TIME;
+          }
+          
+          return newTime;
+        })
       }, 1000)
       
       // Setup audio level monitoring

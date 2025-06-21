@@ -3,8 +3,9 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, trackCredits } from '@/lib/auth/server'
+import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
 import { CreditCost } from '@/lib/credit-costs'
+import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -43,10 +44,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
-      schema: mergedContactSchema,
-      prompt: `Merge these two contact records intelligently. 
+    // Check if user has enough credits
+    const credits = await getUserCredits();
+    if (!credits || credits.remaining < CreditCost.MERGE_CONTACTS) {
+      return NextResponse.json(
+        { 
+          success: false,
+          error: 'Insufficient credits. Please add more credits to continue.',
+          required: CreditCost.MERGE_CONTACTS,
+          remaining: credits?.remaining || 0
+        },
+        { status: 402 }
+      )
+    }
+
+    const promptText = `Merge these two contact records intelligently. 
       
 Existing contact:
 ${JSON.stringify((() => {
@@ -88,10 +100,29 @@ Instructions:
    - Format the notes cleanly, one piece of information per line (list items with "-" preferred)
    - Do not repeat the same information multiple times, even if worded slightly differently
    - Do not include any lines that only contain placeholder values
-6. Preserve the best version of the name (longer/more complete is usually better)`
+6. Preserve the best version of the name (longer/more complete is usually better)`;
+
+    try {
+      checkTokenLimit(promptText, TOKEN_LIMITS.MERGE_CONTACTS.input, 'merge-contacts');
+    } catch (error) {
+      if (error instanceof Error) {
+        return NextResponse.json({ 
+          success: false, 
+          error: "Contact data is too large to merge. Please reduce the size of notes or other fields.",
+          details: error.message
+        }, { status: 400 })
+      }
+      throw error;
+    }
+
+    const { object } = await generateObject({
+      model: openrouter('anthropic/claude-3.7-sonnet'),
+      schema: mergedContactSchema,
+      maxTokens: TOKEN_LIMITS.MERGE_CONTACTS.output,
+      prompt: promptText
     })
 
-    await trackCredits(CreditCost.CLAUDE_3_7_SONNET);
+    await consumeCredits(CreditCost.MERGE_CONTACTS);
 
     const mergedContact: Contact = {
       id: existing.id,

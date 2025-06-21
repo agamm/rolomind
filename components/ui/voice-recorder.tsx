@@ -81,6 +81,13 @@ export function VoiceRecorder({
       {/* Recording Status */}
       {isRecording && (
         <div className="space-y-2">
+          {/* Time limit warning */}
+          {recordingTime >= 50 && (
+            <div className="text-xs text-amber-600 dark:text-amber-400 font-medium">
+              ⚠️ Recording will stop at 1 minute
+            </div>
+          )}
+          
           {/* Audio Visualizer */}
           <div className="flex items-center gap-2">
             <div className={cn(
@@ -102,8 +109,11 @@ export function VoiceRecorder({
               ))}
             </div>
             
-            <span className="font-mono text-xs text-gray-600 dark:text-gray-400 ml-2">
-              {formatTime(recordingTime)}
+            <span className={cn(
+              "font-mono text-xs ml-2",
+              recordingTime >= 50 ? "text-amber-600 dark:text-amber-400 font-semibold" : "text-gray-600 dark:text-gray-400"
+            )}>
+              {formatTime(recordingTime)} / 1:00
             </span>
             
             {isPaused ? (

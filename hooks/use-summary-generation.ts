@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
+import { checkGenerateSummaryTokens } from '@/lib/client-token-utils'
 
 export interface Summary {
   summary: string
@@ -22,6 +23,12 @@ export function useSummaryGeneration(options?: UseSummaryGenerationOptions) {
 
   const mutation = useMutation({
     mutationFn: async ({ contacts, query }: { contacts: ContactMatch[], query: string }) => {
+      // Check token limits before sending
+      const tokenCheck = checkGenerateSummaryTokens(query, contacts);
+      if (!tokenCheck.isValid) {
+        throw new Error(tokenCheck.error || 'Too many contacts to summarize in one request');
+      }
+      
       const response = await fetch('/api/generate-summary', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -30,6 +37,9 @@ export function useSummaryGeneration(options?: UseSummaryGenerationOptions) {
       
       if (!response.ok) {
         const error = await response.json()
+        if (response.status === 402) {
+          throw new Error(error.error || 'Insufficient credits. Please add more credits to continue.')
+        }
         throw new Error(error.error || 'Failed to generate summary')
       }
       
