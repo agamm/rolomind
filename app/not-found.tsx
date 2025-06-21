@@ -13,9 +13,9 @@ export default function NotFound() {
         </p>
         <div className="flex gap-4 justify-center pt-4">
           <Button asChild variant="outline">
-            <Link href="/">
+            <Link href="/dashboard/app">
               <ArrowLeft className="mr-2 h-4 w-4" />
-              Go Back
+              App
             </Link>
           </Button>
           <Button asChild>

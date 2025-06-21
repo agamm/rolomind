@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { Contact } from '@/types/contact';
 import { handleAIError } from '@/lib/ai-error-handler';
 import { openrouter } from '@/lib/openrouter-config';
+import { getServerSession, trackCredits } from '@/lib/auth/server';
+import { CreditCost } from '@/lib/credit-costs';
 
 export const maxDuration = 30;
 
@@ -19,9 +21,14 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    // Process up to 100 contacts per request
     if (contacts.length > 100) {
       return Response.json({ error: 'Too many contacts' }, { status: 400 });
+    }
+
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
 
     const batch = contacts.map((c: Contact) => ({
@@ -38,7 +45,7 @@ export async function POST(req: Request) {
     }));
 
     const { object: matches } = await generateObject({
-      model: openrouter('anthropic/claude-sonnet-4'),
+      model: openrouter('anthropic/claude-3.7-sonnet'),
       output: 'array',
       schema: matchSchema,
       maxRetries: 4,
@@ -69,6 +76,8 @@ For each matching contact, return:
 
 ONLY include contacts that match ALL conditions. Return empty array [] if none match.`
     });
+
+    await trackCredits(CreditCost.CLAUDE_3_7_SONNET);
 
     return Response.json({ matches });
   } catch (error) {

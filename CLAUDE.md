@@ -7,6 +7,7 @@
 - Always remove old unused code/componentes/files that isn't needed anymore.
 - Don't add test files unless I ask you to.
 - Add --force to npm installs in this project
+- Use react-query when querying/fetching http requests
 
 App functionality:
 - Searching "CEOs in Texas" then submitting should show loading (this should always return N>20 results).

@@ -3,6 +3,8 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession, trackCredits } from '@/lib/auth/server'
+import { CreditCost } from '@/lib/credit-costs'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -30,6 +32,15 @@ export async function POST(request: NextRequest) {
         success: false, 
         error: "Both existing and incoming contacts are required" 
       }, { status: 400 })
+    }
+
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
     }
 
     const { object } = await generateObject({
@@ -80,7 +91,8 @@ Instructions:
 6. Preserve the best version of the name (longer/more complete is usually better)`
     })
 
-    // Create the merged contact using the existing contact's ID and timestamps
+    await trackCredits(CreditCost.CLAUDE_3_7_SONNET);
+
     const mergedContact: Contact = {
       id: existing.id,
       name: object.name,
@@ -89,7 +101,7 @@ Instructions:
       location: object.location,
       contactInfo: object.contactInfo,
       notes: object.notes || '',
-      source: existing.source, // Keep original source
+      source: existing.source,
       createdAt: existing.createdAt,
       updatedAt: new Date()
     }

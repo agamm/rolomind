@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { polar, checkout, portal } from "@polar-sh/better-auth";
+import { polar, checkout, portal, usage } from "@polar-sh/better-auth";
 import { Polar } from "@polar-sh/sdk";
 import { db } from "@/db/sqlite";
 import { env } from "@/lib/env";
@@ -36,6 +36,7 @@ export const auth = betterAuth({
           authenticatedUsersOnly: true,
         }),
         portal(),
+        usage(),
       ],
     }),
     nextCookies(), // Must be last in the plugins array

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession, trackCredits } from '@/lib/auth/server'
+import { CreditCost } from '@/lib/credit-costs'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -47,6 +49,15 @@ export async function POST(request: NextRequest) {
       reason: match.reason
     }))
     
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+    
     const { object } = await generateObject({
       model: openrouter('anthropic/claude-3.7-sonnet'),
       schema: summarySchema,
@@ -62,6 +73,8 @@ Provide:
 
 Be concise and highlight the most important information that answers the user's query.`
     })
+    
+    await trackCredits(CreditCost.CLAUDE_3_7_SONNET);
     
     return NextResponse.json(object)
   } catch (error) {

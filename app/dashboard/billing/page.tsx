@@ -84,7 +84,7 @@ export default async function BillingPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-muted-foreground">Current Period</span>
                   <span className="text-sm">
-                    {formatDate(activeSubscription.currentPeriodStart)} - {formatDate(activeSubscription.currentPeriodEnd)}
+                    {formatDate(activeSubscription.currentPeriodStart.toString())} - {formatDate(activeSubscription.currentPeriodEnd?.toString() || '')}
                   </span>
                 </div>
                 

@@ -4,6 +4,8 @@ import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
 import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession, trackCredits } from '@/lib/auth/server'
+import { CreditCost } from '@/lib/credit-costs'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -34,10 +36,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Transcribe audio using OpenAI Whisper
-    const transcribedText = await transcribeAudio(audioFile)
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
 
-    // Use AI to extract structured information from the transcription
+    const transcribedText = await transcribeAudio(audioFile)
+    
+    await trackCredits(CreditCost.OPENAI_WHISPER);
+
     const { object } = await generateObject({
       model: openrouter('anthropic/claude-3-haiku'),
       schema: contactUpdateSchema,
@@ -70,12 +81,11 @@ Examples of what to extract:
 `
     })
 
-    // Merge the extracted information with the current contact
+    await trackCredits(CreditCost.CLAUDE_3_HAIKU);
+
     let mergedNotes = currentContact.notes || ''
     
-    // Handle notes updates
     if (object.notesComplete) {
-      // AI provided complete updated notes
       mergedNotes = object.notesComplete
     }
     
@@ -98,7 +108,6 @@ Examples of what to extract:
       updatedAt: new Date()
     }
 
-    // Handle field removals if any
     if (object.fieldsToRemove) {
       object.fieldsToRemove.forEach(field => {
         switch (field) {
@@ -145,12 +154,10 @@ Examples of what to extract:
 
 async function transcribeAudio(audioFile: File): Promise<string> {
   try {
-    // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       throw new Error('OpenAI API key is not configured. Voice transcription requires OPENAI_API_KEY.')
     }
 
-    // Use the AI SDK's experimental transcribe function with OpenAI's Whisper
     const arrayBuffer = await audioFile.arrayBuffer()
     const audio = new Uint8Array(arrayBuffer)
     

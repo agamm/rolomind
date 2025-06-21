@@ -2,6 +2,7 @@ import { headers } from "next/headers";
 import { auth } from "./auth";
 import { Polar } from "@polar-sh/sdk";
 import { env } from "@/lib/env";
+import { CreditCostType } from "@/lib/credit-costs";
 
 export async function getServerSession() {
   const session = await auth.api.getSession({
@@ -88,10 +89,8 @@ export async function getCustomerState() {
       customerId: customer.id,
     });
 
-    // Get benefits
-    const benefits = await polarClient.benefits.list({
-      customerId: customer.id,
-    });
+    // Get benefits for the organization
+    const benefits = await polarClient.benefits.list({});
 
     return {
       customer,
@@ -104,5 +103,37 @@ export async function getCustomerState() {
   } catch (error) {
     console.error("Error getting customer state:", error);
     return null;
+  }
+}
+
+export async function trackCredits(credits: CreditCostType) {
+  const session = await getServerSession();
+  
+  if (!session?.user?.email) {
+    console.error("No authenticated user for credit tracking");
+    return { success: false, error: "No authenticated user" };
+  }
+
+  try {
+    const polarClient = new Polar({
+      accessToken: env.POLAR_ACCESS_TOKEN,
+      server: env.POLAR_SERVER,
+    });
+
+    const result = await polarClient.events.ingest({
+      events: [{
+        name: 'credits',
+        externalCustomerId: session.user.id,
+        metadata: {
+          credits: credits,
+        },
+      }],
+    });
+
+    console.log("Credits tracked successfully:", { credits, user: session.user.email });
+    return { success: true, data: result };
+  } catch (error) {
+    console.error("Failed to track credits:", error);
+    return { success: false, error: error instanceof Error ? error.message : "Unknown error" };
   }
 }

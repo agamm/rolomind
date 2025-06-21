@@ -17,17 +17,18 @@ export function useIsPayingCustomer() {
     retry: false,
   });
 
-  const hasActiveSubscription = customerState?.subscriptions?.some(
-    (sub) => sub.status === "active" || sub.status === "trialing"
-  ) ?? false;
-
-  const activeSubscriptions = customerState?.subscriptions?.filter(
-    (sub) => sub.status === "active" || sub.status === "trialing"
-  ) ?? [];
-
-  const grantedBenefits = customerState?.benefits ?? [];
+  // Handle potential differences in customer state structure
+  const subscriptions = (customerState as any)?.subscriptions || [];
+  const benefits = (customerState as any)?.benefits || [];
+  const meters = (customerState as any)?.meters || [];
   
-  const meters = customerState?.meters ?? [];
+  const hasActiveSubscription = subscriptions.some(
+    (sub: any) => sub.status === "active" || sub.status === "trialing"
+  );
+
+  const activeSubscriptions = subscriptions.filter(
+    (sub: any) => sub.status === "active" || sub.status === "trialing"
+  );
 
   return {
     isPayingCustomer: hasActiveSubscription,
@@ -35,7 +36,7 @@ export function useIsPayingCustomer() {
     error,
     customerState,
     activeSubscriptions,
-    grantedBenefits,
+    grantedBenefits: benefits,
     meters,
   };
 }

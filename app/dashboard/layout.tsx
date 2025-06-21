@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { isAuthenticated, isPayingCustomer } from "@/lib/auth/server";
+import { isAuthenticated } from "@/lib/auth/server";
 import { DashboardContent } from "./dashboard-content";
 
 interface DashboardLayoutProps {
@@ -14,12 +14,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
     redirect("/sign-in");
   }
 
-  // Check subscription status server-side
-  const isPaying = await isPayingCustomer();
-  
-  if (!isPaying) {
-    redirect("/subscribe");
-  }
-
+  // The dashboard content with TopNav will be shown for all authenticated users
+  // This allows access to billing page even for non-paying customers
   return <DashboardContent>{children}</DashboardContent>;
 }
