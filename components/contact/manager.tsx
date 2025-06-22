@@ -27,6 +27,7 @@ export function ContactManager() {
     handleDuplicateDecision,
     importProgress,
     cancelImport,
+    resetImport,
     oversizedContacts,
     handleOversizedDecision
   } = useEnhancedImport()
@@ -93,6 +94,7 @@ export function ContactManager() {
         progress={importProgress.progress}
         error={importProgress.error}
         onCancel={cancelImport}
+        onClose={resetImport}
       />
       
       <MergeConfirmationModal

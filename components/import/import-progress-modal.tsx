@@ -1,13 +1,9 @@
 import React, { useEffect, useState } from 'react'
 import { Loader2, FileText, Sparkles, CheckCircle, LucideIcon } from 'lucide-react'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription
-} from '@/components/ui/dialog'
+import { Modal, ModalCenteredContent } from '@/components/ui/modal'
 import { Progress } from '@/components/ui/progress'
+import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 
 interface ImportProgressModalProps {
   isOpen: boolean
@@ -20,6 +16,7 @@ interface ImportProgressModalProps {
   }
   error?: string
   onCancel?: () => void
+  onClose?: () => void
 }
 
 export function ImportProgressModal({ 
@@ -28,7 +25,8 @@ export function ImportProgressModal({
   parserType,
   progress,
   error,
-  onCancel
+  onCancel,
+  onClose
 }: ImportProgressModalProps) {
   const [showFormatSelected, setShowFormatSelected] = useState(false)
   const [prevStatus, setPrevStatus] = useState(status)
@@ -126,114 +124,125 @@ export function ImportProgressModal({
     ? Math.round((progress.current / progress.total) * 100) 
     : 0
   
-  const canCancel = status !== 'complete' && status !== 'error'
+  const isProcessing = status !== 'complete' && status !== 'error'
+  
+  const handleClose = () => {
+    if (status === 'error' || status === 'complete') {
+      onClose?.()
+    } else if (isProcessing && onCancel) {
+      onCancel()
+    }
+  }
   
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open && canCancel && onCancel) {
-        onCancel()
-      }
-    }}>
-      <DialogContent 
-        className="sm:max-w-md" 
-        onPointerDownOutside={(e) => e.preventDefault()}
-        hideCloseButton={!canCancel}
-      >
-        <DialogHeader>
-          <div className="flex flex-col items-center gap-4 py-4">
-            {content.icon}
-            <DialogTitle className="text-center">{content.title}</DialogTitle>
-            <DialogDescription className="text-center">
-              {content.description}
-            </DialogDescription>
-          </div>
-        </DialogHeader>
-        
-        {showProgress && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <span>{progress.message || 'Processing...'}</span>
-              <span className="font-medium">
-                {progressPercent}% ({progress.current} / {progress.total})
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-2" />
-            {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && progressPercent > 0 && (
-              <div className="flex items-center justify-center gap-2 text-xs text-purple-600 dark:text-purple-400">
-                <Sparkles className="h-3 w-3 animate-pulse" />
-                <span>AI is extracting names, emails, phones, and other contact details...</span>
-              </div>
-            )}
-          </div>
+    <Modal
+      isOpen={isOpen}
+      onClose={handleClose}
+      preventOutsideClick={isProcessing}
+      preventEscapeKey={isProcessing}
+      showCloseButton={!isProcessing}
+      size="md"
+    >
+      <ModalCenteredContent>
+        {content.icon}
+        <h2 className="text-lg font-semibold text-center">{content.title}</h2>
+        <p className="text-sm text-muted-foreground text-center">
+          {content.description}
+        </p>
+        {status === 'error' && error && error.toLowerCase().includes('insufficient credits') && (
+          <Link href="/dashboard/billing" className="mt-2" onClick={() => onClose?.()}>
+            <Button variant="default" size="sm">
+              <Sparkles className="h-4 w-4 mr-2" />
+              Add Credits
+            </Button>
+          </Link>
         )}
-        
-        {status === 'detecting' && (
-          <div className="mt-4 flex items-center justify-center gap-2 flex-wrap">
-            <FormatOption
-              icon={FileText}
-              label="Rolodex"
-              isSelected={showFormatSelected && parserType === 'rolodex'}
-              showFormatSelected={showFormatSelected}
-              baseColor="green"
-            />
-            <FormatOption
-              icon={FileText}
-              label="LinkedIn"
-              isSelected={showFormatSelected && parserType === 'linkedin'}
-              showFormatSelected={showFormatSelected}
-              baseColor="blue"
-            />
-            <FormatOption
-              icon={FileText}
-              label="Google"
-              isSelected={showFormatSelected && parserType === 'google'}
-              showFormatSelected={showFormatSelected}
-              baseColor="red"
-            />
-            <FormatOption
-              icon={Sparkles}
-              label="Custom"
-              isSelected={showFormatSelected && (parserType === 'custom' || parserType === 'llm-normalizer')}
-              showFormatSelected={showFormatSelected}
-              baseColor="purple"
-            />
-          </div>
-        )}
-        
-        {parserType && ['processing', 'normalizing', 'saving'].includes(status) && (
-          <div className="mt-4 flex flex-col items-center gap-2">
-            <span className="inline-flex items-center gap-2 rounded-full bg-muted border border-border px-3 py-1 text-xs">
-              {parserType === 'rolodex' ? (
-                <>
-                  <FileText className="h-3 w-3 text-green-500" />
-                  Rolodex Format
-                </>
-              ) : parserType === 'linkedin' ? (
-                <>
-                  <FileText className="h-3 w-3 text-blue-500" />
-                  LinkedIn Format
-                </>
-              ) : parserType === 'google' ? (
-                <>
-                  <FileText className="h-3 w-3 text-red-500" />
-                  Google Format
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3 w-3 text-purple-500" />
-                  Custom Format (AI)
-                </>
-              )}
+      </ModalCenteredContent>
+      
+      {showProgress && (
+        <div className="space-y-3 px-6 pb-4">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <span>{progress.message || 'Processing...'}</span>
+            <span className="font-medium">
+              {progressPercent}% ({progress.current} / {progress.total})
             </span>
-            {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && (
-              <div className="text-xs text-muted-foreground animate-pulse">
-                AI is analyzing field patterns and data structure...
-              </div>
-            )}
           </div>
-        )}
-      </DialogContent>
-    </Dialog>
+          <Progress value={progressPercent} className="h-2" />
+          {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && progressPercent > 0 && (
+            <div className="flex items-center justify-center gap-2 text-xs text-purple-600 dark:text-purple-400">
+              <Sparkles className="h-3 w-3 animate-pulse" />
+              <span>AI is extracting names, emails, phones, and other contact details...</span>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {status === 'detecting' && (
+        <div className="mt-4 flex items-center justify-center gap-2 flex-wrap px-6 pb-4">
+          <FormatOption
+            icon={FileText}
+            label="Rolodex"
+            isSelected={showFormatSelected && parserType === 'rolodex'}
+            showFormatSelected={showFormatSelected}
+            baseColor="green"
+          />
+          <FormatOption
+            icon={FileText}
+            label="LinkedIn"
+            isSelected={showFormatSelected && parserType === 'linkedin'}
+            showFormatSelected={showFormatSelected}
+            baseColor="blue"
+          />
+          <FormatOption
+            icon={FileText}
+            label="Google"
+            isSelected={showFormatSelected && parserType === 'google'}
+            showFormatSelected={showFormatSelected}
+            baseColor="red"
+          />
+          <FormatOption
+            icon={Sparkles}
+            label="Custom"
+            isSelected={showFormatSelected && (parserType === 'custom' || parserType === 'llm-normalizer')}
+            showFormatSelected={showFormatSelected}
+            baseColor="purple"
+          />
+        </div>
+      )}
+      
+      {parserType && ['processing', 'normalizing', 'saving'].includes(status) && (
+        <div className="mt-4 flex flex-col items-center gap-2 px-6 pb-4">
+          <span className="inline-flex items-center gap-2 rounded-full bg-muted border border-border px-3 py-1 text-xs">
+            {parserType === 'rolodex' ? (
+              <>
+                <FileText className="h-3 w-3 text-green-500" />
+                Rolodex Format
+              </>
+            ) : parserType === 'linkedin' ? (
+              <>
+                <FileText className="h-3 w-3 text-blue-500" />
+                LinkedIn Format
+              </>
+            ) : parserType === 'google' ? (
+              <>
+                <FileText className="h-3 w-3 text-red-500" />
+                Google Format
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3 w-3 text-purple-500" />
+                Custom Format (AI)
+              </>
+            )}
+          </span>
+          {(parserType === 'custom' || parserType === 'llm-normalizer') && status === 'normalizing' && (
+            <div className="text-xs text-muted-foreground animate-pulse">
+              AI is analyzing field patterns and data structure...
+            </div>
+          )}
+        </div>
+      )}
+    </Modal>
   )
 }
 

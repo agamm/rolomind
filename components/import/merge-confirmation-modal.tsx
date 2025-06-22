@@ -2,14 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Contact } from '@/types/contact'
 import { DuplicateMatch } from '@/lib/contact-merger'
 import { Button } from '@/components/ui/button'
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle,
-  DialogDescription,
-  DialogFooter 
-} from '@/components/ui/dialog'
+import { Modal } from '@/components/ui/modal'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { ContactCard } from '@/components/contact'
 
@@ -49,16 +42,19 @@ export function MergeConfirmationModal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             existing: duplicate.existing,
-            incoming: duplicate.incoming
+            incoming: duplicate.incoming,
+            previewOnly: true
           })
         })
         
-        if (response.ok) {
-          const { mergedContact } = await response.json()
-          setMergedPreview(mergedContact)
+        if (!response.ok) {
+          throw new Error('Failed to generate merge preview')
         }
+        
+        const { merged } = await response.json()
+        setMergedPreview(merged)
       } catch (error) {
-        console.error('Failed to get merge preview:', error)
+        console.error('Failed to generate merge preview:', error)
       } finally {
         setIsLoadingPreview(false)
       }
@@ -67,151 +63,154 @@ export function MergeConfirmationModal({
     fetchMergePreview()
   }, [duplicate])
   
-  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
-    if (action !== 'cancel') {
-      setIsProcessing(true)
-      setActionType(action)
-    }
-    onDecision(action)
-  }
-  
   if (!duplicate) return null
   
-  const { existing, incoming, matchType, matchValue } = duplicate
+  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'merge-all') => {
+    setIsProcessing(true)
+    setActionType(action)
+    
+    // Add a small delay to show the processing state
+    setTimeout(() => {
+      onDecision(action)
+    }, 300)
+  }
+  
+  const handleClose = () => {
+    if (!isProcessing) {
+      onDecision('cancel')
+    }
+  }
   
   return (
-    <Dialog open={!!duplicate} onOpenChange={(open) => {
-      if (!open) handleDecision('cancel')
-    }}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-center">
-            Duplicate Contact Found
-          </DialogTitle>
-          <DialogDescription asChild>
-            <div className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2">
-                <AlertCircle className="h-4 w-4 text-yellow-500 dark:text-yellow-400" />
-                <span className="text-foreground">Match found by <strong>{matchType}</strong>: {matchValue}</span>
-              </div>
-              {remainingCount && remainingCount > 0 && (
-                <p className="text-sm text-muted-foreground">
-                  {remainingCount} more duplicate{remainingCount > 1 ? 's' : ''} to review
-                </p>
-              )}
-            </div>
-          </DialogDescription>
-        </DialogHeader>
+    <Modal
+      isOpen={!!duplicate}
+      onClose={handleClose}
+      title="Duplicate Contact Found"
+      description={`Match type: ${duplicate.matchType} - ${duplicate.matchValue}`}
+      size="xl"
+      preventOutsideClick={isProcessing}
+      preventEscapeKey={isProcessing}
+      showCloseButton={!isProcessing}
+    >
+      <div className="py-4">
+        <div className="flex items-center gap-2 mb-4 px-6">
+          <AlertCircle className="h-5 w-5 text-amber-500" />
+          <p className="text-sm text-muted-foreground">
+            A contact with similar information already exists. How would you like to proceed?
+          </p>
+        </div>
         
-        <div className="grid grid-cols-3 gap-4 my-6">
-          {/* Existing Contact */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-muted-foreground flex items-center gap-2">
-              <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
-              Current Contact
-            </h3>
-            <div className="border-2 border-border rounded-2xl">
-              <ContactCard contact={existing} />
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 px-6">
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-center">Existing Contact</h4>
+            <ContactCard 
+              contact={duplicate.existing} 
+              viewOnly 
+              className="hover:bg-muted/50 cursor-default" 
+            />
           </div>
-          
-          {/* Incoming Contact */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-blue-700 dark:text-blue-400 flex items-center gap-2">
-              <div className="w-2 h-2 bg-blue-400 dark:bg-blue-500 rounded-full"></div>
-              New Contact
-            </h3>
-            <div className="border-2 border-blue-200 dark:border-blue-700 rounded-2xl">
-              <ContactCard contact={incoming as Contact} />
-            </div>
+          <div className="space-y-2 md:pt-8">
+            <div className="text-center text-2xl">→</div>
           </div>
-          
-          {/* Merged Preview */}
-          <div className="space-y-3">
-            <h3 className="font-semibold text-sm text-green-700 dark:text-green-400 flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 dark:bg-green-400 rounded-full animate-pulse"></div>
-              After Merge
-            </h3>
-            <div className="border-2 border-green-300 dark:border-green-700 rounded-2xl bg-green-50 dark:bg-green-950/20">
-              {isLoadingPreview ? (
-                <div className="flex items-center justify-center h-48">
-                  <Loader2 className="h-6 w-6 animate-spin text-green-600" />
-                </div>
-              ) : mergedPreview ? (
-                <ContactCard contact={mergedPreview} />
-              ) : (
-                <div className="p-4 text-center text-muted-foreground">
-                  Unable to preview merge
-                </div>
-              )}
-            </div>
+          <div className="space-y-2">
+            <h4 className="font-medium text-sm text-center">New Contact</h4>
+            <ContactCard 
+              contact={duplicate.incoming} 
+              viewOnly 
+              className="hover:bg-muted/50 cursor-default" 
+            />
           </div>
         </div>
         
-        <DialogFooter className="flex flex-wrap gap-2 justify-between">
-          <div className="flex gap-2">
-            <Button 
-              variant="outline" 
-              onClick={() => handleDecision('skip')}
-              disabled={isProcessing}
-            >
-              {isProcessing && actionType === 'skip' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Skipping...
-                </>
-              ) : (
-                'Skip This Contact'
-              )}
-            </Button>
-            <Button 
-              variant="outline" 
-              onClick={() => handleDecision('keep-both')}
-              disabled={isProcessing}
-            >
-              {isProcessing && actionType === 'keep-both' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Keeping Both...
-                </>
-              ) : (
-                'Keep Both'
-              )}
-            </Button>
-            <Button 
-              onClick={() => handleDecision('merge')} 
-              className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800"
-              disabled={isProcessing}
-            >
-              {isProcessing && actionType === 'merge' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Merging...
-                </>
-              ) : (
-                'Merge Contact'
-              )}
-            </Button>
-            {remainingCount && remainingCount > 0 && (
-            <Button 
-              variant="default" 
-              onClick={() => handleDecision('merge-all')}
-              disabled={isProcessing}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
-            >
-              {isProcessing && actionType === 'merge-all' ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Merging All...
-                </>
-              ) : (
-                <>Merge All ({remainingCount + 1} Contacts)</>
-              )}
-            </Button>
-          )}
+        {isLoadingPreview ? (
+          <div className="text-center py-4 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
+            Generating merge preview...
           </div>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        ) : mergedPreview && (
+          <div className="border-t pt-4 px-6">
+            <h4 className="font-medium text-sm text-center mb-2">
+              Merge Preview (Combined Information)
+            </h4>
+            <ContactCard 
+              contact={mergedPreview} 
+              viewOnly 
+              className="border-2 border-primary/20 bg-primary/5" 
+            />
+          </div>
+        )}
+        
+        {remainingCount !== undefined && remainingCount > 0 && (
+          <div className="text-center text-sm text-muted-foreground mt-4">
+            {remainingCount} more duplicate{remainingCount > 1 ? 's' : ''} remaining after this
+          </div>
+        )}
+      </div>
+      
+      <div className="flex flex-col sm:flex-row gap-2 px-6 pb-6">
+        <Button 
+          onClick={() => handleDecision('merge')} 
+          disabled={isProcessing}
+          variant="default"
+          className="flex-1"
+        >
+          {isProcessing && actionType === 'merge' ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Merging...
+            </>
+          ) : (
+            'Merge Contacts'
+          )}
+        </Button>
+        <Button 
+          onClick={() => handleDecision('keep-both')} 
+          disabled={isProcessing}
+          variant="outline"
+          className="flex-1"
+        >
+          {isProcessing && actionType === 'keep-both' ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Adding...
+            </>
+          ) : (
+            'Keep Both'
+          )}
+        </Button>
+        <Button 
+          onClick={() => handleDecision('skip')} 
+          disabled={isProcessing}
+          variant="ghost"
+          className="flex-1"
+        >
+          {isProcessing && actionType === 'skip' ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Skipping...
+            </>
+          ) : (
+            'Skip Import'
+          )}
+        </Button>
+        {remainingCount !== undefined && remainingCount > 3 && (
+          <Button 
+            onClick={() => handleDecision('merge-all')} 
+            disabled={isProcessing}
+            variant="secondary"
+            className="flex-1"
+          >
+            {isProcessing && actionType === 'merge-all' ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              `Merge All ${remainingCount + 1}`
+            )}
+          </Button>
+        )}
+      </div>
+    </Modal>
   )
 }

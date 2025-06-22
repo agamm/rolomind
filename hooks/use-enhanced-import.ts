@@ -42,6 +42,14 @@ export function useEnhancedImport(onComplete?: () => void) {
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (file: File): Promise<ImportResponse> => {
+      // Check current contact count before starting
+      const existingContacts = await getAllContacts()
+      const currentCount = existingContacts.length
+      
+      if (currentCount >= CONTACT_LIMITS.MAX_CONTACTS) {
+        throw new Error(`Cannot import contacts. You have reached the maximum limit of ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts. Please contact support at help@rolomind.com for assistance.`)
+      }
+      
       setImportProgress({ status: 'detecting' })
       
       const formData = new FormData()
@@ -195,6 +203,11 @@ export function useEnhancedImport(onComplete?: () => void) {
         status: 'error',
         error: error instanceof Error ? error.message : 'Import failed'
       })
+      
+      // Show appropriate toast for contact limit errors
+      if (error instanceof Error && error.message.includes('maximum limit')) {
+        toast.error('Contact limit reached. Please delete some contacts before importing new ones.')
+      }
     }
   })
 
@@ -222,9 +235,9 @@ export function useEnhancedImport(onComplete?: () => void) {
         const availableSlots = Math.max(0, CONTACT_LIMITS.MAX_CONTACTS - currentCount)
         setImportProgress({
           status: 'error',
-          error: `Cannot import ${newCount} contacts. You have ${currentCount} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS}. Only ${availableSlots} more contacts can be added.`
+          error: `Cannot import ${newCount} contacts. You have ${currentCount.toLocaleString()} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()}. Only ${availableSlots.toLocaleString()} more contacts can be added. Please contact support at help@rolomind.com for assistance.`
         })
-        toast.error(`Contact limit exceeded. Maximum ${CONTACT_LIMITS.MAX_CONTACTS} contacts allowed.`)
+        toast.error(`Contact limit exceeded. Maximum ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts allowed. Contact support for help.`)
         return
       }
       
