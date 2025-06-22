@@ -105,7 +105,11 @@ export function useEnhancedImport(onComplete?: () => void) {
         })
         
         if (!processResponse.ok) {
-          throw new Error('Processing failed')
+          const errorData = await processResponse.json()
+          if (processResponse.status === 402) {
+            throw new Error(errorData.error || 'Insufficient credits for AI normalization')
+          }
+          throw new Error(errorData.error || 'Processing failed')
         }
         
         const { readJsonStream } = await import('@/lib/stream-utils')
@@ -146,6 +150,9 @@ export function useEnhancedImport(onComplete?: () => void) {
         const processData = await processResponse.json()
         
         if (!processResponse.ok) {
+          if (processResponse.status === 402) {
+            throw new Error(processData.error || 'Insufficient credits for AI normalization')
+          }
           throw new Error(processData.error || 'Processing failed')
         }
         
@@ -205,6 +212,21 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // Get existing contacts from local database
       const existingContacts = await getAllContacts()
+      
+      // Check if importing would exceed the contact limit
+      const currentCount = existingContacts.length
+      const newCount = contacts.length
+      const totalAfterImport = currentCount + newCount
+      
+      if (totalAfterImport > CONTACT_LIMITS.MAX_CONTACTS) {
+        const availableSlots = Math.max(0, CONTACT_LIMITS.MAX_CONTACTS - currentCount)
+        setImportProgress({
+          status: 'error',
+          error: `Cannot import ${newCount} contacts. You have ${currentCount} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS}. Only ${availableSlots} more contacts can be added.`
+        })
+        toast.error(`Contact limit exceeded. Maximum ${CONTACT_LIMITS.MAX_CONTACTS} contacts allowed.`)
+        return
+      }
       
       // Find duplicates
       const contactsWithDuplicates = contacts.map(contact => {

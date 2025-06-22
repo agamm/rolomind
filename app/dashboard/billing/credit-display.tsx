@@ -2,10 +2,12 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Coins, Plus, Loader2, Info } from "lucide-react";
+import { Coins, Plus, Loader2, Info, AlertCircle } from "lucide-react";
 import { useCredits } from "@/hooks/use-credits";
 import { useState } from "react";
 import { authClient } from "@/lib/auth/auth-client";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 export function CreditDisplay() {
   const { credits, loading, error } = useCredits();
@@ -29,6 +31,10 @@ export function CreditDisplay() {
     }
   };
 
+  const creditPercentage = credits ? (credits.remaining / credits.total) * 100 : 0;
+  const isLowCredits = credits && credits.remaining < 10;
+  const isNoCredits = credits && credits.remaining === 0;
+
   return (
     <Card>
       <CardHeader>
@@ -37,90 +43,128 @@ export function CreditDisplay() {
           Credit Balance
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-6">
         {loading ? (
-          <div className="flex items-center justify-center py-4">
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="text-red-500 text-sm">Failed to load credits</div>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>Failed to load credits. Please refresh the page.</AlertDescription>
+          </Alert>
         ) : credits ? (
           <>
-            <div className="grid grid-cols-3 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold">{credits.remaining}</p>
-                <p className="text-sm text-muted-foreground">Remaining</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{credits.used}</p>
-                <p className="text-sm text-muted-foreground">Used</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{credits.total}</p>
-                <p className="text-sm text-muted-foreground">Total</p>
-              </div>
-            </div>
-            
-            {credits.remaining === 0 && (
-              <div className="bg-red-50 text-red-800 p-3 rounded-lg text-sm text-center">
-                You have no credits remaining. Add more credits to continue using AI features.
-              </div>
-            )}
-            
-            {credits.remaining > 0 && credits.remaining < 10 && (
-              <div className="bg-amber-50 text-amber-800 p-3 rounded-lg text-sm text-center">
-                You have {credits.remaining} credits remaining. Consider adding more credits soon.
-              </div>
-            )}
-            
-            <div className="border rounded-lg p-4 bg-muted/50">
-              <div className="flex items-center justify-between mb-3">
+            {/* Credit Stats */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">Credit Package</p>
-                  <p className="text-sm text-muted-foreground">100 credits for $10</p>
+                  <p className="text-3xl font-bold">
+                    {credits.remaining.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Credits remaining</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold">$10</p>
-                  <p className="text-xs text-muted-foreground">$0.10 per credit</p>
+                  <p className="text-sm text-muted-foreground">
+                    {credits.used.toLocaleString()} of {credits.total.toLocaleString()} used
+                  </p>
                 </div>
               </div>
               
-              <Button 
-                onClick={handleAddCredits} 
-                disabled={addingCredits}
-                className="w-full"
-                variant={credits.remaining === 0 ? "default" : "outline"}
-              >
-                {addingCredits ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Buy 100 Credits
-                  </>
-                )}
-              </Button>
+              <Progress value={100 - creditPercentage} className="h-3" />
             </div>
 
-            <div className="space-y-2 mt-4">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Info className="h-4 w-4" />
-                <span className="font-medium">Credit usage guide:</span>
+            {/* Status Alerts */}
+            {isNoCredits && (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  You have no credits remaining. Add more credits to continue using AI features.
+                </AlertDescription>
+              </Alert>
+            )}
+            
+            {!isNoCredits && isLowCredits && (
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  Only {credits.remaining} credits remaining. Consider adding more soon.
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Purchase Option */}
+            <div className="rounded-lg border bg-muted/30 p-5">
+              <div className="space-y-4">
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h4 className="font-semibold text-lg">Credit Package</h4>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      100 credits for instant use
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-2xl font-bold">$10</p>
+                    <p className="text-xs text-muted-foreground">$0.10/credit</p>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={handleAddCredits} 
+                  disabled={addingCredits}
+                  className="w-full"
+                  size="lg"
+                  variant={isNoCredits ? "default" : "outline"}
+                >
+                  {addingCredits ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Buy 100 Credits
+                    </>
+                  )}
+                </Button>
               </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground pl-6">
-                <div>• Full search: 5 credits</div>
-                <div>• Summary only: 1 credit</div>
-                <div>• Merge contacts: 1 credit</div>
-                <div>• Voice notes: 1 credit</div>
-                <div>• Import 100 contacts: 1 credit</div>
+            </div>
+
+            {/* Usage Guide */}
+            <div className="rounded-lg border bg-background p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Info className="h-4 w-4 text-muted-foreground" />
+                <h4 className="font-medium text-sm">Credit Usage Guide</h4>
+              </div>
+              <div className="space-y-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-1.5 gap-x-4 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Full AI search</span>
+                    <span className="font-medium">5 credits</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Summary only</span>
+                    <span className="font-medium">1 credit</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Merge contacts</span>
+                    <span className="font-medium">1 credit</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Voice notes</span>
+                    <span className="font-medium">1 credit</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Import 100 contacts</span>
+                    <span className="font-medium">1 credit</span>
+                  </div>
+                </div>
               </div>
             </div>
           </>
         ) : (
-          <div className="text-muted-foreground text-sm text-center py-4">
+          <div className="text-muted-foreground text-sm text-center py-8">
             No credit data available
           </div>
         )}

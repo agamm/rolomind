@@ -5,6 +5,8 @@ import * as rolodexParser from "../import/parsers/rolodex-parser"
 import * as googleParser from "../import/parsers/google-parser"
 import { Contact } from '@/types/contact'
 import { createJsonStream } from '@/lib/stream-utils'
+import { getServerSession, getUserCredits } from '@/lib/auth/server'
+import { CreditCost } from '@/lib/credit-costs'
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData()
@@ -42,6 +44,24 @@ export async function POST(request: NextRequest) {
 
   // Stream processing for custom parser (AI)
   if (parserUsed === 'custom') {
+    // Check authentication first
+    const session = await getServerSession();
+    if (!session?.user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
+    }
+
+    // Check if user has enough credits for AI normalization
+    const credits = await getUserCredits();
+    const requiredCredits = Math.ceil(rows.length / 100) * CreditCost.IMPORT_CONTACTS;
+    
+    if (!credits || credits.remaining < requiredCredits) {
+      return new Response(JSON.stringify({ 
+        error: `Insufficient credits for AI normalization. Need ${requiredCredits} credits but only have ${credits?.remaining || 0}.`,
+        required: requiredCredits,
+        remaining: credits?.remaining || 0
+      }), { status: 402 });
+    }
+
     async function* generateProgress() {
       const BATCH_SIZE = 50
       const totalRows = rows.length

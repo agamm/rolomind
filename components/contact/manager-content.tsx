@@ -123,6 +123,11 @@ export function ContactManagerContent() {
         onSearchingChange={setIsAISearching}
         onProcessingChange={setIsProcessing}
         onReset={() => setAiResults(undefined)}
+        onError={(error) => {
+          // Force stop searching state on error
+          setIsAISearching(false)
+          setIsProcessing(false)
+        }}
       />
       <ContactList
         contacts={contacts}

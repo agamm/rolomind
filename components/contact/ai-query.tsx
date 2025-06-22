@@ -23,10 +23,11 @@ interface AIQueryProps {
   onSearchingChange?: (isSearching: boolean) => void
   onProcessingChange?: (isProcessing: boolean) => void
   onReset?: () => void
+  onError?: (error: Error) => void
 }
 
 
-export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingChange, onReset }: AIQueryProps) {
+export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingChange, onReset, onError }: AIQueryProps) {
   const [query, setQuery] = useState("")
   const [enableSummary, setEnableSummary] = useState(false)
   const [isStopping, setIsStopping] = useState(false)
@@ -107,12 +108,24 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
     onProcessingChange?.(isProcessingResults)
   }, [isProcessingResults, onProcessingChange])
   
-  // Show toast for errors
+  // Show toast for errors and reset state
   useEffect(() => {
     if (error && error.message !== 'Search aborted') {
       toast.error(error.message)
+      // Reset timer
+      setElapsedSeconds(0)
+      // Clear the timer interval
+      if (timerRef.current) {
+        clearInterval(timerRef.current)
+        timerRef.current = null
+      }
+      // Notify parent component
+      onError?.(error)
+      // Force searching and processing states to false
+      onSearchingChange?.(false)
+      onProcessingChange?.(false)
     }
-  }, [error])
+  }, [error, onError, onSearchingChange, onProcessingChange])
   
   // Handle post-processing when search completes
   useEffect(() => {
@@ -205,7 +218,18 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
       {error && error.message !== 'Search aborted' && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-          <p className="text-destructive">{error.message}</p>
+          <p className="text-destructive mb-3">{error.message}</p>
+          {error.message.toLowerCase().includes('insufficient credits') && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => window.location.href = '/dashboard/billing'}
+              className="gap-2"
+            >
+              <Sparkles className="h-4 w-4" />
+              Add Credits
+            </Button>
+          )}
         </div>
       )}
 

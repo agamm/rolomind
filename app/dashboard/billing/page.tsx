@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { CreditCard, CheckCircle } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreditCard, CheckCircle, AlertCircle, Receipt } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
 import { CreditDisplay } from "./credit-display";
@@ -13,6 +13,8 @@ import {
   BreadcrumbSeparator 
 } from "@/components/ui/breadcrumb";
 import Link from "next/link";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 
 export default async function BillingPage() {
   const user = await getUser();
@@ -42,7 +44,7 @@ export default async function BillingPage() {
 
   return (
     <>
-      <Breadcrumb className="mb-4">
+      <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink asChild>
@@ -56,98 +58,167 @@ export default async function BillingPage() {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="space-y-6">
-        <CreditDisplay />
-        
-        {hasActiveSubscription ? (
-          <>
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <CreditCard className="h-5 w-5" />
-                  Active Subscription
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Plan</span>
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium">Rolomind Pro</span>
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  </div>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Price</span>
-                  <span className="font-medium">
-                    {formatPrice(activeSubscription.amount, activeSubscription.currency)}/{activeSubscription.recurringInterval}
-                  </span>
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <span className="text-muted-foreground">Current Period</span>
-                  <span className="text-sm">
-                    {formatDate(activeSubscription.currentPeriodStart.toString())} - {formatDate(activeSubscription.currentPeriodEnd?.toString() || '')}
-                  </span>
-                </div>
-                
-                {activeSubscription.cancelAtPeriodEnd && (
-                  <div className="bg-amber-50 text-amber-800 p-3 rounded-lg text-sm">
-                    Your subscription will cancel at the end of the current billing period
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Manage Subscription</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <BillingActions hasSubscription={true} />
-                <p className="text-sm text-muted-foreground mt-3 text-center">
-                  Update payment method, download invoices, or cancel subscription
-                </p>
-              </CardContent>
-            </Card>
-          </>
-        ) : (
-          <>
-            <Card className="border-primary">
-              <CardHeader>
-                <CardTitle>Subscribe to Rolomind Pro</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <p className="text-2xl font-bold">$5/month</p>
-                  <p className="text-muted-foreground">+ additional usage based pricing</p>
-                </div>
-                <BillingActions hasSubscription={false} />
-              </CardContent>
-            </Card>
-
-            {customerState && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Customer Portal</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <BillingActions variant="outline" />
-                </CardContent>
-              </Card>
-            )}
-          </>
-        )}
-
-        <div className="mt-8 pt-6 border-t text-center text-sm text-muted-foreground">
-          <p>
-            Need help? Contact support at{" "}
-            <a href="mailto:help@rolomind.com" className="underline">
-              help@rolomind.com
-            </a>
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight">Billing & Credits</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your subscription and credit balance
           </p>
         </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column - Credits */}
+          <div>
+            <CreditDisplay />
+          </div>
+
+          {/* Right Column - Subscription */}
+          <div>
+            {hasActiveSubscription ? (
+              <Card className="h-full">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <CreditCard className="h-5 w-5" />
+                      Subscription
+                    </CardTitle>
+                    <Badge variant="default" className="gap-1">
+                      <CheckCircle className="h-3 w-3" />
+                      Active
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* Subscription Details */}
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-sm text-muted-foreground">Plan</p>
+                        <p className="font-medium mt-1">Rolomind Pro</p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">Price</p>
+                        <p className="font-medium mt-1">
+                          {formatPrice(activeSubscription.amount, activeSubscription.currency)}/{activeSubscription.recurringInterval}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-1">Current billing period</p>
+                      <p className="text-sm">
+                        {formatDate(activeSubscription.currentPeriodStart.toString())} → {formatDate(activeSubscription.currentPeriodEnd?.toString() || '')}
+                      </p>
+                    </div>
+                    
+                    {activeSubscription.cancelAtPeriodEnd && (
+                      <Alert>
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          Your subscription will cancel at the end of the current billing period on {formatDate(activeSubscription.currentPeriodEnd?.toString() || '')}
+                        </AlertDescription>
+                      </Alert>
+                    )}
+                  </div>
+
+                  {/* Manage Subscription Actions */}
+                  <div className="pt-4 border-t">
+                    <p className="text-sm text-muted-foreground mb-3">
+                      Update payment method, download invoices, or cancel subscription
+                    </p>
+                    <BillingActions hasSubscription={true} />
+                  </div>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {/* Subscribe Card */}
+                <Card className="border-primary/50 shadow-sm">
+                  <CardHeader>
+                    <CardTitle>Subscribe to Rolomind Pro</CardTitle>
+                    <CardDescription>
+                      Get unlimited access to all features with usage-based pricing
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-6">
+                      <div className="rounded-lg bg-muted/50 p-4">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-3xl font-bold">$5</span>
+                          <span className="text-muted-foreground">/month</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Plus usage-based pricing for AI features
+                        </p>
+                      </div>
+                      
+                      <div className="space-y-3">
+                        <h4 className="font-medium text-sm">What's included:</h4>
+                        <ul className="space-y-2 text-sm">
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                            <span>Unlimited contact storage</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                            <span>Advanced search and filters</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                            <span>AI-powered features (pay per use)</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                            <span>Priority support</span>
+                          </li>
+                        </ul>
+                      </div>
+                      
+                      <BillingActions hasSubscription={false} />
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Customer Portal Access */}
+                {customerState && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Receipt className="h-5 w-5" />
+                        Billing History
+                      </CardTitle>
+                      <CardDescription>
+                        Access your invoices and payment history
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <BillingActions variant="outline" />
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Support Section */}
+        <Card className="bg-muted/30">
+          <CardContent className="pt-6">
+            <div className="text-center space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Need help with billing?
+              </p>
+              <p className="text-sm">
+                Contact support at{" "}
+                <a href="mailto:help@rolomind.com" className="text-primary underline underline-offset-4">
+                  help@rolomind.com
+                </a>
+              </p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </>
   );

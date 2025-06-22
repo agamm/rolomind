@@ -9,6 +9,7 @@ export const CreditCost = {
   VOICE_TRANSCRIBE: 0.5,    // OpenAI Whisper
   VOICE_PROCESS: 0.5,       // Claude 3 Haiku
   IMPORT_NORMALIZE: 0.01,   // Claude 3 Haiku (100 contacts = 1 credit)
+  IMPORT_CONTACTS: 1,       // AI normalization (per 100 contacts)
 } as const;
 
 export type CreditCostType = typeof CreditCost[keyof typeof CreditCost];

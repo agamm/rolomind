@@ -3,7 +3,7 @@ import { estimateTokenCount } from './token-utils';
 
 // Contact storage limits
 export const CONTACT_LIMITS = {
-  MAX_CONTACTS: 1600,
+  MAX_CONTACTS: 1000,
   MAX_TOKENS_PER_CONTACT: 500,
   WARNING_THRESHOLD: 0.9, // Warning at 90% capacity
   TOKEN_WARNING_THRESHOLD: 0.8, // Warning at 80% of token limit
