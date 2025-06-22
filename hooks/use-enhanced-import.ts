@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
+import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/contact-limits'
 
 interface ImportResponse {
   success: boolean
@@ -35,6 +36,8 @@ export function useEnhancedImport(onComplete?: () => void) {
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
   const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
   const [importProgress, setImportProgress] = useState<ImportProgress>({ status: 'idle' })
+  const [oversizedContacts, setOversizedContacts] = useState<Array<{ contact: Contact; tokenCount: number; index: number }>>([])
+  const [pendingImportContacts, setPendingImportContacts] = useState<Contact[]>([])
   
   // Import mutation
   const importMutation = useMutation({
@@ -150,13 +153,52 @@ export function useEnhancedImport(onComplete?: () => void) {
       }
     },
     onSuccess: async (data) => {
+      if (!data.contacts || data.contacts.length === 0) {
+        toast.error('No contacts found in the import file')
+        setImportProgress({ status: 'idle' })
+        return
+      }
+
+      // First check for oversized contacts
+      const oversized = data.contacts
+        .map((contact, index) => ({
+          contact,
+          tokenCount: getContactTokenCount(contact),
+          index
+        }))
+        .filter(item => item.tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT)
+
+      if (oversized.length > 0) {
+        // Store oversized contacts for modal
+        setOversizedContacts(oversized)
+        setPendingImportContacts(data.contacts)
+        
+        // Show warning toast
+        toast.warning(`${oversized.length} oversized contact${oversized.length > 1 ? 's' : ''} detected`)
+        
+        // Don't proceed until user decides
+        return
+      }
+
+      // No oversized contacts, proceed with duplicate check
+      await checkDuplicatesAndSave(data.contacts)
+    },
+    onError: (error) => {
+      setImportProgress({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Import failed'
+      })
+    }
+  })
+
+  const checkDuplicatesAndSave = async (contacts: Contact[]) => {
       // Show checking duplicates status
       setImportProgress({
         status: 'checking-duplicates',
         parserType: importProgress.parserType,
         progress: {
           current: 0,
-          total: data.processed?.normalized || 0,
+          total: contacts.length,
           message: 'Checking for duplicate contacts...'
         }
       })
@@ -165,7 +207,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       const existingContacts = await getAllContacts()
       
       // Find duplicates
-      const contactsWithDuplicates = (data.contacts || []).map(contact => {
+      const contactsWithDuplicates = contacts.map(contact => {
         const duplicateMatches = findDuplicates(existingContacts, contact)
         return { contact, duplicates: duplicateMatches }
       })
@@ -217,14 +259,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         // No duplicates, save immediately
         await saveContacts(uniqueContacts)
       }
-    },
-    onError: (error) => {
-      setImportProgress({
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Import failed'
-      })
-    }
-  })
+  }
   
   // Save contacts to local database
   const saveContacts = async (contacts: Contact[]) => {
@@ -506,8 +541,34 @@ export function useEnhancedImport(onComplete?: () => void) {
     
     // Reset state
     resetImport()
+    setOversizedContacts([])
+    setPendingImportContacts([])
     
     toast.info('Import cancelled')
+  }
+
+  const handleOversizedDecision = async (action: 'skip-all' | 'skip-selected' | 'continue', selectedIndices?: number[]) => {
+    let contactsToImport = pendingImportContacts
+
+    if (action === 'skip-all') {
+      // Filter out all oversized contacts
+      const oversizedIndices = new Set(oversizedContacts.map(oc => oc.index))
+      contactsToImport = pendingImportContacts.filter((_, index) => !oversizedIndices.has(index))
+      toast.info(`Skipped ${oversizedContacts.length} oversized contacts`)
+    } else if (action === 'skip-selected' && selectedIndices) {
+      // Filter out selected oversized contacts
+      const skipIndices = new Set(selectedIndices)
+      contactsToImport = pendingImportContacts.filter((_, index) => !skipIndices.has(index))
+      toast.info(`Skipped ${selectedIndices.length} oversized contacts`)
+    }
+    // If 'continue', import all including oversized
+
+    // Clear oversized state
+    setOversizedContacts([])
+    setPendingImportContacts([])
+
+    // Proceed with duplicate check
+    await checkDuplicatesAndSave(contactsToImport)
   }
   
   return {
@@ -524,6 +585,8 @@ export function useEnhancedImport(onComplete?: () => void) {
     error: importMutation.error,
     importProgress,
     resetImport,
-    cancelImport
+    cancelImport,
+    oversizedContacts,
+    handleOversizedDecision
   }
 }

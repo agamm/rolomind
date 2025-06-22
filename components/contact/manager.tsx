@@ -9,6 +9,7 @@ import { useEnhancedImport } from "@/hooks/use-enhanced-import"
 import { Contact } from "@/types/contact"
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
 import { ImportProgressModal } from "@/components/import/import-progress-modal"
+import { OversizedContactsModal } from "@/components/import/oversized-contacts-modal"
 
 export function ContactManager() {
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -25,7 +26,9 @@ export function ContactManager() {
     duplicatesCount,
     handleDuplicateDecision,
     importProgress,
-    cancelImport
+    cancelImport,
+    oversizedContacts,
+    handleOversizedDecision
   } = useEnhancedImport()
 
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
@@ -96,6 +99,12 @@ export function ContactManager() {
         duplicate={currentDuplicate}
         onDecision={handleDuplicateDecision}
         remainingCount={duplicatesCount - 1}
+      />
+      
+      <OversizedContactsModal
+        isOpen={oversizedContacts.length > 0}
+        oversizedContacts={oversizedContacts}
+        onDecision={handleOversizedDecision}
       />
     </div>
   )

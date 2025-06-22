@@ -114,7 +114,7 @@ export default function DebugPage() {
               
               <div className="grid grid-cols-2 gap-3">
                 <Button
-                  onClick={() => chargeCredits(CreditCost.CLAUDE_3_HAIKU)}
+                  onClick={() => chargeCredits(1)}
                   disabled={charging}
                   variant="outline"
                 >
@@ -128,7 +128,7 @@ export default function DebugPage() {
                 </Button>
                 
                 <Button
-                  onClick={() => chargeCredits(CreditCost.CLAUDE_3_7_SONNET)}
+                  onClick={() => chargeCredits(2)}
                   disabled={charging}
                   variant="outline"
                 >
@@ -190,15 +190,15 @@ export default function DebugPage() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between items-center p-2 rounded">
                 <span>Claude 3.7 Sonnet</span>
-                <span className="font-mono">{CreditCost.CLAUDE_3_7_SONNET} credits</span>
+                <span className="font-mono">2 credits</span>
               </div>
               <div className="flex justify-between items-center p-2 rounded">
                 <span>Claude 3 Haiku</span>
-                <span className="font-mono">{CreditCost.CLAUDE_3_HAIKU} credit</span>
+                <span className="font-mono">1 credit</span>
               </div>
               <div className="flex justify-between items-center p-2 rounded">
                 <span>OpenAI Whisper</span>
-                <span className="font-mono">{CreditCost.OPENAI_WHISPER} credit</span>
+                <span className="font-mono">0.5 credit</span>
               </div>
             </div>
           </CardContent>
