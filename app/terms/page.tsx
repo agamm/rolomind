@@ -134,7 +134,7 @@ export default function TermsPage() {
                 If you have any questions about these Terms, please contact us at:
               </p>
               <p className="text-muted-foreground">
-                Email: help@rolomind.com<br />
+                Email: <a href="mailto:help@rolomind.com" className="text-primary hover:underline">help@rolomind.com</a><br />
                 Address: [Your Company Address]
               </p>
             </section>

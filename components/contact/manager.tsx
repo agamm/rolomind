@@ -93,8 +93,7 @@ export function ContactManager() {
         parserType={importProgress.parserType}
         progress={importProgress.progress}
         error={importProgress.error}
-        onCancel={cancelImport}
-        onClose={resetImport}
+        onClose={cancelImport}
       />
       
       <MergeConfirmationModal

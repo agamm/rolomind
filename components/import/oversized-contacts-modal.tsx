@@ -1,5 +1,11 @@
 import React from 'react'
-import { Modal } from '@/components/ui/modal'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogDescription 
+} from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle, FileText } from 'lucide-react'
@@ -49,17 +55,28 @@ export function OversizedContactsModal({
   }
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={handleClose}
-      title="Oversized Contacts Detected"
-      description={`${oversizedContacts.length} contact${oversizedContacts.length > 1 ? 's have' : ' has'} too much data`}
-      size="lg"
-      preventOutsideClick={true}
-      showCloseButton={false}
+    <Dialog 
+      open={isOpen} 
+      onOpenChange={(open) => {
+        if (!open) {
+          handleClose()
+        }
+      }}
     >
-      <div className="px-6">
-        <Alert className="mb-4">
+      <DialogContent 
+        className="sm:max-w-lg"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        hideCloseButton={true}
+      >
+        <DialogHeader>
+          <DialogTitle>Oversized Contacts Detected</DialogTitle>
+          <DialogDescription>
+            {oversizedContacts.length} contact{oversizedContacts.length > 1 ? 's have' : ' has'} too much data
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="space-y-4">
+          <Alert>
           <AlertTriangle className="h-4 w-4" />
           <AlertDescription>
             These contacts exceed the maximum data limit of {CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} tokens. 
@@ -67,12 +84,12 @@ export function OversizedContactsModal({
           </AlertDescription>
         </Alert>
 
-        <div className="space-y-2 mb-4">
+          <div className="space-y-2">
           <p className="text-sm text-muted-foreground">
             Select which contacts to skip during import:
           </p>
           
-          <ScrollArea className="h-[300px] border rounded-lg p-2">
+            <ScrollArea className="h-[300px] border rounded-lg p-2">
             {oversizedContacts.map((item, idx) => (
               <div
                 key={item.index}
@@ -106,43 +123,44 @@ export function OversizedContactsModal({
                 </div>
               </div>
             ))}
-          </ScrollArea>
+            </ScrollArea>
+          </div>
+
+          <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
+            <p className="font-medium mb-1">Options:</p>
+            <ul className="space-y-1 text-xs">
+              <li>• Skip selected: Import only unselected contacts</li>
+              <li>• Skip all: Don't import any oversized contacts</li>
+              <li>• Continue anyway: Import all contacts (not recommended)</li>
+            </ul>
+          </div>
         </div>
 
-        <div className="bg-muted/50 rounded-lg p-3 text-sm text-muted-foreground">
-          <p className="font-medium mb-1">Options:</p>
-          <ul className="space-y-1 text-xs">
-            <li>• Skip selected: Import only unselected contacts</li>
-            <li>• Skip all: Don't import any oversized contacts</li>
-            <li>• Continue anyway: Import all contacts (not recommended)</li>
-          </ul>
+        <div className="flex gap-2 pt-4">
+          <Button
+            variant="default"
+            onClick={handleSkipSelected}
+            disabled={selectedContacts.size === 0}
+            className="flex-1"
+          >
+            Skip Selected ({selectedContacts.size})
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => onDecision('skip-all')}
+            className="flex-1"
+          >
+            Skip All
+          </Button>
+          <Button
+            variant="ghost"
+            onClick={() => onDecision('continue')}
+            className="flex-1"
+          >
+            Continue Anyway
+          </Button>
         </div>
-      </div>
-
-      <div className="flex gap-2 px-6 pb-6 pt-4">
-        <Button
-          variant="default"
-          onClick={handleSkipSelected}
-          disabled={selectedContacts.size === 0}
-          className="flex-1"
-        >
-          Skip Selected ({selectedContacts.size})
-        </Button>
-        <Button
-          variant="outline"
-          onClick={() => onDecision('skip-all')}
-          className="flex-1"
-        >
-          Skip All
-        </Button>
-        <Button
-          variant="ghost"
-          onClick={() => onDecision('continue')}
-          className="flex-1"
-        >
-          Continue Anyway
-        </Button>
-      </div>
-    </Modal>
+      </DialogContent>
+    </Dialog>
   )
 }

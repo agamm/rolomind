@@ -2,7 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Contact } from '@/types/contact'
 import { DuplicateMatch } from '@/lib/contact-merger'
 import { Button } from '@/components/ui/button'
-import { Modal } from '@/components/ui/modal'
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle,
+  DialogDescription 
+} from '@/components/ui/dialog'
 import { AlertCircle, Loader2 } from 'lucide-react'
 import { ContactCard } from '@/components/contact'
 
@@ -82,25 +88,36 @@ export function MergeConfirmationModal({
   }
   
   return (
-    <Modal
-      isOpen={!!duplicate}
-      onClose={handleClose}
-      title="Duplicate Contact Found"
-      description={`Match type: ${duplicate.matchType} - ${duplicate.matchValue}`}
-      size="xl"
-      preventOutsideClick={isProcessing}
-      preventEscapeKey={isProcessing}
-      showCloseButton={!isProcessing}
+    <Dialog 
+      open={!!duplicate} 
+      onOpenChange={(open) => {
+        if (!open) {
+          handleClose()
+        }
+      }}
     >
-      <div className="py-4">
-        <div className="flex items-center gap-2 mb-4 px-6">
+      <DialogContent 
+        className="sm:max-w-xl"
+        onPointerDownOutside={(e) => isProcessing && e.preventDefault()}
+        onEscapeKeyDown={(e) => isProcessing && e.preventDefault()}
+        hideCloseButton={isProcessing}
+      >
+        <DialogHeader>
+          <DialogTitle>Duplicate Contact Found</DialogTitle>
+          <DialogDescription>
+            Match type: {duplicate.matchType} - {duplicate.matchValue}
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="py-4">
+        <div className="flex items-center gap-2 mb-4">
           <AlertCircle className="h-5 w-5 text-amber-500" />
           <p className="text-sm text-muted-foreground">
             A contact with similar information already exists. How would you like to proceed?
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6 px-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
           <div className="space-y-2">
             <h4 className="font-medium text-sm text-center">Existing Contact</h4>
             <ContactCard 
@@ -128,7 +145,7 @@ export function MergeConfirmationModal({
             Generating merge preview...
           </div>
         ) : mergedPreview && (
-          <div className="border-t pt-4 px-6">
+          <div className="border-t pt-4">
             <h4 className="font-medium text-sm text-center mb-2">
               Merge Preview (Combined Information)
             </h4>
@@ -145,9 +162,9 @@ export function MergeConfirmationModal({
             {remainingCount} more duplicate{remainingCount > 1 ? 's' : ''} remaining after this
           </div>
         )}
-      </div>
-      
-      <div className="flex flex-col sm:flex-row gap-2 px-6 pb-6">
+        </div>
+        
+        <div className="flex flex-col sm:flex-row gap-2">
         <Button 
           onClick={() => handleDecision('merge')} 
           disabled={isProcessing}
@@ -210,7 +227,8 @@ export function MergeConfirmationModal({
             )}
           </Button>
         )}
-      </div>
-    </Modal>
+        </div>
+      </DialogContent>
+    </Dialog>
   )
 }

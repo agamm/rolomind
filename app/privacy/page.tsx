@@ -173,7 +173,7 @@ export default function PrivacyPage() {
                 If you have any questions about this Privacy Policy, please contact us at:
               </p>
               <p className="text-muted-foreground">
-                Email: privacy@rolomind.com<br />
+                Email: <a href="mailto:privacy@rolomind.com" className="text-primary hover:underline">privacy@rolomind.com</a><br />
                 Address: [Your Company Address]
               </p>
             </section>

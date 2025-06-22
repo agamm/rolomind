@@ -51,7 +51,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
         parserType={importProgress.parserType}
         progress={importProgress.progress}
         error={importProgress.error}
-        onCancel={cancelImport}
+        onClose={cancelImport}
       />
       
       <MergeConfirmationModal

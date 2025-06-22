@@ -47,7 +47,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       const currentCount = existingContacts.length
       
       if (currentCount >= CONTACT_LIMITS.MAX_CONTACTS) {
-        throw new Error(`Cannot import contacts. You have reached the maximum limit of ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts. Please contact support at help@rolomind.com for assistance.`)
+        throw new Error(`Cannot import contacts. You have reached the maximum limit of ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts. Please contact support at <a href="mailto:help@rolomind.com" class="underline">help@rolomind.com</a> for assistance.`)
       }
       
       setImportProgress({ status: 'detecting' })
@@ -98,7 +98,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           message: parserType === 'linkedin' 
             ? 'Processing LinkedIn contacts...' 
             : parserType === 'rolodex'
-            ? 'Processing Rolodex export...'
+            ? 'Processing Rolomind export...'
             : parserType === 'google'
             ? 'Processing Google contacts...'
             : 'AI is analyzing your contacts...'
@@ -199,10 +199,11 @@ export function useEnhancedImport(onComplete?: () => void) {
       await checkDuplicatesAndSave(data.contacts)
     },
     onError: (error) => {
-      setImportProgress({
+      setImportProgress(prev => ({
+        ...prev,
         status: 'error',
         error: error instanceof Error ? error.message : 'Import failed'
-      })
+      }))
       
       // Show appropriate toast for contact limit errors
       if (error instanceof Error && error.message.includes('maximum limit')) {
@@ -235,7 +236,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         const availableSlots = Math.max(0, CONTACT_LIMITS.MAX_CONTACTS - currentCount)
         setImportProgress({
           status: 'error',
-          error: `Cannot import ${newCount} contacts. You have ${currentCount.toLocaleString()} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()}. Only ${availableSlots.toLocaleString()} more contacts can be added. Please contact support at help@rolomind.com for assistance.`
+          error: `Cannot import ${newCount} contacts. You have ${currentCount.toLocaleString()} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()}. Only ${availableSlots.toLocaleString()} more contacts can be added. Please contact support at <a href="mailto:help@rolomind.com" class="underline">help@rolomind.com</a> for assistance.`
         })
         toast.error(`Contact limit exceeded. Maximum ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts allowed. Contact support for help.`)
         return
@@ -564,21 +565,17 @@ export function useEnhancedImport(onComplete?: () => void) {
   }
   
   const resetImport = () => {
+    importMutation.reset()
     setImportProgress({ status: 'idle' })
     setDuplicates([])
     setCurrentDuplicate(null)
     setResolvedContacts([])
+    setOversizedContacts([])
+    setPendingImportContacts([])
   }
   
   const cancelImport = () => {
-    // Cancel any pending mutations
-    importMutation.reset()
-    
-    // Reset state
     resetImport()
-    setOversizedContacts([])
-    setPendingImportContacts([])
-    
     toast.info('Import cancelled')
   }
 
