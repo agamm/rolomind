@@ -18,9 +18,14 @@ export async function POST(request: NextRequest) {
   }
 
   const text = await file.text()
-  const parseResult = Papa.parse(text, { header: true })
+  const parseResult = Papa.parse(text, { header: true, skipEmptyLines: true })
   const headers = parseResult.meta.fields || []
-  const rows = parseResult.data as Record<string, string>[]
+  const allRows = parseResult.data as Record<string, string>[]
+  
+  // Filter out empty rows
+  const rows = allRows.filter(row => {
+    return Object.values(row).some(value => value && value.toString().trim() !== '')
+  })
   
   // Detect parser type
   let parserUsed = 'custom' // default

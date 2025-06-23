@@ -20,7 +20,7 @@ interface ImportResponse {
 }
 
 export interface ImportProgress {
-  status: 'idle' | 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
+  status: 'idle' | 'detecting' | 'preview' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
   parserType?: 'linkedin' | 'rolodex' | 'google' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
@@ -28,6 +28,10 @@ export interface ImportProgress {
     message?: string
   }
   error?: string
+  csvHeaders?: string[]
+  sampleRow?: Record<string, string>
+  pendingFile?: File
+  rowCount?: number
 }
 
 export function useEnhancedImport(onComplete?: () => void) {
@@ -73,6 +77,18 @@ export function useEnhancedImport(onComplete?: () => void) {
                          detectData.parserUsed === 'google' ? 'google' :
                          detectData.parserUsed === 'custom' ? 'custom' : 'llm-normalizer'
       
+      // Parse CSV to get headers and sample row for mapping dialog
+      const Papa = (await import('papaparse')).default
+      const csvContent = await file.text()
+      const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+        preview: 2 // Only need headers and one sample row
+      })
+      
+      const csvHeaders = parseResult.meta.fields || []
+      const sampleRow = parseResult.data[0] || {}
+      
       // Show format detection animation
       setImportProgress({
         status: 'detecting',
@@ -81,11 +97,24 @@ export function useEnhancedImport(onComplete?: () => void) {
           current: 0,
           total: detectData.rowCount || 0,
           message: 'Format detected!'
-        }
+        },
+        csvHeaders,
+        sampleRow,
+        pendingFile: file,
+        rowCount: detectData.rowCount
       })
       
       // Wait to show the format selection animation
       await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Show preview dialog
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'preview'
+      }))
+      
+      // Return early - the actual processing will happen when user confirms preview
+      return { success: true, phase: 'detection', parserUsed: parserType }
       
       // Phase 2: Full processing
       // First update status to processing/normalizing
@@ -168,6 +197,11 @@ export function useEnhancedImport(onComplete?: () => void) {
       }
     },
     onSuccess: async (data) => {
+      // If we're in detection phase, don't process contacts yet
+      if (data.phase === 'detection') {
+        return
+      }
+      
       if (!data.contacts || data.contacts.length === 0) {
         toast.error('No contacts found in the import file')
         setImportProgress({ status: 'idle' })
@@ -603,13 +637,135 @@ export function useEnhancedImport(onComplete?: () => void) {
     await checkDuplicatesAndSave(contactsToImport)
   }
   
+  const continueImportAfterPreview = async () => {
+    if (!importProgress.pendingFile || !importProgress.parserType) {
+      toast.error('Import data not found')
+      return
+    }
+    
+    const file = importProgress.pendingFile
+    const parserType = importProgress.parserType
+    
+    // Update status to processing/normalizing
+    setImportProgress({
+      status: (parserType === 'linkedin' || parserType === 'rolodex' || parserType === 'google') ? 'processing' : 'normalizing',
+      parserType,
+      progress: importProgress.progress
+    })
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // Use streaming for custom parser (AI)
+      if (parserType === 'custom' || parserType === 'llm-normalizer') {
+        const processResponse = await fetch('/api/import-ai-stream?phase=process', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (!processResponse.ok) {
+          const errorData = await processResponse.json()
+          if (processResponse.status === 402) {
+            throw new Error(errorData.error || 'Insufficient credits for AI normalization')
+          }
+          throw new Error(errorData.error || 'Processing failed')
+        }
+        
+        const { readJsonStream } = await import('@/lib/stream-utils')
+        let finalData: ImportResponse | null = null
+        
+        for await (const data of readJsonStream(processResponse)) {
+          if (data.type === 'progress') {
+            setImportProgress({
+              status: 'normalizing',
+              parserType,
+              progress: {
+                current: data.current,
+                total: data.total,
+                message: `AI is analyzing contact ${data.current} of ${data.total}...`
+              }
+            })
+          } else if (data.type === 'complete') {
+            finalData = {
+              success: true,
+              phase: 'complete',
+              ...data
+            }
+          }
+        }
+        
+        if (finalData && finalData.contacts) {
+          await handleImportSuccess(finalData)
+        }
+      } else {
+        // Regular processing for non-AI parsers
+        const processFormData = new FormData()
+        processFormData.append('file', file)
+        
+        const processResponse = await fetch(`/api/import?phase=process&parserType=${parserType}`, {
+          method: 'POST',
+          body: processFormData
+        })
+        
+        const processData = await processResponse.json()
+        
+        if (!processResponse.ok) {
+          throw new Error(processData.error || 'Processing failed')
+        }
+        
+        if (processData.contacts) {
+          await handleImportSuccess(processData)
+        }
+      }
+    } catch (error) {
+      setImportProgress({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Import failed'
+      })
+      toast.error(error instanceof Error ? error.message : 'Import failed')
+    }
+  }
+  
+  const handleImportSuccess = async (data: ImportResponse) => {
+    if (!data.contacts || data.contacts.length === 0) {
+      toast.error('No contacts found in the import file')
+      setImportProgress({ status: 'idle' })
+      return
+    }
+
+    // First check for oversized contacts
+    const oversized = data.contacts
+      .map((contact, index) => ({
+        contact,
+        tokenCount: getContactTokenCount(contact),
+        index
+      }))
+      .filter(item => item.tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT)
+
+    if (oversized.length > 0) {
+      // Store oversized contacts for modal
+      setOversizedContacts(oversized)
+      setPendingImportContacts(data.contacts)
+      
+      // Show warning toast
+      toast.warning(`${oversized.length} oversized contact${oversized.length > 1 ? 's' : ''} detected`)
+      
+      // Don't proceed until user decides
+      return
+    }
+
+    // No oversized contacts, proceed with duplicate check
+    await checkDuplicatesAndSave(data.contacts)
+  }
+
   return {
     importFile: (file: File) => {
       // Set detecting status immediately before mutation
       setImportProgress({ status: 'detecting' })
       importMutation.mutate(file)
     },
-    isImporting: importMutation.isPending,
+    isImporting: importMutation.isPending || importProgress.status === 'normalizing' || importProgress.status === 'processing',
     isSaving: false,
     currentDuplicate,
     duplicatesCount: duplicates.length,
@@ -619,6 +775,7 @@ export function useEnhancedImport(onComplete?: () => void) {
     resetImport,
     cancelImport,
     oversizedContacts,
-    handleOversizedDecision
+    handleOversizedDecision,
+    continueImportAfterPreview
   }
 }

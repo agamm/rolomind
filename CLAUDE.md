@@ -9,6 +9,11 @@
 - Use react-query when querying/fetching http requests
 - Don't abstract with too many functions unless it really imroves simplicity and readability.
 
+Local Development Auth:
+- Run `npm run db:seed` to create a test user (if first time)
+- Email: test@gmail.com
+- Password: 123123123
+
 App functionality:
 - Searching "CEOs in Texas" then submitting should show loading (this should always return N>20 results).
 - If there are more than 500 contacts it should send chunked requests to query-contacts.
