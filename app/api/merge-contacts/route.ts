@@ -26,7 +26,7 @@ const mergedContactSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { existing, incoming } = await request.json()
+    const { existing, incoming, previewOnly = false } = await request.json()
     
     if (!existing || !incoming) {
       return NextResponse.json({ 
@@ -44,18 +44,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has enough credits
-    const credits = await getUserCredits();
-    if (!credits || credits.remaining < CreditCost.MERGE_CONTACTS) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Insufficient credits. Please add more credits to continue.',
-          required: CreditCost.MERGE_CONTACTS,
-          remaining: credits?.remaining || 0
-        },
-        { status: 402 }
-      )
+    // Only check credits if not preview mode
+    if (!previewOnly) {
+      // Check if user has enough credits
+      const credits = await getUserCredits();
+      if (!credits || credits.remaining < CreditCost.MERGE_CONTACTS) {
+        return NextResponse.json(
+          { 
+            success: false,
+            error: 'Insufficient credits. Please add more credits to continue.',
+            required: CreditCost.MERGE_CONTACTS,
+            remaining: credits?.remaining || 0
+          },
+          { status: 402 }
+        )
+      }
     }
 
     const promptText = `Merge these two contact records intelligently. 
@@ -122,7 +125,10 @@ Instructions:
       prompt: promptText
     })
 
-    await consumeCredits(CreditCost.MERGE_CONTACTS);
+    // Only consume credits if not preview mode
+    if (!previewOnly) {
+      await consumeCredits(CreditCost.MERGE_CONTACTS);
+    }
 
     const mergedContact: Contact = {
       id: existing.id,
@@ -135,6 +141,14 @@ Instructions:
       source: existing.source,
       createdAt: existing.createdAt,
       updatedAt: new Date()
+    }
+
+    // Return different format for preview vs actual merge
+    if (previewOnly) {
+      return NextResponse.json({ 
+        success: true,
+        merged: mergedContact
+      })
     }
 
     return NextResponse.json({ 

@@ -70,6 +70,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
         duplicate={currentDuplicate}
         onDecision={handleDuplicateDecision}
         remainingCount={duplicatesCount - 1}
+        mergeProgress={importProgress.mergeProgress}
       />
     </>
   );

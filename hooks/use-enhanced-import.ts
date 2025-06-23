@@ -27,6 +27,11 @@ export interface ImportProgress {
     total: number
     message?: string
   }
+  mergeProgress?: {
+    current: number
+    total: number
+    message?: string
+  }
   error?: string
   csvHeaders?: string[]
   sampleRow?: Record<string, string>
@@ -169,6 +174,8 @@ export function useEnhancedImport(onComplete?: () => void) {
               phase: 'complete',
               ...data
             }
+          } else if (data.type === 'error') {
+            throw new Error(data.message || 'AI normalization failed')
           }
         }
         
@@ -388,16 +395,16 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         toast.info(`Merging ${allDuplicates.length} contacts...`)
         
-        // Update import progress to show merging status
-        setImportProgress({
-          status: 'processing',
-          parserType: importProgress.parserType,
-          progress: {
+        // Keep status as 'resolving' to prevent showing import modal
+        setImportProgress(prev => ({
+          ...prev,
+          status: 'resolving',
+          mergeProgress: {
             current: 0,
             total: allDuplicates.length,
             message: 'Merging duplicate contacts...'
           }
-        })
+        }))
         
         // Process merges in batches
         const BATCH_SIZE = 20
@@ -442,16 +449,15 @@ export function useEnhancedImport(onComplete?: () => void) {
             }
             totalProcessed++
             
-            // Update progress
-            setImportProgress({
-              status: 'processing',
-              parserType: importProgress.parserType,
-              progress: {
+            // Update merge progress (not regular progress to avoid showing modal)
+            setImportProgress(prev => ({
+              ...prev,
+              mergeProgress: {
                 current: totalProcessed,
                 total: allDuplicates.length,
                 message: `Merged ${totalProcessed} of ${allDuplicates.length} contacts...`
               }
-            })
+            }))
           }
           
           // Show toast update every batch
@@ -692,11 +698,15 @@ export function useEnhancedImport(onComplete?: () => void) {
               phase: 'complete',
               ...data
             }
+          } else if (data.type === 'error') {
+            throw new Error(data.message || 'AI normalization failed')
           }
         }
         
         if (finalData && finalData.contacts) {
           await handleImportSuccess(finalData)
+        } else {
+          throw new Error('No contacts found in the import file')
         }
       } else {
         // Regular processing for non-AI parsers
@@ -719,18 +729,23 @@ export function useEnhancedImport(onComplete?: () => void) {
         }
       }
     } catch (error) {
-      setImportProgress({
+      setImportProgress(prev => ({
+        ...prev,
         status: 'error',
         error: error instanceof Error ? error.message : 'Import failed'
-      })
-      toast.error(error instanceof Error ? error.message : 'Import failed')
+      }))
+      // Don't show toast - error is shown in modal
     }
   }
   
   const handleImportSuccess = async (data: ImportResponse) => {
     if (!data.contacts || data.contacts.length === 0) {
-      toast.error('No contacts found in the import file')
-      setImportProgress({ status: 'idle' })
+      // Show error in modal instead of toast
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'No contacts found in the import file. The AI was unable to extract contact information from your CSV.'
+      }))
       return
     }
 

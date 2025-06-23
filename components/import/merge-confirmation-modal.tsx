@@ -16,12 +16,18 @@ interface MergeConfirmationModalProps {
   duplicate: DuplicateMatch | null
   onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => void
   remainingCount?: number
+  mergeProgress?: {
+    current: number
+    total: number
+    message?: string
+  }
 }
 
 export function MergeConfirmationModal({ 
   duplicate, 
   onDecision,
-  remainingCount
+  remainingCount,
+  mergeProgress
 }: MergeConfirmationModalProps) {
   const [mergedPreview, setMergedPreview] = useState<Contact | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
@@ -69,7 +75,10 @@ export function MergeConfirmationModal({
     fetchMergePreview()
   }, [duplicate])
   
-  if (!duplicate) return null
+  // If we're in bulk merge mode, show progress instead of normal content
+  const isBulkMerging = mergeProgress && mergeProgress.total > 0
+  
+  if (!duplicate && !isBulkMerging) return null
   
   const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'merge-all') => {
     setIsProcessing(true)
@@ -89,25 +98,57 @@ export function MergeConfirmationModal({
   
   return (
     <Dialog 
-      open={!!duplicate} 
+      open={!!duplicate || isBulkMerging} 
       onOpenChange={(open) => {
-        if (!open) {
+        if (!open && !isBulkMerging) {
           handleClose()
         }
       }}
     >
       <DialogContent 
-        className="sm:max-w-xl"
-        onPointerDownOutside={(e) => isProcessing && e.preventDefault()}
-        onEscapeKeyDown={(e) => isProcessing && e.preventDefault()}
-        hideCloseButton={isProcessing}
+        className={isBulkMerging ? "sm:max-w-md" : "sm:max-w-4xl"}
+        onPointerDownOutside={(e) => (isProcessing || isBulkMerging) && e.preventDefault()}
+        onEscapeKeyDown={(e) => (isProcessing || isBulkMerging) && e.preventDefault()}
+        hideCloseButton={isProcessing || isBulkMerging}
       >
-        <DialogHeader>
-          <DialogTitle>Duplicate Contact Found</DialogTitle>
-          <DialogDescription>
-            Match type: {duplicate.matchType} - {duplicate.matchValue}
-          </DialogDescription>
-        </DialogHeader>
+        {isBulkMerging ? (
+          // Bulk merge progress UI
+          <>
+            <DialogHeader>
+              <DialogTitle>Merging Contacts</DialogTitle>
+              <DialogDescription>
+                Processing duplicate contacts...
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-8 space-y-4">
+              <div className="flex flex-col items-center gap-4">
+                <Loader2 className="h-12 w-12 animate-spin text-primary" />
+                <div className="text-center space-y-2">
+                  <p className="text-lg font-medium">
+                    {mergeProgress.current} of {mergeProgress.total}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {mergeProgress.message || 'Merging contacts...'}
+                  </p>
+                </div>
+                <div className="w-full bg-secondary rounded-full h-2">
+                  <div 
+                    className="bg-primary rounded-full h-2 transition-all duration-300"
+                    style={{ width: `${(mergeProgress.current / mergeProgress.total) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          // Normal duplicate UI
+          <>
+            <DialogHeader>
+              <DialogTitle>Duplicate Contact Found</DialogTitle>
+              <DialogDescription>
+                Match type: {duplicate.matchType} - {duplicate.matchValue}
+              </DialogDescription>
+            </DialogHeader>
         
         <div className="py-4">
         <div className="flex items-center gap-2 mb-4">
@@ -117,45 +158,50 @@ export function MergeConfirmationModal({
           </p>
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm text-center">Existing Contact</h4>
-            <ContactCard 
-              contact={duplicate.existing} 
-              viewOnly 
-              className="hover:bg-muted/50 cursor-default" 
-            />
-          </div>
-          <div className="space-y-2 md:pt-8">
-            <div className="text-center text-2xl">→</div>
-          </div>
-          <div className="space-y-2">
-            <h4 className="font-medium text-sm text-center">New Contact</h4>
-            <ContactCard 
-              contact={duplicate.incoming} 
-              viewOnly 
-              className="hover:bg-muted/50 cursor-default" 
-            />
+        <div className="space-y-4">
+          {/* All three contacts side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm text-center">Existing Contact</h4>
+              <ContactCard 
+                contact={duplicate.existing} 
+                viewOnly 
+                className="hover:bg-muted/50 cursor-default border" 
+              />
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm text-center">New Contact (Importing)</h4>
+              <ContactCard 
+                contact={duplicate.incoming} 
+                viewOnly 
+                className="hover:bg-muted/50 cursor-default border" 
+              />
+            </div>
+            <div className="space-y-2">
+              <h4 className="font-medium text-sm text-center">
+                {isLoadingPreview ? 'Loading...' : 'Merged Result'}
+              </h4>
+              {isLoadingPreview ? (
+                <div className="border rounded-lg p-8 flex items-center justify-center min-h-[200px]">
+                  <div className="text-center">
+                    <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-xs text-muted-foreground">Generating preview...</p>
+                  </div>
+                </div>
+              ) : mergedPreview ? (
+                <ContactCard 
+                  contact={mergedPreview} 
+                  viewOnly 
+                  className="border-2 border-green-500/50 bg-green-50/50 dark:bg-green-950/20" 
+                />
+              ) : (
+                <div className="border rounded-lg p-8 flex items-center justify-center min-h-[200px]">
+                  <p className="text-xs text-muted-foreground">Preview unavailable</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-        
-        {isLoadingPreview ? (
-          <div className="text-center py-4 text-sm text-muted-foreground">
-            <Loader2 className="h-4 w-4 animate-spin inline-block mr-2" />
-            Generating merge preview...
-          </div>
-        ) : mergedPreview && (
-          <div className="border-t pt-4">
-            <h4 className="font-medium text-sm text-center mb-2">
-              Merge Preview (Combined Information)
-            </h4>
-            <ContactCard 
-              contact={mergedPreview} 
-              viewOnly 
-              className="border-2 border-primary/20 bg-primary/5" 
-            />
-          </div>
-        )}
         
         {remainingCount !== undefined && remainingCount > 0 && (
           <div className="text-center text-sm text-muted-foreground mt-4">
@@ -228,6 +274,8 @@ export function MergeConfirmationModal({
           </Button>
         )}
         </div>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

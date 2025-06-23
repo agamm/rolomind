@@ -278,8 +278,20 @@ export function ImportPreviewDialog({
           <Button variant="outline" onClick={onClose} size="sm" className="flex-1">
             Cancel
           </Button>
-          <Button onClick={onConfirm} size="sm" className="flex-1">
-            Start importing...
+          <Button 
+            onClick={onConfirm} 
+            size="sm" 
+            className="flex-1"
+            disabled={isLoadingPreview}
+          >
+            {isLoadingPreview ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Loading preview...
+              </>
+            ) : (
+              'Start importing...'
+            )}
           </Button>
         </div>
       </DialogContent>

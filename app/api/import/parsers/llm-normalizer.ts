@@ -7,8 +7,8 @@ import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
-  phones: z.array(z.string()).describe('Phone numbers, normalized to include country code if possible'),
-  emails: z.array(z.string()).describe('Email addresses'),
+  phones: z.array(z.string()).describe('Phone numbers, normalized to include country code if possible').default([]),
+  emails: z.array(z.string()).describe('Email addresses').default([]),
   linkedinUrl: z.string().optional().describe('LinkedIn profile URL'),
   company: z.string().optional().describe('Company name'),
   role: z.string().optional().describe('Job title, position or role'),
@@ -52,12 +52,38 @@ Be thorough in extracting all available contact information.`;
       throw error;
     }
 
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
-      schema: normalizedContactSchema,
-      maxTokens: TOKEN_LIMITS.IMPORT_CONTACT.output,
-      prompt: promptText
-    })
+    console.log('Calling OpenRouter with prompt length:', promptText.length)
+    console.log('Sample data:', JSON.stringify(rawData).slice(0, 200))
+    
+    let object;
+    try {
+      const result = await generateObject({
+        model: openrouter('anthropic/claude-3-haiku'),
+        schema: normalizedContactSchema,
+        maxTokens: TOKEN_LIMITS.IMPORT_CONTACT.output,
+        prompt: promptText,
+        temperature: 0.3, // Lower temperature for more consistent parsing
+        mode: 'json' // Ensure JSON mode
+      })
+      object = result.object
+      console.log('Successfully parsed contact:', object.name)
+    } catch (genError) {
+      console.error('generateObject error:', genError)
+      console.error('Failed on data:', rawData)
+      
+      // Check for specific error types
+      if (genError instanceof Error) {
+        if (genError.message.includes('API key')) {
+          throw new Error('OpenRouter API key is invalid or missing. Please check your OPENROUTER_API_KEY environment variable.')
+        } else if (genError.message.includes('parse') || genError.message.includes('No object generated')) {
+          console.error('Failed to parse LLM response. Raw data:', JSON.stringify(rawData))
+          // Try a simpler extraction
+          const name = rawData.Name || rawData.name || rawData['Full Name'] || 'Unknown Contact'
+          throw new Error(`LLM could not parse contact "${name}". Data may be malformed or incomplete.`)
+        }
+      }
+      throw genError
+    }
 
     const contact: Partial<Contact> = {
       id: uuidv4(),

@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
 import { checkQueryContactsTokens } from '@/lib/client-token-utils'
+import { Semaphore } from '@/lib/semaphore'
 
 interface ContactMatch {
   contact: Contact
@@ -14,7 +15,7 @@ interface UseAIQueryOptions {
 }
 
 const BATCH_SIZE = 50
-const SEMAPHORE_LIMIT = 6
+const MAX_CONCURRENT = 6
 
 async function queryBatch(
   contacts: Contact[], 
@@ -75,66 +76,52 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       
       const allResults: ContactMatch[] = []
       let completed = 0
-      let batchIndex = 0
-      let activeBatches = 0
-      const inFlightPromises = new Map<number, Promise<ContactMatch[]>>()
       
-      while (batchIndex < batches.length || activeBatches > 0) {
-        // Check if aborted
-        if (abortControllerRef.current.signal.aborted) {
-          throw new Error('Search aborted')
-        }
-        
-        // Start new batches up to semaphore limit
-        while (activeBatches < SEMAPHORE_LIMIT && batchIndex < batches.length) {
-          const currentIndex = batchIndex
-          const batch = batches[currentIndex]
-          
-          activeBatches++
-          batchIndex++
-          
-          const promise = queryBatch(batch, query, abortControllerRef.current.signal)
-            .then(matches => {
-              allResults.push(...matches)
-              completed++
-              activeBatches--
-              
-              setProgress({ completed, total: batches.length })
-              setResults([...allResults])
-              onResults?.([...allResults])
-              
-              inFlightPromises.delete(currentIndex)
-              return matches
-            })
-            .catch(error => {
-              activeBatches--
-              completed++
-              inFlightPromises.delete(currentIndex)
-              
-              if (error instanceof Error) {
-                if (error.name === 'AbortError') {
-                  throw new Error('Search aborted')
-                }
-                if (error.message.toLowerCase().includes('insufficient credits')) {
-                  // Abort all other requests
-                  abortControllerRef.current?.abort()
-                  throw error
-                }
+      // Create semaphore for this search operation
+      const semaphore = new Semaphore(MAX_CONCURRENT)
+      
+      // Process all batches with semaphore control
+      const batchPromises = batches.map(async (batch) => {
+        return semaphore.withLock(async () => {
+          try {
+            // Check if aborted before making request
+            if (abortControllerRef.current?.signal.aborted) {
+              throw new Error('Search aborted')
+            }
+            
+            const matches = await queryBatch(batch, query, abortControllerRef.current?.signal)
+            
+            allResults.push(...matches)
+            completed++
+            
+            setProgress({ completed, total: batches.length })
+            setResults([...allResults])
+            onResults?.([...allResults])
+            
+            return matches
+          } catch (error) {
+            completed++
+            
+            if (error instanceof Error) {
+              if (error.name === 'AbortError' || error.message === 'Search aborted') {
+                throw error
               }
-              
-              // Update progress even on error
-              setProgress({ completed, total: batches.length })
-              return []
-            })
-          
-          inFlightPromises.set(currentIndex, promise)
-        }
-        
-        // Wait for at least one to complete before continuing
-        if (inFlightPromises.size > 0) {
-          await Promise.race(Array.from(inFlightPromises.values()))
-        }
-      }
+              if (error.message.toLowerCase().includes('insufficient credits')) {
+                // Abort all other requests
+                abortControllerRef.current?.abort()
+                throw error
+              }
+            }
+            
+            // Update progress even on error
+            setProgress({ completed, total: batches.length })
+            return []
+          }
+        })
+      })
+      
+      // Wait for all batches to complete
+      await Promise.allSettled(batchPromises)
       
       return allResults
     },

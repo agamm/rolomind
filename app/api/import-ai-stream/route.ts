@@ -68,43 +68,68 @@ export async function POST(request: NextRequest) {
     }
 
     async function* generateProgress() {
-      const BATCH_SIZE = 50
+      const { Semaphore } = await import('@/lib/semaphore')
+      const { normalizeContactWithLLM } = await import('../import/parsers/llm-normalizer')
+      
+      const BATCH_SIZE = 25
+      const MAX_CONCURRENT = 5
+      const semaphore = new Semaphore(MAX_CONCURRENT)
+      
       const totalRows = rows.length
-      let processed = 0
       const normalizedContacts: Contact[] = []
+      const errors: string[] = []
+      let processed = 0
+      let failed = 0
       
       // Yield initial progress
       yield { type: 'progress', current: 0, total: totalRows }
       
+      // Process in batches
       for (let i = 0; i < totalRows; i += BATCH_SIZE) {
         const batch = rows.slice(i, Math.min(i + BATCH_SIZE, totalRows))
         
-        // Process batch
-        const promises = batch.map(async (row) => {
-          try {
-            const { normalizeContactWithLLM } = await import('../import/parsers/llm-normalizer')
-            return await normalizeContactWithLLM(row, headers)
-          } catch (error) {
-            console.error('Failed to normalize contact:', error)
-            return null
-          }
+        console.log(`Processing batch ${Math.floor(i / BATCH_SIZE) + 1}, rows ${i + 1}-${i + batch.length} of ${totalRows}`)
+        
+        // Process batch with semaphore control
+        const batchPromises = batch.map(async (row, batchIndex) => {
+          const rowIndex = i + batchIndex
+          return semaphore.withLock(async () => {
+            try {
+              const contact = await normalizeContactWithLLM(row, headers)
+              return { success: true, contact, index: rowIndex }
+            } catch (error) {
+              const errorMsg = `Row ${rowIndex + 1}: ${error instanceof Error ? error.message : 'Unknown error'}`
+              console.error('Failed to normalize contact:', errorMsg)
+              errors.push(errorMsg)
+              return { success: false, error, index: rowIndex }
+            }
+          })
         })
         
-        const results = await Promise.all(promises)
+        // Wait for batch to complete
+        const batchResults = await Promise.all(batchPromises)
         
-        for (const contact of results) {
-          if (contact) {
-            normalizedContacts.push(contact as Contact)
-            processed++
-            // Yield progress update
-            yield { type: 'progress', current: processed, total: totalRows }
+        // Process results and update progress
+        for (const result of batchResults) {
+          processed++
+          if (result.success && result.contact) {
+            normalizedContacts.push(result.contact as Contact)
+          } else {
+            failed++
           }
+          // Yield progress update
+          yield { type: 'progress', current: processed, total: totalRows }
         }
         
-        // Add delay between batches to avoid rate limits
+        // Small delay between batches
         if (i + BATCH_SIZE < totalRows) {
-          await new Promise(resolve => setTimeout(resolve, 1000))
+          await new Promise(resolve => setTimeout(resolve, 500))
         }
+      }
+      
+      // Check if all failed
+      if (normalizedContacts.length === 0 && failed > 0) {
+        throw new Error(`AI normalization failed for all ${failed} contacts. ${errors.length > 0 ? 'First error: ' + errors[0] : 'Check your API key and try again.'}`)
       }
       
       // Yield final result with normalized contacts
@@ -112,14 +137,26 @@ export async function POST(request: NextRequest) {
         type: 'complete',
         processed: {
           total: totalRows,
-          normalized: normalizedContacts.length
+          normalized: normalizedContacts.length,
+          failed: failed
         },
         contacts: normalizedContacts,
-        parserUsed
+        parserUsed,
+        errors: errors.slice(0, 5) // Include first 5 errors
       }
     }
     
-    return createJsonStream(generateProgress)
+    try {
+      return createJsonStream(generateProgress)
+    } catch (error) {
+      console.error('Stream generation error:', error)
+      return new Response(JSON.stringify({
+        error: error instanceof Error ? error.message : 'Failed to process contacts'
+      }), { 
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    }
   }
   
   // For non-custom parsers, use regular parsing
