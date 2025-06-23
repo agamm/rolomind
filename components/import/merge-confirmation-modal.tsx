@@ -14,7 +14,7 @@ import { ContactCard } from '@/components/contact'
 
 interface MergeConfirmationModalProps {
   duplicate: DuplicateMatch | null
-  onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => void
+  onDecision: (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all' | 'skip-all') => void
   remainingCount?: number
   mergeProgress?: {
     current: number
@@ -32,7 +32,7 @@ export function MergeConfirmationModal({
   const [mergedPreview, setMergedPreview] = useState<Contact | null>(null)
   const [isLoadingPreview, setIsLoadingPreview] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [actionType, setActionType] = useState<'merge' | 'skip' | 'keep-both' | 'merge-all' | null>(null)
+  const [actionType, setActionType] = useState<'merge' | 'skip' | 'keep-both' | 'merge-all' | 'skip-all' | null>(null)
   
   useEffect(() => {
     // Reset processing state when duplicate changes
@@ -80,7 +80,7 @@ export function MergeConfirmationModal({
   
   if (!duplicate && !isBulkMerging) return null
   
-  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'merge-all') => {
+  const handleDecision = (action: 'merge' | 'skip' | 'keep-both' | 'merge-all' | 'skip-all') => {
     setIsProcessing(true)
     setActionType(action)
     
@@ -210,69 +210,93 @@ export function MergeConfirmationModal({
         )}
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-2">
-        <Button 
-          onClick={() => handleDecision('merge')} 
-          disabled={isProcessing}
-          variant="default"
-          className="flex-1"
-        >
-          {isProcessing && actionType === 'merge' ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Merging...
-            </>
-          ) : (
-            'Merge Contacts'
+        <div className="space-y-3">
+          {/* Primary actions */}
+          <div className="grid grid-cols-3 gap-2">
+            <Button 
+              onClick={() => handleDecision('keep-both')} 
+              disabled={isProcessing}
+              variant="outline"
+              size="sm"
+            >
+              {isProcessing && actionType === 'keep-both' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Adding...
+                </>
+              ) : (
+                'Keep Both'
+              )}
+            </Button>
+            <Button 
+              onClick={() => handleDecision('skip')} 
+              disabled={isProcessing}
+              variant="ghost"
+              size="sm"
+            >
+              {isProcessing && actionType === 'skip' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Skipping...
+                </>
+              ) : (
+                'Skip New Contact'
+              )}
+            </Button>
+            <Button 
+              onClick={() => handleDecision('merge')} 
+              disabled={isProcessing}
+              variant="default"
+              size="sm"
+            >
+              {isProcessing && actionType === 'merge' ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Merging...
+                </>
+              ) : (
+                'Merge'
+              )}
+            </Button>
+          </div>
+          
+          {/* Bulk actions - only show if more than 3 remaining */}
+          {remainingCount !== undefined && remainingCount > 3 && (
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
+              <Button 
+                onClick={() => handleDecision('merge-all')} 
+                disabled={isProcessing}
+                variant="secondary"
+                size="sm"
+                className="text-xs"
+              >
+                {isProcessing && actionType === 'merge-all' ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  `Merge All (${remainingCount + 1})`
+                )}
+              </Button>
+              <Button 
+                onClick={() => handleDecision('skip-all')} 
+                disabled={isProcessing}
+                variant="secondary"
+                size="sm"
+                className="text-xs"
+              >
+                {isProcessing && actionType === 'skip-all' ? (
+                  <>
+                    <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                    Skipping...
+                  </>
+                ) : (
+                  `Skip All (${remainingCount + 1})`
+                )}
+              </Button>
+            </div>
           )}
-        </Button>
-        <Button 
-          onClick={() => handleDecision('keep-both')} 
-          disabled={isProcessing}
-          variant="outline"
-          className="flex-1"
-        >
-          {isProcessing && actionType === 'keep-both' ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Adding...
-            </>
-          ) : (
-            'Keep Both'
-          )}
-        </Button>
-        <Button 
-          onClick={() => handleDecision('skip')} 
-          disabled={isProcessing}
-          variant="ghost"
-          className="flex-1"
-        >
-          {isProcessing && actionType === 'skip' ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Skipping...
-            </>
-          ) : (
-            'Skip Import'
-          )}
-        </Button>
-        {remainingCount !== undefined && remainingCount > 3 && (
-          <Button 
-            onClick={() => handleDecision('merge-all')} 
-            disabled={isProcessing}
-            variant="secondary"
-            className="flex-1"
-          >
-            {isProcessing && actionType === 'merge-all' ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              `Merge All ${remainingCount + 1}`
-            )}
-          </Button>
-        )}
         </div>
           </>
         )}

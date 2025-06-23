@@ -379,12 +379,30 @@ export function useEnhancedImport(onComplete?: () => void) {
     }
   }
   
-  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
+  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all' | 'skip-all') => {
     if (!currentDuplicate) return
     
     // Handle cancel - stop entire import
     if (action === 'cancel') {
       cancelImport()
+      return
+    }
+    
+    // Handle skip-all
+    if (action === 'skip-all') {
+      const allDuplicates = [currentDuplicate, ...duplicates.filter(d => d !== currentDuplicate)]
+      toast.info(`Skipped ${allDuplicates.length} duplicate contacts`)
+      
+      // Clear duplicates and move to saving unique contacts
+      setDuplicates([])
+      setCurrentDuplicate(null)
+      
+      if (resolvedContacts.length > 0) {
+        await saveContacts(resolvedContacts)
+      } else {
+        setImportProgress({ status: 'idle' })
+        toast.info('Import completed - all duplicates were skipped')
+      }
       return
     }
     
