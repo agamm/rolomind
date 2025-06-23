@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreditCard, CheckCircle, AlertCircle, Receipt } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
-import { CreditDisplay } from "./credit-display";
+import { UsageDisplay } from "./usage-display";
 import { 
   Breadcrumb,
   BreadcrumbList,
@@ -71,7 +71,7 @@ export default async function BillingPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column - Credits */}
           <div>
-            <CreditDisplay />
+            <UsageDisplay />
           </div>
 
           {/* Right Column - Subscription */}

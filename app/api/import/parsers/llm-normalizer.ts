@@ -2,8 +2,9 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
-import { openrouter } from '@/lib/openrouter-config'
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { llmIngestion } from '@/lib/llm-ingestion'
+import { getServerSession } from '@/lib/auth/server'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
@@ -21,9 +22,10 @@ export async function normalizeContactWithLLM(
   headers: string[]
 ): Promise<Partial<Contact>> {
   try {
-    // Check if OpenRouter is configured
-    if (!process.env.OPENROUTER_API_KEY) {
-      throw new Error('OpenRouter API key not configured. Please set OPENROUTER_API_KEY environment variable.')
+    // Get session for user tracking
+    const session = await getServerSession();
+    if (!session?.user) {
+      throw new Error('Authentication required for AI normalization');
     }
 
     const promptText = `Extract and normalize contact information from this CSV row data.
@@ -55,10 +57,15 @@ Be thorough in extracting all available contact information.`;
     console.log('Calling OpenRouter with prompt length:', promptText.length)
     console.log('Sample data:', JSON.stringify(rawData).slice(0, 200))
     
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     let object;
     try {
       const result = await generateObject({
-        model: openrouter('anthropic/claude-3-haiku'),
+        model,
         schema: normalizedContactSchema,
         maxTokens: TOKEN_LIMITS.IMPORT_CONTACT.output,
         prompt: promptText,

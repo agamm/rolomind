@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
-import { CreditCost } from '@/lib/credit-costs'
+import { getServerSession } from '@/lib/auth/server'
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { llmIngestion } from '@/lib/llm-ingestion'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -59,19 +58,6 @@ export async function POST(request: NextRequest) {
       )
     }
     
-    // Check if user has enough credits
-    const credits = await getUserCredits();
-    if (!credits || credits.remaining < CreditCost.GENERATE_SUMMARY) {
-      return NextResponse.json(
-        { 
-          error: 'Insufficient credits. Please add more credits to continue.',
-          required: CreditCost.GENERATE_SUMMARY,
-          remaining: credits?.remaining || 0
-        },
-        { status: 402 }
-      )
-    }
-    
     const promptText = `Analyze these ${contacts.length} contacts that match the query "${query}".
       
 Contacts found:
@@ -99,14 +85,17 @@ Be concise and highlight the most important information that answers the user's 
       throw error;
     }
 
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
+      model,
       schema: summarySchema,
       maxTokens: TOKEN_LIMITS.GENERATE_SUMMARY.output,
       prompt: promptText
     })
-    
-    await consumeCredits(CreditCost.GENERATE_SUMMARY);
     
     return NextResponse.json(object)
   } catch (error) {

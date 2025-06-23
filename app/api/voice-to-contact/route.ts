@@ -3,10 +3,9 @@ import { generateObject, experimental_transcribe } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
-import { CreditCost } from '@/lib/credit-costs'
+import { getServerSession } from '@/lib/auth/server'
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { llmIngestion } from '@/lib/llm-ingestion'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -65,24 +64,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has enough credits (Whisper + Haiku)
-    const totalCreditsNeeded = CreditCost.VOICE_TRANSCRIBE + CreditCost.VOICE_PROCESS;
-    const credits = await getUserCredits();
-    if (!credits || credits.remaining < totalCreditsNeeded) {
-      return NextResponse.json(
-        { 
-          success: false,
-          error: 'Insufficient credits. Please add more credits to continue.',
-          required: totalCreditsNeeded,
-          remaining: credits?.remaining || 0
-        },
-        { status: 402 }
-      )
-    }
-
     const transcribedText = await transcribeAudio(audioFile)
-    
-    await consumeCredits(CreditCost.VOICE_TRANSCRIBE);
 
     const promptText = `Extract contact information updates from this voice transcription about a contact.
       
@@ -128,14 +110,17 @@ Examples of what to extract:
       throw error;
     }
 
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
+      model,
       schema: contactUpdateSchema,
       maxTokens: TOKEN_LIMITS.VOICE_TO_CONTACT.output,
       prompt: promptText
     })
-
-    await consumeCredits(CreditCost.VOICE_PROCESS);
 
     let mergedNotes = currentContact.notes || ''
     

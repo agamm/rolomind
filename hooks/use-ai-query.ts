@@ -1,8 +1,9 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
-import { checkQueryContactsTokens } from '@/lib/client-token-utils'
+import { checkQueryContactsTokens, createSafeBatches } from '@/lib/client-token-utils'
 import { Semaphore } from '@/lib/semaphore'
+import { TOKEN_LIMITS, estimateTokenCount } from '@/lib/token-utils'
 
 interface ContactMatch {
   contact: Contact
@@ -14,7 +15,6 @@ interface UseAIQueryOptions {
   onResults?: (results: ContactMatch[]) => void
 }
 
-const BATCH_SIZE = 50
 const MAX_CONCURRENT = 6
 
 async function queryBatch(
@@ -37,7 +37,7 @@ async function queryBatch(
   if (!response.ok) {
     const error = await response.json()
     if (response.status === 402) {
-      throw new Error(error.error || 'Insufficient credits. Please add more credits to continue.')
+      throw new Error(error.error || 'Usage limit exceeded. Please upgrade your plan for more AI usage.')
     }
     throw new Error(error.error || error.message || 'Query failed')
   }
@@ -67,10 +67,16 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       setProgress({ completed: 0, total: 0 })
       onResults?.([])
       
-      const batches: Contact[][] = []
-      for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
-        batches.push(contacts.slice(i, i + BATCH_SIZE))
-      }
+      // Calculate base prompt tokens including the query
+      const basePromptTokens = 300 + estimateTokenCount(query);
+      
+      // Create token-aware batches with safety margin
+      const batches = createSafeBatches(
+        contacts,
+        TOKEN_LIMITS.QUERY_CONTACTS.input,
+        basePromptTokens,
+        0.8 // Use 80% of limit for extra safety
+      );
       
       setProgress({ completed: 0, total: batches.length })
       

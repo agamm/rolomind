@@ -63,15 +63,15 @@ export function handleAIError(error: unknown): Response {
       );
     }
     
-    // Check for credit limit errors (usually 402 Payment Required or specific error messages)
+    // Check for usage limit errors (usually 402 Payment Required or specific error messages)
     if (apiError.statusCode === 402 || 
         (apiError.responseBody && typeof apiError.responseBody === 'string' && 
          (apiError.responseBody.toLowerCase().includes('credit') || 
           apiError.responseBody.toLowerCase().includes('insufficient funds') ||
           apiError.responseBody.toLowerCase().includes('quota exceeded')))) {
       const errorResponse: ErrorResponse = {
-        error: 'Insufficient credits',
-        message: 'API credit limit reached. Please check your API credits or try again later.',
+        error: 'Usage limit exceeded',
+        message: 'AI usage limit reached. Please upgrade your plan or wait for the next billing cycle.',
         statusCode: 402
       };
       

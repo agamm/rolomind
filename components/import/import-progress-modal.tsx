@@ -151,19 +151,19 @@ export function ImportProgressModal({
               {content.description}
             </p>
           )}
-          {status === 'error' && error && error.toLowerCase().includes('insufficient credits') && (
+          {status === 'error' && error && (error.toLowerCase().includes('insufficient credits') || error.toLowerCase().includes('rate limit')) && (
             <Link href="/dashboard/billing" className="mt-2">
               <Button 
                 variant="default" 
                 size="sm"
                 onClick={(e) => {
-                  // Ensure modal closes when clicking Add Credits
+                  // Ensure modal closes when clicking the button
                   e.stopPropagation()
                   onClose()
                 }}
               >
                 <Sparkles className="h-4 w-4 mr-2" />
-                Add Credits
+                Buy More AI Usage
               </Button>
             </Link>
           )}

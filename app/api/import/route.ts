@@ -5,8 +5,7 @@ import * as rolodexParser from "./parsers/rolodex-parser"
 import * as googleParser from "./parsers/google-parser"
 import * as customParser from "./parsers/custom-parser"
 import type { Contact, RawContactData } from "@/types/contact"
-import { getServerSession, getUserCredits } from '@/lib/auth/server'
-import { CreditCost } from '@/lib/credit-costs'
+import { getServerSession } from '@/lib/auth/server'
 
 // Export parser detection function
 export function detectParserType(headers: string[]): string {
@@ -153,22 +152,10 @@ export async function POST(request: NextRequest) {
       normalizedContacts = googleParser.parse(content)
       parserUsed = 'google'
     } else {
-      // Check authentication and credits for AI normalization
+      // Check authentication for AI normalization
       const session = await getServerSession();
       if (!session?.user) {
         return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
-      }
-
-      // Check if user has enough credits for AI normalization
-      const credits = await getUserCredits();
-      const requiredCredits = Math.ceil(rows.length / 100) * CreditCost.IMPORT_CONTACTS;
-      
-      if (!credits || credits.remaining < requiredCredits) {
-        return NextResponse.json({ 
-          error: `Insufficient credits for AI normalization. Need ${requiredCredits} credits but only have ${credits?.remaining || 0}.`,
-          required: requiredCredits,
-          remaining: credits?.remaining || 0
-        }, { status: 402 });
       }
 
       console.log('Using custom parser for AI normalization')

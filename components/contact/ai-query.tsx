@@ -218,18 +218,7 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
       {error && error.message !== 'Search aborted' && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-          <p className="text-destructive mb-3">{error.message}</p>
-          {error.message.toLowerCase().includes('insufficient credits') && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.location.href = '/dashboard/billing'}
-              className="gap-2"
-            >
-              <Sparkles className="h-4 w-4" />
-              Add Credits
-            </Button>
-          )}
+          <p className="text-destructive">{error.message}</p>
         </div>
       )}
 

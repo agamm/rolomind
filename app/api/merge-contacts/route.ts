@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
-import { CreditCost } from '@/lib/credit-costs'
+import { getServerSession } from '@/lib/auth/server'
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { llmIngestion } from '@/lib/llm-ingestion'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -44,22 +43,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Only check credits if not preview mode
-    if (!previewOnly) {
-      // Check if user has enough credits
-      const credits = await getUserCredits();
-      if (!credits || credits.remaining < CreditCost.MERGE_CONTACTS) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient credits. Please add more credits to continue.',
-            required: CreditCost.MERGE_CONTACTS,
-            remaining: credits?.remaining || 0
-          },
-          { status: 402 }
-        )
-      }
-    }
+    // Credits are now tracked automatically by Polar LLMStrategy
 
     const promptText = `Merge these two contact records intelligently. 
       
@@ -118,17 +102,17 @@ Instructions:
       throw error;
     }
 
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
+      model,
       schema: mergedContactSchema,
       maxTokens: TOKEN_LIMITS.MERGE_CONTACTS.output,
       prompt: promptText
     })
-
-    // Only consume credits if not preview mode
-    if (!previewOnly) {
-      await consumeCredits(CreditCost.MERGE_CONTACTS);
-    }
 
     const mergedContact: Contact = {
       id: existing.id,

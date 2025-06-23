@@ -2,10 +2,9 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
 import { handleAIError } from '@/lib/ai-error-handler';
-import { openrouter } from '@/lib/openrouter-config';
-import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server';
-import { CreditCost } from '@/lib/credit-costs';
+import { getServerSession } from '@/lib/auth/server';
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils';
+import { llmIngestion } from '@/lib/llm-ingestion';
 
 export const maxDuration = 30;
 
@@ -30,16 +29,6 @@ export async function POST(req: Request) {
     
     if (!session?.user) {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
-    }
-
-    // Check if user has enough credits
-    const credits = await getUserCredits();
-    if (!credits || credits.remaining < CreditCost.QUERY_CONTACTS) {
-      return Response.json({ 
-        error: 'Insufficient credits. Please add more credits to continue.',
-        required: CreditCost.QUERY_CONTACTS,
-        remaining: credits?.remaining || 0
-      }, { status: 402 });
     }
 
     const batch = contacts.map((c: Contact) => ({
@@ -95,16 +84,19 @@ ONLY include contacts that match ALL conditions. Return empty array [] if none m
       throw error;
     }
 
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     const { object: matches } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
+      model,
       output: 'array',
       schema: matchSchema,
       maxRetries: 4,
       maxTokens: TOKEN_LIMITS.QUERY_CONTACTS.output,
       prompt: promptText
     });
-
-    await consumeCredits(CreditCost.QUERY_CONTACTS);
 
     return Response.json({ matches });
   } catch (error) {

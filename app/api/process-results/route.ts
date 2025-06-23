@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact } from "@/types/contact"
-import { openrouter } from '@/lib/openrouter-config'
-import { getServerSession, consumeCredits, getUserCredits } from '@/lib/auth/server'
-import { CreditCost } from '@/lib/credit-costs'
+import { getServerSession } from '@/lib/auth/server'
 import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { llmIngestion } from '@/lib/llm-ingestion'
 
 interface ContactMatch {
   contact: Contact
@@ -39,19 +38,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      )
-    }
-
-    // Check if user has enough credits
-    const credits = await getUserCredits();
-    if (!credits || credits.remaining < CreditCost.PROCESS_RESULTS) {
-      return NextResponse.json(
-        { 
-          error: 'Insufficient credits. Please add more credits to continue.',
-          required: CreditCost.PROCESS_RESULTS,
-          remaining: credits?.remaining || 0
-        },
-        { status: 402 }
       )
     }
 
@@ -110,14 +96,17 @@ Return:
       throw error;
     }
 
+    // Get the wrapped LLM model with ingestion capabilities
+    const model = llmIngestion.client({
+      externalCustomerId: session.user.id,
+    });
+
     const { object: response } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
+      model,
       schema: responseSchema,
       maxTokens: TOKEN_LIMITS.PROCESS_RESULTS.output,
       prompt: promptText
     })
-    
-    await consumeCredits(CreditCost.PROCESS_RESULTS);
     
     // Apply the sorting and filtering
     const sortedIndices = response.sortedIndices || []

@@ -14,8 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, CreditCard, User, ChevronDown, Coins, Loader2 } from "lucide-react"
-import { useCredits } from "@/hooks/use-credits"
+import { LogOut, CreditCard, User, ChevronDown } from "lucide-react"
 
 interface TopNavProps {
   contactCount: number
@@ -30,7 +29,6 @@ export function TopNav({
 }: TopNavProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const { credits, loading: creditsLoading } = useCredits();
   
   return (
     <div className="flex items-center justify-between relative">
@@ -57,22 +55,6 @@ export function TopNav({
               <div className="px-2 py-1.5">
                 <p className="text-sm font-medium">{session.user.name || "User"}</p>
                 <p className="text-xs text-muted-foreground">{session.user.email}</p>
-              </div>
-              <DropdownMenuSeparator />
-              <div className="px-2 py-1.5 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Coins className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">Credits</span>
-                </div>
-                {creditsLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                ) : credits ? (
-                  <span className="text-sm font-medium">
-                    {credits.remaining} / {credits.total}
-                  </span>
-                ) : (
-                  <span className="text-sm text-muted-foreground">--</span>
-                )}
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem
