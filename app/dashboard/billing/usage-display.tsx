@@ -175,13 +175,6 @@ export function UsageDisplay() {
                       </p>
                     </div>
                   </div>
-                  
-                  <div className="pt-2 border-t">
-                    <div className="flex justify-between items-center">
-                      <p className="text-sm font-medium">Claude 3.7 Sonnet Events</p>
-                      <p className="text-sm font-mono">{usage.usageEvents.filter(e => e.meterName.includes("Claude 3.7 Sonnet")).length}</p>
-                    </div>
-                  </div>
                 </div>
               </CollapsibleContent>
             </Collapsible>
