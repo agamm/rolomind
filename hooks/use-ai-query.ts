@@ -3,7 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
 import { checkQueryContactsTokens, createSafeBatches } from '@/lib/client-token-utils'
 import { Semaphore } from '@/lib/semaphore'
-import { TOKEN_LIMITS, estimateTokenCount } from '@/lib/token-utils'
+import { TOKEN_LIMITS, estimateTokenCount } from '@/lib/config'
 
 interface ContactMatch {
   contact: Contact

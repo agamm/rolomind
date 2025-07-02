@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { getServerSession } from '@/lib/auth/server'
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
 import { llmIngestion } from '@/lib/llm-ingestion'
+import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -56,6 +56,17 @@ export async function POST(request: NextRequest) {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // Check usage limit before processing
+    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.GENERATE_SUMMARY);
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'Usage limit exceeded',
+        details: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage,
+        usageLimit: usageCheck.usageLimit
+      }, { status: 402 });
     }
     
     const promptText = `Analyze these ${contacts.length} contacts that match the query "${query}".

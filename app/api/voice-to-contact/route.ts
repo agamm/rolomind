@@ -3,9 +3,9 @@ import { generateObject, experimental_transcribe } from 'ai'
 import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { getServerSession } from '@/lib/auth/server'
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
 import { llmIngestion } from '@/lib/llm-ingestion'
+import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -62,6 +62,18 @@ export async function POST(request: NextRequest) {
         { success: false, error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // Check usage limit before processing
+    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.VOICE_NOTE_30S);
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        success: false,
+        error: 'Usage limit exceeded',
+        details: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage,
+        usageLimit: usageCheck.usageLimit
+      }, { status: 402 });
     }
 
     const transcribedText = await transcribeAudio(audioFile)

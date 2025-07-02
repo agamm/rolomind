@@ -11,7 +11,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Contact } from '@/types/contact';
-import { getContactDataScore } from '@/lib/contact-limits';
+import { getContactDataScore } from '@/lib/config';
 import { Trash2, Mail, Phone, Building, MapPin, FileText } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 

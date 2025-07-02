@@ -4,7 +4,7 @@ import {
   getContactTokenCount,
   isApproachingContactLimit,
   findEmptyContacts
-} from '../contact-limits';
+} from '../config';
 import { Contact } from '@/types/contact';
 
 // Helper to create a test contact

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
-import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/contact-limits'
+import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
 
 interface ImportResponse {
   success: boolean

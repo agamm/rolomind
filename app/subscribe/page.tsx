@@ -4,11 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Loader2, CheckCircle, Code2 } from "lucide-react";
+import { Loader2, CheckCircle, Code2, ChevronDown, ChevronUp } from "lucide-react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useIsAuthenticated } from "@/hooks/use-is-authenticated";
 import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
 import Link from "next/link";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { PRICING_WITH_PROFIT, formatPricingWithBase, BASE_PRICING, OPERATION_ESTIMATES } from "@/lib/config";
 
 export default function SubscribePage() {
   const router = useRouter();
@@ -16,6 +22,7 @@ export default function SubscribePage() {
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pricingDetailsOpen, setPricingDetailsOpen] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -34,7 +41,7 @@ export default function SubscribePage() {
       setCheckoutLoading(true);
       setError(null);
       const response = await authClient.checkout({
-        products: ["3edbd9f4-735b-49d6-96aa-1fbe47a39908"]
+        products: ["1d51dafc-0a3f-4ed6-9b36-af44a8e15884"]
       });
       if (response.data?.url) {
         window.location.href = response.data.url;
@@ -66,7 +73,7 @@ export default function SubscribePage() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
           <p className="text-lg text-muted-foreground">
-            Start finding the contacts you need with Rolomind Pro
+            Transparent AI-powered contact management with pay-per-use pricing
           </p>
         </div>
 
@@ -81,15 +88,15 @@ export default function SubscribePage() {
         <Card className="mb-8 border-primary">
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle className="text-2xl">Rolomind Pro</CardTitle>
+              <CardTitle className="text-2xl">AI Usage Plan</CardTitle>
               <div className="text-right">
-                <p className="text-3xl font-bold">$5</p>
-                <p className="text-sm text-muted-foreground">/month</p>
-                <p className="text-xs text-muted-foreground">+ usage-based AI calls</p>
+                <p className="text-3xl font-bold">Pay per use</p>
+                <p className="text-sm text-muted-foreground">Claude 3.7 Sonnet</p>
+                <p className="text-xs text-muted-foreground">$10/month cap (adjustable)</p>
               </div>
             </div>
             <CardDescription>
-              Everything you need to find and connect with the right people
+              Transparent AI usage pricing with no surprises
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -97,27 +104,88 @@ export default function SubscribePage() {
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">20 free searches per month + usage-based AI calls</span>
+                  <span className="text-sm">Store up to 10,000 contacts</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">Export contacts to CSV whenever you want</span>
+                  <span className="text-sm">Export contacts to CSV anytime</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="h-4 w-4 text-green-500" />
-                  <span className="text-sm">Priority support</span>
+                  <span className="text-sm">AI-powered contact search and management</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">Voice notes with AI processing</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-green-500" />
+                  <span className="text-sm">AI contact merging and deduplication</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-muted/50 rounded-lg p-4">
-              <p className="text-sm font-medium mb-1">How it works</p>
-              <p className="text-sm text-muted-foreground">
-                The $5/month platform fee includes pre-loaded AI credits for approximately 20 queries. 
-                After that, additional AI usage is billed based on actual consumption.
-              </p>
-              <p className="text-sm text-muted-foreground mt-1">
-                You can view your usage in the billing page at any time.
+            <Collapsible open={pricingDetailsOpen} onOpenChange={setPricingDetailsOpen}>
+              <CollapsibleTrigger asChild>
+                <Button variant="ghost" className="w-full justify-between p-4 h-auto bg-muted/50 hover:bg-muted/70">
+                  <div className="text-left">
+                    <p className="text-sm font-medium">Transparent Pricing</p>
+                    <p className="text-sm text-muted-foreground">
+                      Claude 3.7 Sonnet costs + 20% profit margin
+                    </p>
+                  </div>
+                  {pricingDetailsOpen ? (
+                    <ChevronUp className="h-4 w-4" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4" />
+                  )}
+                </Button>
+              </CollapsibleTrigger>
+              <CollapsibleContent className="pt-4">
+                <div className="space-y-4">
+                  <div className="bg-muted/30 rounded-lg p-4 space-y-3">
+                    <p className="text-sm text-muted-foreground">
+                      We charge Claude 3.7 Sonnet token costs + 20% profit margin. You only pay for what you use.
+                    </p>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>• Input tokens: {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.input)}</p>
+                      <p>• Output tokens: {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.output)}</p>
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">Cost Examples</p>
+                    <div className="space-y-2 text-sm text-blue-800 dark:text-blue-200">
+                      <div className="flex justify-between">
+                        <span>Search 1,000 contacts:</span>
+                        <span className="font-medium">~${(OPERATION_ESTIMATES.SEARCH_1000_CONTACTS / 100).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Generate summary:</span>
+                        <span className="font-medium">~${(OPERATION_ESTIMATES.GENERATE_SUMMARY / 100).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Merge 2 contacts:</span>
+                        <span className="font-medium">~${(OPERATION_ESTIMATES.MERGE_CONTACTS / 100).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Voice note (30s):</span>
+                        <span className="font-medium">~${(OPERATION_ESTIMATES.VOICE_NOTE_30S / 100).toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Import 100 contacts:</span>
+                        <span className="font-medium">~${(100 * OPERATION_ESTIMATES.IMPORT_PER_CONTACT).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CollapsibleContent>
+            </Collapsible>
+
+            <div className="bg-amber-50 dark:bg-amber-950/20 rounded-lg p-4">
+              <p className="text-sm font-medium text-amber-900 dark:text-amber-100 mb-2">Usage Cap Protection</p>
+              <p className="text-sm text-amber-800 dark:text-amber-200">
+                Default $10/month spending cap prevents surprises. You can adjust this limit anytime in your billing settings.
               </p>
             </div>
 
@@ -133,7 +201,7 @@ export default function SubscribePage() {
                   Loading...
                 </>
               ) : (
-                "Subscribe Now"
+                "Start Using AI Features"
               )}
             </Button>
 
@@ -143,14 +211,6 @@ export default function SubscribePage() {
           </CardContent>
         </Card>
 
-        <div className="text-center">
-          <p className="text-sm text-muted-foreground mb-2">
-            Already have a subscription?
-          </p>
-          <Link href="/dashboard/app" className="text-sm text-primary hover:underline">
-            Go to Dashboard
-          </Link>
-        </div>
 
         <Card className="mt-8 bg-muted/30 border-muted">
           <CardContent className="pt-6">

@@ -2,9 +2,9 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
 import { handleAIError } from '@/lib/ai-error-handler';
-import { getServerSession } from '@/lib/auth/server';
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils';
+import { getServerSession, checkUsageLimit } from '@/lib/auth/server';
 import { llmIngestion } from '@/lib/llm-ingestion';
+import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config';
 
 export const maxDuration = 30;
 
@@ -29,6 +29,17 @@ export async function POST(req: Request) {
     
     if (!session?.user) {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    // Check usage limit before processing
+    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.SEARCH_1000_CONTACTS);
+    if (!usageCheck.allowed) {
+      return Response.json({ 
+        error: 'Usage limit exceeded',
+        details: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage,
+        usageLimit: usageCheck.usageLimit
+      }, { status: 402 });
     }
 
     const batch = contacts.map((c: Contact) => ({

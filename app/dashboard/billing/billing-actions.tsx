@@ -33,7 +33,7 @@ export function BillingActions({ variant = "default", hasSubscription = true }: 
     try {
       setCheckoutLoading(true);
       const response = await authClient.checkout({
-        products: ["3edbd9f4-735b-49d6-96aa-1fbe47a39908"]
+        products: ["1d51dafc-0a3f-4ed6-9b36-af44a8e15884"]
       });
       if (response.data?.url) {
         window.location.href = response.data.url;

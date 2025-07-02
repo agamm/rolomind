@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle, FileText } from 'lucide-react'
 import { Contact } from '@/types/contact'
-import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/contact-limits'
+import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface OversizedContact {

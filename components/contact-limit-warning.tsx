@@ -3,7 +3,7 @@
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { AlertTriangle, Search, Users, FileX } from "lucide-react";
-import { CONTACT_LIMITS, findEmptyContacts, findMinimalContacts, findContactsWithoutNotes, getContactTokenCount, isApproachingContactLimit } from "@/lib/contact-limits";
+import { CONTACT_LIMITS, findEmptyContacts, findMinimalContacts, findContactsWithoutNotes, getContactTokenCount, isApproachingContactLimit } from "@/lib/config";
 import { Contact } from "@/types/contact";
 
 interface ContactLimitWarningProps {

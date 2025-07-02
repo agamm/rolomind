@@ -18,7 +18,7 @@ import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
 import { VoiceRecorder } from '@/components/ui/voice-recorder'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
-import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/contact-limits'
+import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface EditContactModalProps {

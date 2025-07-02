@@ -2,9 +2,9 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact } from "@/types/contact"
-import { getServerSession } from '@/lib/auth/server'
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
 import { llmIngestion } from '@/lib/llm-ingestion'
+import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
 
 interface ContactMatch {
   contact: Contact
@@ -39,6 +39,17 @@ export async function POST(request: NextRequest) {
         { error: 'Authentication required' },
         { status: 401 }
       )
+    }
+
+    // Check usage limit before processing
+    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.PROCESS_RESULTS);
+    if (!usageCheck.allowed) {
+      return NextResponse.json({ 
+        error: 'Usage limit exceeded',
+        details: usageCheck.reason,
+        currentUsage: usageCheck.currentUsage,
+        usageLimit: usageCheck.usageLimit
+      }, { status: 402 });
     }
 
     // Create a simplified list for the AI to work with
@@ -136,9 +147,10 @@ Return:
 
   } catch (error) {
     console.error('Process results error:', error)
-    return NextResponse.json(
-      { error: 'Failed to process results' },
-      { status: 500 }
-    )
+    // If AI processing fails, return original results
+    return NextResponse.json({
+      sortedResults: results,
+      processingNote: 'AI processing failed. Showing original order.'
+    } as ProcessedResult)
   }
 }

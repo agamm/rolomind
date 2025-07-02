@@ -28,12 +28,8 @@ export const auth = betterAuth({
         checkout({
           products: [
             {
-              productId: "3edbd9f4-735b-49d6-96aa-1fbe47a39908",
-              slug: "rolomind-pro",
-            },
-            {
-              productId: "cff4d713-4086-4709-8f65-d003269e8398",
-              slug: "AI-Tokens"
+              productId: "1d51dafc-0a3f-4ed6-9b36-af44a8e15884",
+              slug: "AI-Usage"
             }
           ],
           successUrl: "/subscribe/success?checkout_id={CHECKOUT_ID}",

@@ -2,7 +2,7 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/token-utils'
+import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/config'
 import { llmIngestion } from '@/lib/llm-ingestion'
 import { getServerSession } from '@/lib/auth/server'
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, DollarSign, Loader2, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import { TrendingUp, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
@@ -13,61 +13,54 @@ import {
 } from "@/components/ui/collapsible";
 
 interface UsageData {
-  inputTokens: number;
-  outputTokens: number;
-  totalCost: number;
-  creditedAmount: number; // From $5/mo subscription
-  accountBalance: number;
+  totalCostCents: number;
+  usageCapCents: number;
+  usageEvents: Array<{
+    name: string;
+    metadata: {
+      promptTokens?: number;
+      completionTokens?: number;
+    };
+  }>;
 }
 
-// Mock pricing based on Claude 3.5 Sonnet pricing
-const PRICING = {
-  inputTokensPerMillion: 3.00,  // $3 per million input tokens
-  outputTokensPerMillion: 15.00, // $15 per million output tokens
-};
+import { PRICING_WITH_PROFIT, formatPricingWithBase, BASE_PRICING } from "@/lib/config";
 
 export function UsageDisplay() {
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [buyingTokens, setBuyingTokens] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [estimatesOpen, setEstimatesOpen] = useState(false);
 
   useEffect(() => {
-    // Mock data - in production this would fetch from Polar's usage API
-    const mockUsage: UsageData = {
-      inputTokens: 1250000,  // 1.25M tokens
-      outputTokens: 450000,   // 450K tokens
-      totalCost: 10.50,       // Calculated from tokens
-      creditedAmount: 5.00,   // From $5/mo subscription
-      accountBalance: 39.50,  // Total balance remaining
+    const fetchUsageData = async () => {
+      try {
+        // Fetch usage data from our API endpoint with cache busting
+        const response = await fetch(`/api/usage?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Cache-Control': 'no-cache',
+          },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setUsage(data);
+          console.log("Fetched usage data:", data);
+        } else {
+          console.error("Failed to fetch usage data:", response.status, response.statusText);
+        }
+      } catch (error) {
+        console.error("Error fetching usage data:", error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
-    setTimeout(() => {
-      setUsage(mockUsage);
-      setLoading(false);
-    }, 1000);
+
+    fetchUsageData();
   }, []);
 
-  const handleBuyTokens = async () => {
-    try {
-      setBuyingTokens(true);
-      const response = await authClient.checkout({
-        products: ["cff4d713-4086-4709-8f65-d003269e8398"]
-      });
-      if (response.data?.url) {
-        window.location.href = response.data.url;
-      }
-    } catch (error) {
-      console.error("Error opening token checkout:", error);
-      alert("Unable to open checkout. Please try again.");
-    } finally {
-      setBuyingTokens(false);
-    }
-  };
-
-  const usagePercentage = usage ? ((usage.totalCost / (usage.creditedAmount + usage.accountBalance)) * 100) : 0;
-  const isLowBalance = usage && usage.accountBalance < 10;
+  const usagePercentage = usage ? ((usage.totalCostCents / usage.usageCapCents) * 100) : 0;
+  const isNearLimit = usage && usagePercentage > 80;
 
   const formatTokenCount = (count: number) => {
     if (count >= 1_000_000) {
@@ -77,6 +70,22 @@ export function UsageDisplay() {
     }
     return count.toString();
   };
+
+  const formatCents = (cents: number) => {
+    return `$${(cents / 100).toFixed(2)}`;
+  };
+
+  // Calculate token totals from usage events
+  const tokenTotals = usage?.usageEvents.reduce(
+    (acc, event) => {
+      if (event.name === "claude-3-7-sonnet") {
+        acc.inputTokens += event.metadata.promptTokens || 0;
+        acc.outputTokens += event.metadata.completionTokens || 0;
+      }
+      return acc;
+    },
+    { inputTokens: 0, outputTokens: 0 }
+  ) || { inputTokens: 0, outputTokens: 0 };
 
   return (
     <Card>
@@ -93,60 +102,40 @@ export function UsageDisplay() {
           </div>
         ) : usage ? (
           <>
-            {/* Main Balance Display */}
+            {/* Main Usage Display */}
             <div className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <div>
                   <p className="text-3xl font-bold">
-                    ${usage.accountBalance.toFixed(2)}
+                    {formatCents(usage.totalCostCents)}
                   </p>
-                  <p className="text-sm text-muted-foreground">Balance remaining</p>
+                  <p className="text-sm text-muted-foreground">Used this month</p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground">
-                    ${usage.totalCost.toFixed(2)} used
+                    {formatCents(usage.usageCapCents - usage.totalCostCents)} remaining
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    of ${(usage.creditedAmount + usage.accountBalance).toFixed(2)} total
+                    of {formatCents(usage.usageCapCents)} limit
                   </p>
                 </div>
               </div>
               
               <Progress 
-                value={100 - usagePercentage} 
+                value={usagePercentage} 
                 className="h-3"
                 style={{
-                  // @ts-ignore - CSS variable
-                  '--progress-background': isLowBalance ? 'hsl(var(--destructive))' : undefined
+                  // @ts-expect-error - CSS variable
+                  '--progress-background': isNearLimit ? 'hsl(var(--destructive))' : undefined
                 }}
               />
               
-              {isLowBalance && (
+              {isNearLimit && (
                 <p className="text-sm text-amber-600">
-                  Low balance! Consider buying more tokens.
+                  You&apos;re approaching your usage limit.
                 </p>
               )}
             </div>
-
-            {/* Buy More Tokens Button */}
-            <Button
-              onClick={handleBuyTokens}
-              disabled={buyingTokens}
-              className="w-full"
-              variant={isLowBalance ? "default" : "outline"}
-            >
-              {buyingTokens ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing...
-                </>
-              ) : (
-                <>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Buy More AI Tokens
-                </>
-              )}
-            </Button>
 
             {/* Collapsible Token Details */}
             <Collapsible open={detailsOpen} onOpenChange={setDetailsOpen}>
@@ -166,13 +155,13 @@ export function UsageDisplay() {
                     <div>
                       <p className="text-sm font-medium">Input Tokens</p>
                       <p className="text-xs text-muted-foreground">
-                        ${PRICING.inputTokensPerMillion.toFixed(2)}/million
+                        {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.input)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-mono">{formatTokenCount(usage.inputTokens)}</p>
+                      <p className="text-sm font-mono">{formatTokenCount(tokenTotals.inputTokens)}</p>
                       <p className="text-xs text-muted-foreground">
-                        ${((usage.inputTokens / 1_000_000) * PRICING.inputTokensPerMillion).toFixed(2)}
+                        ${((tokenTotals.inputTokens / 1_000_000) * PRICING_WITH_PROFIT.CLAUDE_3_7_SONNET.input).toFixed(2)}
                       </p>
                     </div>
                   </div>
@@ -181,14 +170,21 @@ export function UsageDisplay() {
                     <div>
                       <p className="text-sm font-medium">Output Tokens</p>
                       <p className="text-xs text-muted-foreground">
-                        ${PRICING.outputTokensPerMillion.toFixed(2)}/million
+                        {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.output)}
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm font-mono">{formatTokenCount(usage.outputTokens)}</p>
+                      <p className="text-sm font-mono">{formatTokenCount(tokenTotals.outputTokens)}</p>
                       <p className="text-xs text-muted-foreground">
-                        ${((usage.outputTokens / 1_000_000) * PRICING.outputTokensPerMillion).toFixed(2)}
+                        ${((tokenTotals.outputTokens / 1_000_000) * PRICING_WITH_PROFIT.CLAUDE_3_7_SONNET.output).toFixed(2)}
                       </p>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-2 border-t">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm font-medium">Claude 3.7 Sonnet Events</p>
+                      <p className="text-sm font-mono">{usage.usageEvents.filter(e => e.name === "claude-3-7-sonnet").length}</p>
                     </div>
                   </div>
                 </div>

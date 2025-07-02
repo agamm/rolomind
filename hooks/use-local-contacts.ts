@@ -14,7 +14,7 @@ import { useState, useEffect } from 'react';
 import { 
   CONTACT_LIMITS,
   getContactTokenCount 
-} from '@/lib/contact-limits';
+} from '@/lib/config';
 
 // Hook to get all contacts with real-time updates
 export function useContacts(searchQuery?: string) {

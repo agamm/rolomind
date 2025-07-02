@@ -1,0 +1,1 @@
+ALTER TABLE `user` ADD `usage_cap_cents` integer NOT NULL;

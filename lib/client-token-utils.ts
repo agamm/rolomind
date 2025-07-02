@@ -2,16 +2,34 @@ import {
   TOKEN_LIMITS, 
   estimateTokenCount, 
   chunkContactsByTokenLimit
-} from './token-utils';
+} from './config';
 import { Contact } from '@/types/contact';
 
-// Re-export batching utilities
+// Re-export batching utilities from config
 export { 
   createSafeBatches,
-  batchItemsByTokens,
-  getBatchInfo,
-  type BatchInfo
-} from './token-utils';
+  batchItemsByTokens
+} from './config';
+
+// Additional utility types and functions
+export interface BatchInfo {
+  totalBatches: number;
+  itemsPerBatch: number[];
+  estimatedTokensPerBatch: number[];
+}
+
+export function getBatchInfo<T>(
+  batches: T[][],
+  itemToString: (item: T) => string
+): BatchInfo {
+  return {
+    totalBatches: batches.length,
+    itemsPerBatch: batches.map(batch => batch.length),
+    estimatedTokensPerBatch: batches.map(batch => 
+      batch.reduce((sum, item) => sum + estimateTokenCount(itemToString(item)), 0)
+    )
+  };
+}
 
 export interface TokenCheckResult {
   isValid: boolean;
