@@ -158,19 +158,10 @@ export async function getUserUsageData() {
     // Get user's usage cap from database
     const usageCapCents = await getUserUsageCap();
 
-    // Get Polar client and fetch real usage data
-    const polarClient = new Polar({
-      accessToken: env.POLAR_ACCESS_TOKEN,
-      server: env.POLAR_SERVER,
-    });
-
-    // Get customer by email
-    const customers = await polarClient.customers.list({
-      email: session.user.email,
-    });
-
-    if (customers.result.items.length === 0) {
-      console.log("No customer found for email:", session.user.email);
+    // Get customer state which includes subscription meters
+    const customerState = await getCustomerState();
+    
+    if (!customerState) {
       return {
         totalCostCents: 0,
         usageCapCents: usageCapCents || 1000,
@@ -178,51 +169,50 @@ export async function getUserUsageData() {
       };
     }
 
-    const customer = customers.result.items[0];
-    console.log("Found customer:", customer.id);
-
-    // Try to get customer meters (usage data)
+    // Calculate total costs from subscription meters
     let totalCostCents = 0;
-    const usageEvents: unknown[] = [];
+    let inputTokens = 0;
+    let outputTokens = 0;
+    const usageEvents: any[] = [];
 
-    try {
-      // Get customer meters using Polar SDK
-      const customerMeters = await polarClient.customerMeters.list({
-        customerId: customer.id
-      });
-      
-      console.log("Customer meters found:", customerMeters);
-      
-      // Get all meters from paginated results  
-      const allMeters = [];
-      for await (const page of customerMeters) {
-        // Each page has an 'items' array containing the meter objects
-        if (page && (page as any).items) {
-          allMeters.push(...(page as any).items);
+    // Process all active subscriptions and their meters
+    for (const subscription of customerState.activeSubscriptions) {
+      if (subscription.meters) {
+        for (const meter of subscription.meters) {
+          if (meter.amount) {
+            totalCostCents += meter.amount; // amount is already in cents
+          }
+          
+          // Track token usage for detailed breakdown
+          if (meter.meter.name === "Claude 3.7 Sonnet (Input)") {
+            inputTokens = meter.consumedUnits;
+          } else if (meter.meter.name === "Claude 3.7 Sonnet (Output)") {
+            outputTokens = meter.consumedUnits;
+          }
+          
+          usageEvents.push({
+            meterName: meter.meter.name,
+            consumedUnits: meter.consumedUnits,
+            amount: meter.amount,
+            meterId: meter.meterId
+          });
         }
       }
-      
-      console.log("All meters collected:", allMeters);
-      
-      // Calculate total costs from meters
-      for (const meter of allMeters) {
-        if (meter.amount) {
-          totalCostCents += meter.amount; // amount is already in cents
-        }
-      }
-      
-      console.log("Total cost from meters:", totalCostCents);
-    } catch (metersError) {
-      console.log("Customer meters fetch failed:", metersError);
     }
 
-    // Note: Metrics API requires organizationId which we don't have in customer context
-    // For broader analytics, we would need organization-level access
+    console.log("Usage data calculated:", {
+      totalCostCents,
+      inputTokens,
+      outputTokens,
+      usageEvents
+    });
 
     return {
       totalCostCents,
       usageCapCents: usageCapCents || 1000,
       usageEvents,
+      inputTokens,
+      outputTokens,
     };
   } catch (error) {
     console.error("Error getting user usage data:", error);
@@ -232,6 +222,8 @@ export async function getUserUsageData() {
       totalCostCents: 0,
       usageCapCents: usageCapCents || 1000,
       usageEvents: [],
+      inputTokens: 0,
+      outputTokens: 0,
     };
   }
 }
