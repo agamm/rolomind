@@ -15,12 +15,13 @@ import {
 interface UsageData {
   totalCostCents: number;
   usageCapCents: number;
+  inputTokens?: number;
+  outputTokens?: number;
   usageEvents: Array<{
-    name: string;
-    metadata: {
-      promptTokens?: number;
-      completionTokens?: number;
-    };
+    meterName: string;
+    consumedUnits: number;
+    amount: number;
+    meterId: string;
   }>;
 }
 
@@ -75,17 +76,11 @@ export function UsageDisplay() {
     return `$${(cents / 100).toFixed(2)}`;
   };
 
-  // Calculate token totals from usage events
-  const tokenTotals = usage?.usageEvents.reduce(
-    (acc, event) => {
-      if (event.name === "claude-3-7-sonnet") {
-        acc.inputTokens += event.metadata.promptTokens || 0;
-        acc.outputTokens += event.metadata.completionTokens || 0;
-      }
-      return acc;
-    },
-    { inputTokens: 0, outputTokens: 0 }
-  ) || { inputTokens: 0, outputTokens: 0 };
+  // Get token totals directly from usage data
+  const tokenTotals = {
+    inputTokens: usage?.inputTokens || 0,
+    outputTokens: usage?.outputTokens || 0
+  };
 
   return (
     <Card>
@@ -155,7 +150,7 @@ export function UsageDisplay() {
                     <div>
                       <p className="text-sm font-medium">Input Tokens</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.input)}
+                        $3.60/million tokens
                       </p>
                     </div>
                     <div className="text-right">
@@ -170,7 +165,7 @@ export function UsageDisplay() {
                     <div>
                       <p className="text-sm font-medium">Output Tokens</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatPricingWithBase(BASE_PRICING.CLAUDE_3_7_SONNET.output)}
+                        $18.00/million tokens
                       </p>
                     </div>
                     <div className="text-right">
@@ -184,7 +179,7 @@ export function UsageDisplay() {
                   <div className="pt-2 border-t">
                     <div className="flex justify-between items-center">
                       <p className="text-sm font-medium">Claude 3.7 Sonnet Events</p>
-                      <p className="text-sm font-mono">{usage.usageEvents.filter(e => e.name === "claude-3-7-sonnet").length}</p>
+                      <p className="text-sm font-mono">{usage.usageEvents.filter(e => e.meterName.includes("Claude 3.7 Sonnet")).length}</p>
                     </div>
                   </div>
                 </div>

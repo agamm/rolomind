@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { LogOut, CreditCard, User, ChevronDown } from "lucide-react"
+import { UsageBadge } from "./usage-badge"
 
 interface TopNavProps {
   contactCount: number
@@ -62,7 +63,10 @@ export function TopNav({
                 onClick={() => router.push("/dashboard/billing")}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                Billing
+                <div className="flex items-center justify-between w-full">
+                  <span>Billing</span>
+                  <UsageBadge />
+                </div>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

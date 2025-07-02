@@ -173,7 +173,12 @@ export async function getUserUsageData() {
     let totalCostCents = 0;
     let inputTokens = 0;
     let outputTokens = 0;
-    const usageEvents: any[] = [];
+    const usageEvents: Array<{
+      meterName: string;
+      consumedUnits: number;
+      amount: number;
+      meterId: string;
+    }> = [];
 
     // Process all active subscriptions and their meters
     for (const subscription of customerState.activeSubscriptions) {
