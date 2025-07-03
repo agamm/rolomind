@@ -31,6 +31,11 @@ export async function isPayingCustomer() {
     return false;
   }
 
+  if (!env.POLAR_ACCESS_TOKEN) {
+    console.warn("POLAR_ACCESS_TOKEN not configured");
+    return false;
+  }
+
   try {
     const polarClient = new Polar({
       accessToken: env.POLAR_ACCESS_TOKEN,
@@ -66,6 +71,11 @@ export async function getCustomerState() {
   const session = await getServerSession();
   
   if (!session?.user?.email) {
+    return null;
+  }
+
+  if (!env.POLAR_ACCESS_TOKEN) {
+    console.warn("POLAR_ACCESS_TOKEN not configured");
     return null;
   }
 

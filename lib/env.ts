@@ -6,10 +6,10 @@ export const env = createEnv({
     DATABASE_URL: z.string().min(1),
     DATABASE_AUTH_TOKEN: z.string().optional(),
     BETTER_AUTH_URL: z.string().url().optional().default("http://localhost:3000"),
-    BETTER_AUTH_SECRET: z.string().min(32),
-    POLAR_ACCESS_TOKEN: z.string().min(1),
+    BETTER_AUTH_SECRET: z.string().min(32).optional(),
+    POLAR_ACCESS_TOKEN: z.string().min(1).optional(),
     POLAR_SERVER: z.enum(['sandbox', 'production']).default('sandbox'),
-    POLAR_PRODUCT_ID: z.string().min(1),
+    POLAR_PRODUCT_ID: z.string().min(1).optional(),
   },
   client: {
     // Add client-side env vars here if needed
@@ -24,4 +24,5 @@ export const env = createEnv({
     POLAR_PRODUCT_ID: process.env.POLAR_PRODUCT_ID,
   },
   emptyStringAsUndefined: true,
+  skipValidation: process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'preview',
 });

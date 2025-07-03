@@ -6,21 +6,18 @@ import { Polar } from "@polar-sh/sdk";
 import { db } from "@/db/sqlite";
 import { env } from "@/lib/env";
 
-const polarClient = new Polar({
+// Create polar client only if access token is available
+const polarClient = env.POLAR_ACCESS_TOKEN ? new Polar({
   accessToken: env.POLAR_ACCESS_TOKEN,
   server: env.POLAR_SERVER,
-});
+}) : null;
 
-export const auth = betterAuth({
-  database: drizzleAdapter(db, {
-    provider: "sqlite",
-  }),
-  baseURL: env.BETTER_AUTH_URL,
-  secret: env.BETTER_AUTH_SECRET,
-  emailAndPassword: {
-    enabled: true,
-  },
-  plugins: [
+// Create plugins array conditionally
+const plugins = [];
+
+// Add polar plugin only if client is available
+if (polarClient) {
+  plugins.push(
     polar({
       client: polarClient,
       createCustomerOnSignUp: true,
@@ -38,7 +35,21 @@ export const auth = betterAuth({
         portal(),
         usage(),
       ],
-    }),
-    nextCookies(), // Must be last in the plugins array
-  ],
+    })
+  );
+}
+
+// nextCookies must be last
+plugins.push(nextCookies());
+
+export const auth = betterAuth({
+  database: drizzleAdapter(db, {
+    provider: "sqlite",
+  }),
+  baseURL: env.BETTER_AUTH_URL,
+  secret: env.BETTER_AUTH_SECRET || "fallback-secret-for-build-time-only",
+  emailAndPassword: {
+    enabled: true,
+  },
+  plugins,
 });

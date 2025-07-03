@@ -33,6 +33,11 @@ export function BillingActions({ variant = "default", hasSubscription = true }: 
   const handleCheckout = async () => {
     try {
       setCheckoutLoading(true);
+      
+      if (!env.POLAR_PRODUCT_ID) {
+        throw new Error("Product ID not configured");
+      }
+      
       const response = await authClient.checkout({
         products: [env.POLAR_PRODUCT_ID]
       });
