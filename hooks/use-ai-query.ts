@@ -1,9 +1,7 @@
 import React, { useState } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Contact } from '@/types/contact'
-import { checkQueryContactsTokens, createSafeBatches } from '@/lib/client-token-utils'
 import { Semaphore } from '@/lib/semaphore'
-import { TOKEN_LIMITS, estimateTokenCount } from '@/lib/config'
 
 interface ContactMatch {
   contact: Contact
@@ -22,11 +20,6 @@ async function queryBatch(
   query: string, 
   signal?: AbortSignal
 ): Promise<ContactMatch[]> {
-  const tokenCheck = checkQueryContactsTokens(query, contacts);
-  if (!tokenCheck.isValid && !tokenCheck.needsChunking) {
-    throw new Error(tokenCheck.error || 'Token limit exceeded');
-  }
-  
   const response = await fetch('/api/query-contacts', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -37,7 +30,7 @@ async function queryBatch(
   if (!response.ok) {
     const error = await response.json()
     if (response.status === 402) {
-      throw new Error(error.error || 'Usage limit exceeded. Please upgrade your plan for more AI usage.')
+      throw new Error(error.details || error.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
     }
     throw new Error(error.error || error.message || 'Query failed')
   }
@@ -67,16 +60,12 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       setProgress({ completed: 0, total: 0 })
       onResults?.([])
       
-      // Calculate base prompt tokens including the query
-      const basePromptTokens = 300 + estimateTokenCount(query);
-      
-      // Create token-aware batches with safety margin
-      const batches = createSafeBatches(
-        contacts,
-        TOKEN_LIMITS.QUERY_CONTACTS.input,
-        basePromptTokens,
-        0.8 // Use 80% of limit for extra safety
-      );
+      // Create simple batches of 100 contacts each
+      const BATCH_SIZE = 100;
+      const batches: Contact[][] = [];
+      for (let i = 0; i < contacts.length; i += BATCH_SIZE) {
+        batches.push(contacts.slice(i, i + BATCH_SIZE));
+      }
       
       setProgress({ completed: 0, total: batches.length })
       
@@ -117,6 +106,12 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
                 abortControllerRef.current?.abort()
                 throw error
               }
+              if (error.message.toLowerCase().includes('api key not configured') || 
+                  error.message.toLowerCase().includes('ai service not configured')) {
+                // Abort all other requests for API key errors
+                abortControllerRef.current?.abort()
+                throw error
+              }
             }
             
             // Update progress even on error
@@ -127,7 +122,19 @@ export function useAIQuery({ contacts, onResults }: UseAIQueryOptions) {
       })
       
       // Wait for all batches to complete
-      await Promise.allSettled(batchPromises)
+      const batchResults = await Promise.allSettled(batchPromises)
+      
+      // Check if any batch failed with an API key error
+      const apiKeyError = batchResults.find(result => 
+        result.status === 'rejected' && 
+        result.reason instanceof Error && 
+        (result.reason.message.toLowerCase().includes('api key not configured') ||
+         result.reason.message.toLowerCase().includes('ai service not configured'))
+      )
+      
+      if (apiKeyError && apiKeyError.status === 'rejected') {
+        throw apiKeyError.reason
+      }
       
       return allResults
     },

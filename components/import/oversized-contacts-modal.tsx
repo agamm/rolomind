@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { AlertTriangle, FileText } from 'lucide-react'
 import { Contact } from '@/types/contact'
-import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
+import { CONTACT_LIMITS } from '@/lib/config'
 import { ScrollArea } from '@/components/ui/scroll-area'
 
 interface OversizedContact {
@@ -90,7 +90,7 @@ export function OversizedContactsModal({
           </p>
           
             <ScrollArea className="h-[300px] border rounded-lg p-2">
-            {oversizedContacts.map((item, idx) => (
+            {oversizedContacts.map((item) => (
               <div
                 key={item.index}
                 className="flex items-start gap-3 p-3 hover:bg-muted/50 rounded-md cursor-pointer"
@@ -130,7 +130,7 @@ export function OversizedContactsModal({
             <p className="font-medium mb-1">Options:</p>
             <ul className="space-y-1 text-xs">
               <li>• Skip selected: Import only unselected contacts</li>
-              <li>• Skip all: Don't import any oversized contacts</li>
+              <li>• Skip all: Don&apos;t import any oversized contacts</li>
               <li>• Continue anyway: Import all contacts (not recommended)</li>
             </ul>
           </div>

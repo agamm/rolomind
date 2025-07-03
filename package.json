@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
+    "db:generate": "npx drizzle-kit generate",
     "db:push": "npx drizzle-kit push",
     "db:seed": "npx tsx --env-file=.env scripts/seed.ts",
     "test": "vitest",

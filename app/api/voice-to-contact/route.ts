@@ -1,11 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateObject, experimental_transcribe } from 'ai'
-import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
-import { llmIngestion } from '@/lib/llm-ingestion'
-import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -64,17 +62,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check usage limit before processing
-    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.VOICE_NOTE_30S);
-    if (!usageCheck.allowed) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Usage limit exceeded',
-        details: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage,
-        usageLimit: usageCheck.usageLimit
-      }, { status: 402 });
-    }
 
     const transcribedText = await transcribeAudio(audioFile)
 
@@ -107,92 +94,85 @@ Examples of what to extract:
 `;
 
     try {
-      checkTokenLimit(promptText, TOKEN_LIMITS.VOICE_TO_CONTACT.input, 'voice-to-contact');
+      const model = await getAIModel('anthropic/claude-3-haiku');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: contactUpdateSchema,
+        maxTokens: 200,
+        prompt: promptText
+      })
+
+      let mergedNotes = currentContact.notes || ''
+      
+      if (object.notesComplete) {
+        mergedNotes = object.notesComplete
+      }
+      
+      const updatedContact: Contact = {
+        ...currentContact,
+        name: object.name || currentContact.name,
+        company: object.company || currentContact.company,
+        role: object.role || currentContact.role,
+        location: object.location || currentContact.location,
+        contactInfo: {
+          emails: [...new Set([...currentContact.contactInfo.emails, ...(object.emails || [])])],
+          phones: [...new Set([...currentContact.contactInfo.phones, ...(object.phones || [])])],
+          linkedinUrl: object.linkedinUrl || currentContact.contactInfo.linkedinUrl,
+          otherUrls: [
+            ...(currentContact.contactInfo.otherUrls || []),
+            ...(object.otherUrls || [])
+          ]
+        },
+        notes: mergedNotes,
+        updatedAt: new Date()
+      }
+
+      if (object.fieldsToRemove) {
+        object.fieldsToRemove.forEach(field => {
+          switch (field) {
+            case 'company':
+              updatedContact.company = undefined
+              break
+            case 'role':
+              updatedContact.role = undefined
+              break
+            case 'location':
+              updatedContact.location = undefined
+              break
+            case 'emails':
+              updatedContact.contactInfo.emails = []
+              break
+            case 'phones':
+              updatedContact.contactInfo.phones = []
+              break
+            case 'linkedinUrl':
+              updatedContact.contactInfo.linkedinUrl = undefined
+              break
+            case 'otherUrls':
+              updatedContact.contactInfo.otherUrls = []
+              break
+          }
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        updatedContact,
+        changes: object,
+        transcription: transcribedText
+      })
     } catch (error) {
-      if (error instanceof Error) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Voice transcription or contact data is too large to process.',
-            details: error.message
-          },
-          { status: 400 }
-        )
+      if (error instanceof Error && error.message.includes('API key not configured')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'AI service not configured',
+          details: error.message,
+          action: 'Please configure your API keys in Settings > AI Keys'
+        }, { status: 402 })
       }
       throw error;
     }
-
-    // Get the wrapped LLM model with ingestion capabilities
-    const model = llmIngestion.client({
-      externalCustomerId: session.user.id,
-    });
-
-    const { object } = await generateObject({
-      model,
-      schema: contactUpdateSchema,
-      maxTokens: TOKEN_LIMITS.VOICE_TO_CONTACT.output,
-      prompt: promptText
-    })
-
-    let mergedNotes = currentContact.notes || ''
-    
-    if (object.notesComplete) {
-      mergedNotes = object.notesComplete
-    }
-    
-    const updatedContact: Contact = {
-      ...currentContact,
-      name: object.name || currentContact.name,
-      company: object.company || currentContact.company,
-      role: object.role || currentContact.role,
-      location: object.location || currentContact.location,
-      contactInfo: {
-        emails: [...new Set([...currentContact.contactInfo.emails, ...(object.emails || [])])],
-        phones: [...new Set([...currentContact.contactInfo.phones, ...(object.phones || [])])],
-        linkedinUrl: object.linkedinUrl || currentContact.contactInfo.linkedinUrl,
-        otherUrls: [
-          ...(currentContact.contactInfo.otherUrls || []),
-          ...(object.otherUrls || [])
-        ]
-      },
-      notes: mergedNotes,
-      updatedAt: new Date()
-    }
-
-    if (object.fieldsToRemove) {
-      object.fieldsToRemove.forEach(field => {
-        switch (field) {
-          case 'company':
-            updatedContact.company = undefined
-            break
-          case 'role':
-            updatedContact.role = undefined
-            break
-          case 'location':
-            updatedContact.location = undefined
-            break
-          case 'emails':
-            updatedContact.contactInfo.emails = []
-            break
-          case 'phones':
-            updatedContact.contactInfo.phones = []
-            break
-          case 'linkedinUrl':
-            updatedContact.contactInfo.linkedinUrl = undefined
-            break
-          case 'otherUrls':
-            updatedContact.contactInfo.otherUrls = []
-            break
-        }
-      })
-    }
-
-    return NextResponse.json({
-      success: true,
-      updatedContact,
-      changes: object,
-      transcription: transcribedText
-    })
   } catch (error) {
     console.error("Error processing voice recording:", error)
     const errorMessage = error instanceof Error ? error.message : "Failed to process voice recording"
@@ -205,21 +185,28 @@ Examples of what to extract:
 
 async function transcribeAudio(audioFile: File): Promise<string> {
   try {
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key is not configured. Voice transcription requires OPENAI_API_KEY.')
-    }
+    const { getAIClient } = await import('@/lib/ai-client');
+    const aiClient = await getAIClient(true); // Use OpenAI for transcription
 
     const arrayBuffer = await audioFile.arrayBuffer()
     const audio = new Uint8Array(arrayBuffer)
     
+    // Type guard to ensure we have the transcription method
+    if (!('transcription' in aiClient)) {
+      throw new Error('Transcription not available - OpenAI client not configured properly')
+    }
+    
     const { text } = await experimental_transcribe({
-      model: openai.transcription('whisper-1'),
+      model: aiClient.transcription('whisper-1'),
       audio: audio,
     })
 
     return text
   } catch (error) {
     console.error('Transcription error:', error)
+    if (error instanceof Error && error.message.includes('API key not configured')) {
+      throw new Error('OpenAI API key not configured. Please add your OpenAI API key in Settings > AI Keys for voice transcription features.')
+    }
     throw new Error(error instanceof Error ? error.message : 'Failed to transcribe audio')
   }
 }

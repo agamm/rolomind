@@ -2,9 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
-import { llmIngestion } from '@/lib/llm-ingestion'
-import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -43,19 +42,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check usage limit before processing
-    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.MERGE_CONTACTS);
-    if (!usageCheck.allowed) {
-      return NextResponse.json({ 
-        success: false,
-        error: 'Usage limit exceeded',
-        details: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage,
-        usageLimit: usageCheck.usageLimit
-      }, { status: 402 });
-    }
-
-    // Credits are now tracked automatically by Polar LLMStrategy
 
     const promptText = `Merge these two contact records intelligently. 
       
@@ -102,55 +88,56 @@ Instructions:
 6. Preserve the best version of the name (longer/more complete is usually better)`;
 
     try {
-      checkTokenLimit(promptText, TOKEN_LIMITS.MERGE_CONTACTS.input, 'merge-contacts');
-    } catch (error) {
-      if (error instanceof Error) {
-        return NextResponse.json({ 
-          success: false, 
-          error: "Contact data is too large to merge. Please reduce the size of notes or other fields.",
-          details: error.message
-        }, { status: 400 })
+      const model = await getAIModel('anthropic/claude-3.7-sonnet');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: mergedContactSchema,
+        maxTokens: 300,
+        prompt: promptText
+      })
+
+      const mergedContact: Contact = {
+        id: existing.id,
+        name: object.name,
+        company: object.company,
+        role: object.role,
+        location: object.location,
+        contactInfo: object.contactInfo,
+        notes: object.notes || '',
+        source: existing.source,
+        createdAt: existing.createdAt,
+        updatedAt: new Date()
       }
-      throw error;
-    }
 
-    // Get the wrapped LLM model with ingestion capabilities
-    const model = llmIngestion.client({
-      externalCustomerId: session.user.id,
-    });
+      // Return different format for preview vs actual merge
+      if (previewOnly) {
+        return NextResponse.json({ 
+          success: true,
+          merged: mergedContact
+        })
+      }
 
-    const { object } = await generateObject({
-      model,
-      schema: mergedContactSchema,
-      maxTokens: TOKEN_LIMITS.MERGE_CONTACTS.output,
-      prompt: promptText
-    })
-
-    const mergedContact: Contact = {
-      id: existing.id,
-      name: object.name,
-      company: object.company,
-      role: object.role,
-      location: object.location,
-      contactInfo: object.contactInfo,
-      notes: object.notes || '',
-      source: existing.source,
-      createdAt: existing.createdAt,
-      updatedAt: new Date()
-    }
-
-    // Return different format for preview vs actual merge
-    if (previewOnly) {
       return NextResponse.json({ 
         success: true,
-        merged: mergedContact
+        mergedContact
       })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'AI service not configured',
+          details: error.message,
+          action: 'Please configure your API keys in Settings > AI Keys'
+        }, { status: 402 })
+      }
+      
+      console.error("Error merging contacts:", error)
+      return NextResponse.json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to merge contacts" 
+      }, { status: 500 })
     }
-
-    return NextResponse.json({ 
-      success: true,
-      mergedContact
-    })
   } catch (error) {
     console.error("Error merging contacts:", error)
     return NextResponse.json({ 

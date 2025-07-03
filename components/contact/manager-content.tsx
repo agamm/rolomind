@@ -5,15 +5,14 @@ import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
 import { useContacts } from "@/hooks/use-local-contacts"
 import { Contact } from "@/types/contact"
-import { ContactLimitWarning } from "@/components/contact-limit-warning"
-import { findEmptyContacts, findMinimalContacts, findContactsWithoutNotes } from "@/lib/config"
 import { MinimalContactsModal } from "./minimal-contacts-modal"
+import { findMinimalContacts } from "@/lib/config"
 import { deleteContactsBatch } from "@/db/indexdb/contacts"
 import { toast } from "sonner"
 
 export function ContactManagerContent() {
   const [searchQuery, setSearchQuery] = React.useState('')
-  const { data: contacts = [], isLoading, error } = useContacts(searchQuery)
+  const { data: contacts = [], isLoading } = useContacts(searchQuery)
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)
   const [isProcessing, setIsProcessing] = React.useState(false)
@@ -23,24 +22,6 @@ export function ContactManagerContent() {
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
     setAiResults(results)
   }, [])
-
-  const handleSearchEmpty = React.useCallback(() => {
-    // Find empty contacts and set them as AI results
-    const emptyContacts = findEmptyContacts(contacts);
-    const emptyResults = emptyContacts.map(contact => ({
-      contact,
-      reason: 'Empty contact with no information'
-    }));
-    setAiResults(emptyResults);
-    setSearchQuery(''); // Clear text search to show all
-  }, [contacts]);
-
-  const handleSearchMinimal = React.useCallback(() => {
-    // Find minimal contacts and show them in modal
-    const minimal = findMinimalContacts(contacts);
-    setMinimalContacts(minimal);
-    setShowMinimalContacts(true);
-  }, [contacts]);
 
   // Update minimal contacts when contacts change and modal is open
   React.useEffect(() => {
@@ -54,17 +35,6 @@ export function ContactManagerContent() {
       }
     }
   }, [contacts, showMinimalContacts]);
-
-  const handleSearchWithoutNotes = React.useCallback(() => {
-    // Find contacts without notes and set them as AI results
-    const contactsWithoutNotes = findContactsWithoutNotes(contacts);
-    const results = contactsWithoutNotes.map(contact => ({
-      contact,
-      reason: 'Contact without notes'
-    }));
-    setAiResults(results);
-    setSearchQuery(''); // Clear text search to show all
-  }, [contacts]);
 
   const handleDeleteMinimalContacts = React.useCallback(async (contactIds: string[]) => {
     try {
@@ -92,14 +62,6 @@ export function ContactManagerContent() {
     }
   }, [aiResults]);
 
-  if (error) {
-    return (
-      <div className="text-center py-12">
-        <h1 className="text-2xl font-bold text-red-600 mb-2">Error loading contacts</h1>
-        <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
-      </div>
-    )
-  }
 
   if (isLoading) {
     return (
@@ -111,19 +73,13 @@ export function ContactManagerContent() {
 
   return (
     <>
-      <ContactLimitWarning 
-        contacts={contacts}
-        onSearchEmpty={handleSearchEmpty}
-        onSearchMinimal={handleSearchMinimal}
-        onSearchWithoutNotes={handleSearchWithoutNotes}
-      />
       <AIQuery 
         contacts={contacts} 
         onResults={handleAiResults}
         onSearchingChange={setIsAISearching}
         onProcessingChange={setIsProcessing}
         onReset={() => setAiResults(undefined)}
-        onError={(error) => {
+        onError={() => {
           // Force stop searching state on error
           setIsAISearching(false)
           setIsProcessing(false)

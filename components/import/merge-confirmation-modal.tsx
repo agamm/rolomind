@@ -140,7 +140,7 @@ export function MergeConfirmationModal({
               </div>
             </div>
           </>
-        ) : (
+        ) : duplicate ? (
           // Normal duplicate UI
           <>
             <DialogHeader>
@@ -165,16 +165,12 @@ export function MergeConfirmationModal({
               <h4 className="font-medium text-sm text-center">Existing Contact</h4>
               <ContactCard 
                 contact={duplicate.existing} 
-                viewOnly 
-                className="hover:bg-muted/50 cursor-default border" 
               />
             </div>
             <div className="space-y-2">
               <h4 className="font-medium text-sm text-center">New Contact (Importing)</h4>
               <ContactCard 
-                contact={duplicate.incoming} 
-                viewOnly 
-                className="hover:bg-muted/50 cursor-default border" 
+                contact={duplicate.incoming as Contact} 
               />
             </div>
             <div className="space-y-2">
@@ -191,8 +187,6 @@ export function MergeConfirmationModal({
               ) : mergedPreview ? (
                 <ContactCard 
                   contact={mergedPreview} 
-                  viewOnly 
-                  className="border-2 border-green-500/50 bg-green-50/50 dark:bg-green-950/20" 
                 />
               ) : (
                 <div className="border rounded-lg p-8 flex items-center justify-center min-h-[200px]">
@@ -299,7 +293,7 @@ export function MergeConfirmationModal({
           )}
         </div>
           </>
-        )}
+        ) : null}
       </DialogContent>
     </Dialog>
   )

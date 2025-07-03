@@ -2,9 +2,8 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
-import { TOKEN_LIMITS, checkTokenLimit } from '@/lib/config'
-import { llmIngestion } from '@/lib/llm-ingestion'
 import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
@@ -45,29 +44,17 @@ Instructions:
 
 Be thorough in extracting all available contact information.`;
 
-    try {
-      checkTokenLimit(promptText, TOKEN_LIMITS.IMPORT_CONTACT.input, 'import-contact');
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Contact data too large: ${error.message}`);
-      }
-      throw error;
-    }
-
-    console.log('Calling OpenRouter with prompt length:', promptText.length)
+    console.log('Calling AI client with prompt length:', promptText.length)
     console.log('Sample data:', JSON.stringify(rawData).slice(0, 200))
     
-    // Get the wrapped LLM model with ingestion capabilities
-    const model = llmIngestion.client({
-      externalCustomerId: session.user.id,
-    });
-
     let object;
     try {
+      const model = await getAIModel('anthropic/claude-3-haiku');
+      
       const result = await generateObject({
-        model,
+        model: model,
         schema: normalizedContactSchema,
-        maxTokens: TOKEN_LIMITS.IMPORT_CONTACT.output,
+        maxTokens: 100,
         prompt: promptText,
         temperature: 0.3, // Lower temperature for more consistent parsing
         mode: 'json' // Ensure JSON mode
@@ -80,8 +67,8 @@ Be thorough in extracting all available contact information.`;
       
       // Check for specific error types
       if (genError instanceof Error) {
-        if (genError.message.includes('API key')) {
-          throw new Error('OpenRouter API key is invalid or missing. Please check your OPENROUTER_API_KEY environment variable.')
+        if (genError.message.includes('API key not configured')) {
+          throw new Error('AI service not configured. Please add your OpenRouter API key in Settings > AI Keys.')
         } else if (genError.message.includes('parse') || genError.message.includes('No object generated')) {
           console.error('Failed to parse LLM response. Raw data:', JSON.stringify(rawData))
           // Try a simpler extraction

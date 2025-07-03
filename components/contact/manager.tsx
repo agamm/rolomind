@@ -28,7 +28,6 @@ export function ContactManager() {
     handleDuplicateDecision,
     importProgress,
     cancelImport,
-    resetImport,
     oversizedContacts,
     handleOversizedDecision,
     continueImportAfterPreview

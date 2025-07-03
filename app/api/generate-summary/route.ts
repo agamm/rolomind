@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
-import { llmIngestion } from '@/lib/llm-ingestion'
-import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -58,16 +57,6 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check usage limit before processing
-    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.GENERATE_SUMMARY);
-    if (!usageCheck.allowed) {
-      return NextResponse.json({ 
-        error: 'Usage limit exceeded',
-        details: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage,
-        usageLimit: usageCheck.usageLimit
-      }, { status: 402 });
-    }
     
     const promptText = `Analyze these ${contacts.length} contacts that match the query "${query}".
       
@@ -82,33 +71,30 @@ Provide:
 Be concise and highlight the most important information that answers the user's query.`;
 
     try {
-      checkTokenLimit(promptText, TOKEN_LIMITS.GENERATE_SUMMARY.input, 'generate-summary');
+      const model = await getAIModel('anthropic/claude-3.7-sonnet');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: summarySchema,
+        maxTokens: 200,
+        prompt: promptText
+      })
+      
+      return NextResponse.json(object)
     } catch (error) {
-      if (error instanceof Error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
         return NextResponse.json(
           { 
-            error: 'Too many contacts to summarize. Please process fewer contacts.',
-            details: error.message
+            error: 'AI service not configured', 
+            details: error.message,
+            action: 'Please configure your API keys in Settings > AI Keys'
           },
-          { status: 400 }
+          { status: 402 }
         )
       }
       throw error;
     }
-
-    // Get the wrapped LLM model with ingestion capabilities
-    const model = llmIngestion.client({
-      externalCustomerId: session.user.id,
-    });
-
-    const { object } = await generateObject({
-      model,
-      schema: summarySchema,
-      maxTokens: TOKEN_LIMITS.GENERATE_SUMMARY.output,
-      prompt: promptText
-    })
     
-    return NextResponse.json(object)
   } catch (error) {
     console.error('Summary generation error:', error)
     

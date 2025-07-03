@@ -4,7 +4,13 @@ import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
-import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
+import { CONTACT_LIMITS } from '@/lib/config'
+
+// Simple contact size estimation for UI purposes
+function getContactTokenCount(contact: Contact): number {
+  const contactString = JSON.stringify(contact);
+  return Math.ceil(contactString.length / 3); // Rough estimate: 3 chars per token
+}
 
 interface ImportResponse {
   success: boolean
@@ -149,7 +155,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         if (!processResponse.ok) {
           const errorData = await processResponse.json()
           if (processResponse.status === 402) {
-            throw new Error(errorData.error || 'Insufficient credits for AI normalization')
+            throw new Error(errorData.details || errorData.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
           }
           throw new Error(errorData.error || 'Processing failed')
         }
@@ -183,7 +189,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           throw new Error('No data received from stream')
         }
         
-        return finalData
+        return finalData as ImportResponse
       } else {
         // Use regular endpoint for other parsers
         const processResponse = await fetch('/api/import?phase=process', {
@@ -691,7 +697,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         if (!processResponse.ok) {
           const errorData = await processResponse.json()
           if (processResponse.status === 402) {
-            throw new Error(errorData.error || 'Insufficient credits for AI normalization')
+            throw new Error(errorData.details || errorData.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
           }
           throw new Error(errorData.error || 'Processing failed')
         }

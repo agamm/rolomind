@@ -2,9 +2,8 @@ import { generateObject } from 'ai';
 import { z } from 'zod';
 import { Contact } from '@/types/contact';
 import { handleAIError } from '@/lib/ai-error-handler';
-import { getServerSession, checkUsageLimit } from '@/lib/auth/server';
-import { llmIngestion } from '@/lib/llm-ingestion';
-import { TOKEN_LIMITS, checkTokenLimit, OPERATION_ESTIMATES } from '@/lib/config';
+import { getServerSession } from '@/lib/auth/server';
+import { getAIModel } from '@/lib/ai-client';
 
 export const maxDuration = 30;
 
@@ -31,16 +30,6 @@ export async function POST(req: Request) {
       return Response.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    // Check usage limit before processing
-    const usageCheck = await checkUsageLimit(OPERATION_ESTIMATES.SEARCH_1000_CONTACTS);
-    if (!usageCheck.allowed) {
-      return Response.json({ 
-        error: 'Usage limit exceeded',
-        details: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage,
-        usageLimit: usageCheck.usageLimit
-      }, { status: 402 });
-    }
 
     const batch = contacts.map((c: Contact) => ({
       id: c.id,
@@ -83,33 +72,29 @@ For each matching contact, return:
 ONLY include contacts that match ALL conditions. Return empty array [] if none match.`;
 
     try {
-      checkTokenLimit(promptText, TOKEN_LIMITS.QUERY_CONTACTS.input, 'query-contacts');
+      const model = await getAIModel('anthropic/claude-3.7-sonnet');
+      
+      const { object: matches } = await generateObject({
+        model: model,
+        output: 'array',
+        schema: matchSchema,
+        maxRetries: 4,
+        maxTokens: 1000,
+        prompt: promptText
+      });
+
+      return Response.json({ matches });
     } catch (error) {
-      if (error instanceof Error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
         return Response.json({ 
-          error: 'Too many contacts to process. Please reduce the number of contacts.',
+          error: 'AI service not configured',
           details: error.message,
-          maxContacts: Math.floor((TOKEN_LIMITS.QUERY_CONTACTS.input - 300) / (promptText.length / contacts.length))
-        }, { status: 400 });
+          action: 'Please configure your API keys in Settings > AI Keys'
+        }, { status: 402 });
       }
       throw error;
     }
 
-    // Get the wrapped LLM model with ingestion capabilities
-    const model = llmIngestion.client({
-      externalCustomerId: session.user.id,
-    });
-
-    const { object: matches } = await generateObject({
-      model,
-      output: 'array',
-      schema: matchSchema,
-      maxRetries: 4,
-      maxTokens: TOKEN_LIMITS.QUERY_CONTACTS.output,
-      prompt: promptText
-    });
-
-    return Response.json({ matches });
   } catch (error) {
     return handleAIError(error);
   }

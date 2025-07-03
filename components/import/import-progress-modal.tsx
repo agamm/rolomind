@@ -13,7 +13,7 @@ import Link from 'next/link'
 
 interface ImportProgressModalProps {
   isOpen: boolean
-  status: 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'saving' | 'complete' | 'error'
+  status: 'detecting' | 'preview' | 'processing' | 'normalizing' | 'checking-duplicates' | 'saving' | 'complete' | 'error'
   parserType?: 'linkedin' | 'rolodex' | 'google' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number

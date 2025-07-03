@@ -108,7 +108,7 @@ export async function getCustomerState() {
   }
 }
 
-export async function getUserUsageCap() {
+export async function getUserApiKeys() {
   const session = await getServerSession();
   
   if (!session?.user?.id) {
@@ -121,14 +121,18 @@ export async function getUserUsageCap() {
       .where(eq(user.id, session.user.id))
       .limit(1);
 
-    return userRecord[0]?.usageCapCents || 1000; // Default $10
+    const userData = userRecord[0];
+    return {
+      openrouterApiKey: userData?.openrouterApiKey,
+      openaiApiKey: userData?.openaiApiKey,
+    };
   } catch (error) {
-    console.error("Error getting user usage cap:", error);
-    return 1000; // Default $10
+    console.error("Error getting user API keys:", error);
+    return null;
   }
 }
 
-export async function updateUserUsageCap(newCapCents: number) {
+export async function updateUserApiKeys(openrouterApiKey?: string, openaiApiKey?: string) {
   const session = await getServerSession();
   
   if (!session?.user?.id) {
@@ -136,122 +140,24 @@ export async function updateUserUsageCap(newCapCents: number) {
   }
 
   try {
+    const updateData: { openrouterApiKey?: string; openaiApiKey?: string } = {};
+    
+    if (openrouterApiKey !== undefined) {
+      updateData.openrouterApiKey = openrouterApiKey;
+    }
+    
+    if (openaiApiKey !== undefined) {
+      updateData.openaiApiKey = openaiApiKey;
+    }
+
     await db.update(user)
-      .set({ usageCapCents: newCapCents })
+      .set(updateData)
       .where(eq(user.id, session.user.id));
     
     return true;
   } catch (error) {
-    console.error("Error updating user usage cap:", error);
+    console.error("Error updating user API keys:", error);
     throw error;
   }
-}
-
-export async function getUserUsageData() {
-  const session = await getServerSession();
-  
-  if (!session?.user?.email) {
-    return null;
-  }
-
-  try {
-    // Get user's usage cap from database
-    const usageCapCents = await getUserUsageCap();
-
-    // Get customer state which includes subscription meters
-    const customerState = await getCustomerState();
-    
-    if (!customerState) {
-      return {
-        totalCostCents: 0,
-        usageCapCents: usageCapCents || 1000,
-        usageEvents: [],
-      };
-    }
-
-    // Calculate total costs from subscription meters
-    let totalCostCents = 0;
-    let inputTokens = 0;
-    let outputTokens = 0;
-    const usageEvents: Array<{
-      meterName: string;
-      consumedUnits: number;
-      amount: number;
-      meterId: string;
-    }> = [];
-
-    // Process all active subscriptions and their meters
-    for (const subscription of customerState.activeSubscriptions) {
-      if (subscription.meters) {
-        for (const meter of subscription.meters) {
-          if (meter.amount) {
-            totalCostCents += meter.amount; // amount is already in cents
-          }
-          
-          // Track token usage for detailed breakdown
-          if (meter.meter.name === "Claude 3.7 Sonnet (Input)") {
-            inputTokens = meter.consumedUnits;
-          } else if (meter.meter.name === "Claude 3.7 Sonnet (Output)") {
-            outputTokens = meter.consumedUnits;
-          }
-          
-          usageEvents.push({
-            meterName: meter.meter.name,
-            consumedUnits: meter.consumedUnits,
-            amount: meter.amount,
-            meterId: meter.meterId
-          });
-        }
-      }
-    }
-
-    console.log("Usage data calculated:", {
-      totalCostCents,
-      inputTokens,
-      outputTokens,
-      usageEvents
-    });
-
-    return {
-      totalCostCents,
-      usageCapCents: usageCapCents || 1000,
-      usageEvents,
-      inputTokens,
-      outputTokens,
-    };
-  } catch (error) {
-    console.error("Error getting user usage data:", error);
-    // Return default values if usage data can't be fetched
-    const usageCapCents = await getUserUsageCap();
-    return {
-      totalCostCents: 0,
-      usageCapCents: usageCapCents || 1000,
-      usageEvents: [],
-      inputTokens: 0,
-      outputTokens: 0,
-    };
-  }
-}
-
-export async function checkUsageLimit(estimatedCostCents: number = 0) {
-  const usageData = await getUserUsageData();
-  
-  if (!usageData) {
-    return { allowed: false, reason: "Unable to fetch usage data" };
-  }
-
-  const projectedUsage = usageData.totalCostCents + estimatedCostCents;
-  
-  if (projectedUsage > usageData.usageCapCents) {
-    return { 
-      allowed: false, 
-      reason: "Usage limit exceeded",
-      currentUsage: usageData.totalCostCents,
-      usageLimit: usageData.usageCapCents,
-      projectedUsage
-    };
-  }
-
-  return { allowed: true };
 }
 

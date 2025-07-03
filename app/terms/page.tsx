@@ -92,7 +92,29 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">8. Intellectual Property Rights</h2>
+              <h2 className="text-2xl font-semibold">8. Bring Your Own API Keys</h2>
+              <p className="text-muted-foreground">
+                <strong>API Key Requirement:</strong> To use Rolomind&apos;s AI-powered features, you must provide your own API keys from third-party AI service providers. 
+                Specifically, an OpenRouter API key is required for core AI functionality, and an OpenAI API key is optional for voice transcription features.
+              </p>
+              <p className="text-muted-foreground">
+                <strong>Your Responsibility:</strong> You are solely responsible for:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Obtaining and maintaining valid API keys from the respective providers</li>
+                <li>Ensuring your API keys have sufficient usage credits or allowances</li>
+                <li>Managing costs and billing associated with your API usage</li>
+                <li>Compliance with the terms of service of the API providers</li>
+                <li>Securing your API keys and preventing unauthorized access</li>
+              </ul>
+              <p className="text-muted-foreground">
+                <strong>Service Limitations:</strong> Without valid API keys, AI-powered features will not function. Rolomind is not responsible for any costs, 
+                limitations, or restrictions imposed by third-party API providers. We do not guarantee the availability, reliability, or performance of third-party AI services.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold">9. Intellectual Property Rights</h2>
               <p className="text-muted-foreground">
                 The Service and its original content, features, and functionality are and will remain the exclusive property of Rolomind and its licensors. 
                 The Service is protected by copyright, trademark, and other laws. Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent.
@@ -100,7 +122,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">9. Termination</h2>
+              <h2 className="text-2xl font-semibold">10. Termination</h2>
               <p className="text-muted-foreground">
                 We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, 
                 under our sole discretion, for any reason whatsoever, including without limitation if you breach the Terms. 
@@ -115,7 +137,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">10. Disclaimer</h2>
+              <h2 className="text-2xl font-semibold">11. Disclaimer</h2>
               <p className="text-muted-foreground">
                 The Service is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis. The Service is provided without warranties of any kind, 
                 whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, 
@@ -124,7 +146,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">11. Limitation of Liability</h2>
+              <h2 className="text-2xl font-semibold">12. Limitation of Liability</h2>
               <p className="text-muted-foreground">
                 In no event shall Rolomind, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, 
                 incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, 
@@ -133,7 +155,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">12. Governing Law</h2>
+              <h2 className="text-2xl font-semibold">13. Governing Law</h2>
               <p className="text-muted-foreground">
                 These Terms shall be governed and construed in accordance with the laws of the United States, without regard to its conflict of law provisions. 
                 Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.
@@ -141,7 +163,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">13. Changes to Terms</h2>
+              <h2 className="text-2xl font-semibold">14. Changes to Terms</h2>
               <p className="text-muted-foreground">
                 We reserve the right, at our sole discretion, to modify or replace these Terms at any time. 
                 If a revision is material, we will provide at least 30 days notice prior to any new terms taking effect.
@@ -149,7 +171,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">14. Contact Information</h2>
+              <h2 className="text-2xl font-semibold">15. Contact Information</h2>
               <p className="text-muted-foreground">
                 If you have any questions about these Terms, please contact us at:
               </p>

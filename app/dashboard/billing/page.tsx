@@ -3,7 +3,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { CreditCard, CheckCircle, AlertCircle, Receipt } from "lucide-react";
 import { getUser, getCustomerState } from "@/lib/auth/server";
 import { BillingActions } from "./billing-actions";
-import { UsageDisplay } from "./usage-display";
 import { 
   Breadcrumb,
   BreadcrumbList,
@@ -15,6 +14,7 @@ import {
 import Link from "next/link";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { OpenRouterCredits } from "@/components/billing/openrouter-credits";
 
 export default async function BillingPage() {
   const user = await getUser();
@@ -61,20 +61,18 @@ export default async function BillingPage() {
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Page Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight">Billing & Credits</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Billing & Subscription</h1>
           <p className="text-muted-foreground mt-2">
-            Manage your subscription and credit balance
+            Manage your Rolomind Cloud subscription
           </p>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left Column - Credits */}
-          <div>
-            <UsageDisplay />
-          </div>
-
-          {/* Right Column - Subscription */}
+        {/* Main Content */}
+        <div className="max-w-4xl mx-auto space-y-6">
+          {/* OpenRouter Credits */}
+          <OpenRouterCredits />
+          
+          {/* Subscription Section */}
           <div>
             {hasActiveSubscription ? (
               <Card className="h-full">
@@ -96,7 +94,7 @@ export default async function BillingPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-sm text-muted-foreground">Plan</p>
-                        <p className="font-medium mt-1">Rolomind Pro</p>
+                        <p className="font-medium mt-1">Rolomind Cloud</p>
                       </div>
                       <div>
                         <p className="text-sm text-muted-foreground">Price</p>
@@ -137,25 +135,25 @@ export default async function BillingPage() {
                 {/* Subscribe Card */}
                 <Card className="border-primary/50 shadow-sm">
                   <CardHeader>
-                    <CardTitle>Subscribe to Rolomind Pro</CardTitle>
+                    <CardTitle>Subscribe to Rolomind Cloud</CardTitle>
                     <CardDescription>
-                      Get unlimited access to all features with usage-based pricing
+                      Bring your own AI keys for hosting and deployment
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-6">
                       <div className="rounded-lg bg-muted/50 p-4">
                         <div className="flex items-baseline gap-1">
-                          <span className="text-3xl font-bold">$5</span>
+                          <span className="text-3xl font-bold">$2.99</span>
                           <span className="text-muted-foreground">/month</span>
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                          Plus usage-based pricing for AI features
+                          Fixed pricing for hosting and deployment. Use your own AI API keys.
                         </p>
                       </div>
                       
                       <div className="space-y-3">
-                        <h4 className="font-medium text-sm">What's included:</h4>
+                        <h4 className="font-medium text-sm">What&apos;s included:</h4>
                         <ul className="space-y-2 text-sm">
                           <li className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
@@ -167,7 +165,11 @@ export default async function BillingPage() {
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
-                            <span>AI-powered features (pay per use)</span>
+                            <span>AI-powered features (use your own API keys)</span>
+                          </li>
+                          <li className="flex items-center gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                            <span>Hosted and deployed infrastructure</span>
                           </li>
                           <li className="flex items-center gap-2">
                             <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />

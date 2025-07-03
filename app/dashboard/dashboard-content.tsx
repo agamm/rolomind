@@ -2,6 +2,7 @@
 
 import React from "react";
 import { TopNav } from "@/components/layout";
+import { ApiKeysWarning } from "@/components/layout/api-keys-warning";
 import { useContacts } from "@/hooks/use-local-contacts";
 import { useEnhancedImport } from "@/hooks/use-enhanced-import";
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal";
@@ -42,6 +43,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
               isImporting={isImporting || isSaving}
               disabled={isLoading}
             />
+            <ApiKeysWarning />
             {children}
           </div>
         </div>

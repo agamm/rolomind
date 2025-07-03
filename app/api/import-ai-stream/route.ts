@@ -5,8 +5,7 @@ import * as rolodexParser from "../import/parsers/rolodex-parser"
 import * as googleParser from "../import/parsers/google-parser"
 import { Contact } from '@/types/contact'
 import { createJsonStream } from '@/lib/stream-utils'
-import { getServerSession, checkUsageLimit } from '@/lib/auth/server'
-import { OPERATION_ESTIMATES } from '@/lib/config'
+import { getServerSession } from '@/lib/auth/server'
 
 export async function POST(request: NextRequest) {
   const formData = await request.formData()
@@ -55,17 +54,6 @@ export async function POST(request: NextRequest) {
       return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401 });
     }
 
-    // Check usage limit before processing - estimate cost based on row count
-    const estimatedCost = Math.max(10, Math.ceil(rows.length * OPERATION_ESTIMATES.IMPORT_PER_CONTACT));
-    const usageCheck = await checkUsageLimit(estimatedCost);
-    if (!usageCheck.allowed) {
-      return new Response(JSON.stringify({ 
-        error: 'Usage limit exceeded',
-        details: usageCheck.reason,
-        currentUsage: usageCheck.currentUsage,
-        usageLimit: usageCheck.usageLimit
-      }), { status: 402 });
-    }
 
     async function* generateProgress() {
       const { Semaphore } = await import('@/lib/semaphore')

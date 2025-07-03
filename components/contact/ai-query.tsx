@@ -111,7 +111,11 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
   // Show toast for errors and reset state
   useEffect(() => {
     if (error && error.message !== 'Search aborted') {
-      toast.error(error.message)
+      // Only show toast for non-API key errors since we display those in the UI
+      if (!error.message.toLowerCase().includes('api key not configured') && 
+          !error.message.toLowerCase().includes('ai service not configured')) {
+        toast.error(error.message)
+      }
       // Reset timer
       setElapsedSeconds(0)
       // Clear the timer interval
@@ -218,7 +222,17 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
 
       {error && error.message !== 'Search aborted' && (
         <div className="bg-destructive/5 border border-destructive/20 rounded-xl p-4">
-          <p className="text-destructive">{error.message}</p>
+          <p className="text-destructive font-medium">{error.message}</p>
+          {(error.message.toLowerCase().includes('api key not configured') || 
+            error.message.toLowerCase().includes('ai service not configured')) && (
+            <div className="mt-3">
+              <Button asChild variant="outline" size="sm">
+                <a href="/dashboard/ai-keys">
+                  Configure API Keys
+                </a>
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

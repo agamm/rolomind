@@ -8,9 +8,8 @@ export const user = sqliteTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
-  usageCapCents: integer("usage_cap_cents")
-    .default(1000) // Default $10.00 cap
-    .notNull(),
+  openrouterApiKey: text("openrouter_api_key"),
+  openaiApiKey: text("openai_api_key"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),
