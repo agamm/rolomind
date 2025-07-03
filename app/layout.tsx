@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Outfit, Space_Mono } from "next/font/google";
 import "./globals.css";
-import { Providers } from "@/components/layout";
+import { ClientLayout } from "./client-layout";
 
 const outfit = Outfit({ 
   subsets: ["latin"],
@@ -31,9 +31,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${outfit.variable} ${spaceMono.variable} font-sans`}>
-        <Providers>
+        <ClientLayout>
           {children}
-        </Providers>
+        </ClientLayout>
       </body>
     </html>
   );

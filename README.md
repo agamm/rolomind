@@ -16,12 +16,14 @@ npm install --force
 
 # Set up environment
 cp .env.example .env
-# Add your API keys to .env:
-# - OPENROUTER_API_KEY (required): https://openrouter.ai/api-keys
-# - OPENAI_API_KEY (optional, for voice): https://platform.openai.com/api-keys
 
 # Run development server
 npm run dev
+
+# Configure AI API Keys
+# After starting the app, go to Settings > AI Keys to configure:
+# - OpenRouter API key (required): Get from https://openrouter.ai/api-keys
+# - OpenAI API key (optional, for voice features): Get from https://platform.openai.com/api-keys
 ```
 
 Open [http://localhost:3000](http://localhost:3000)

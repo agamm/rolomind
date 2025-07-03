@@ -9,6 +9,8 @@ import { useEnhancedImport } from "@/hooks/use-enhanced-import"
 import { Contact } from "@/types/contact"
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
 import { ImportProgressModal } from "@/components/import/import-progress-modal"
+import { OversizedContactsModal } from "@/components/import/oversized-contacts-modal"
+import { ImportPreviewDialog } from "@/components/import/import-preview-dialog"
 
 export function ContactManager() {
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -25,7 +27,10 @@ export function ContactManager() {
     duplicatesCount,
     handleDuplicateDecision,
     importProgress,
-    cancelImport
+    cancelImport,
+    oversizedContacts,
+    handleOversizedDecision,
+    continueImportAfterPreview
   } = useEnhancedImport()
 
   const handleAiResults = React.useCallback((results: Array<{ contact: Contact; reason: string }>) => {
@@ -84,18 +89,35 @@ export function ContactManager() {
       </div>
       
       <ImportProgressModal
-        isOpen={importProgress.status !== 'idle' && importProgress.status !== 'resolving'}
+        isOpen={importProgress.status !== 'idle' && importProgress.status !== 'resolving' && importProgress.status !== 'preview'}
         status={importProgress.status === 'idle' || importProgress.status === 'resolving' ? 'detecting' : importProgress.status}
         parserType={importProgress.parserType}
         progress={importProgress.progress}
         error={importProgress.error}
-        onCancel={cancelImport}
+        onClose={cancelImport}
+      />
+      
+      <ImportPreviewDialog
+        isOpen={importProgress.status === 'preview'}
+        onClose={cancelImport}
+        onConfirm={continueImportAfterPreview}
+        csvHeaders={importProgress.csvHeaders || []}
+        sampleRow={importProgress.sampleRow}
+        parserType={importProgress.parserType || 'custom'}
+        rowCount={importProgress.rowCount}
       />
       
       <MergeConfirmationModal
         duplicate={currentDuplicate}
         onDecision={handleDuplicateDecision}
         remainingCount={duplicatesCount - 1}
+        mergeProgress={importProgress.mergeProgress}
+      />
+      
+      <OversizedContactsModal
+        isOpen={oversizedContacts.length > 0}
+        oversizedContacts={oversizedContacts}
+        onDecision={handleOversizedDecision}
       />
     </div>
   )

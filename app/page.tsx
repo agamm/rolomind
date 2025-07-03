@@ -204,7 +204,7 @@ export default function LandingPage() {
                       Update contact details naturally by speaking
                     </p>
                   </div>
-                  <DemoWrapper title="Try Voice">
+                  <DemoWrapper title="Try Voice" demoId="voice">
                     <DemoVoiceEdit />
                   </DemoWrapper>
                 </div>

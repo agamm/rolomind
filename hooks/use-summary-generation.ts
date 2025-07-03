@@ -30,6 +30,9 @@ export function useSummaryGeneration(options?: UseSummaryGenerationOptions) {
       
       if (!response.ok) {
         const error = await response.json()
+        if (response.status === 402) {
+          throw new Error(error.error || 'AI service not configured. Please add your API keys in Settings > AI Keys.')
+        }
         throw new Error(error.error || 'Failed to generate summary')
       }
       

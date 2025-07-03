@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { generateObject } from 'ai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const mergedContactSchema = z.object({
   name: z.string().describe('The most complete and accurate name - NEVER use placeholder values'),
@@ -23,7 +24,7 @@ const mergedContactSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const { existing, incoming } = await request.json()
+    const { existing, incoming, previewOnly = false } = await request.json()
     
     if (!existing || !incoming) {
       return NextResponse.json({ 
@@ -32,10 +33,17 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
-      schema: mergedContactSchema,
-      prompt: `Merge these two contact records intelligently. 
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+
+    const promptText = `Merge these two contact records intelligently. 
       
 Existing contact:
 ${JSON.stringify((() => {
@@ -77,27 +85,59 @@ Instructions:
    - Format the notes cleanly, one piece of information per line (list items with "-" preferred)
    - Do not repeat the same information multiple times, even if worded slightly differently
    - Do not include any lines that only contain placeholder values
-6. Preserve the best version of the name (longer/more complete is usually better)`
-    })
+6. Preserve the best version of the name (longer/more complete is usually better)`;
 
-    // Create the merged contact using the existing contact's ID and timestamps
-    const mergedContact: Contact = {
-      id: existing.id,
-      name: object.name,
-      company: object.company,
-      role: object.role,
-      location: object.location,
-      contactInfo: object.contactInfo,
-      notes: object.notes || '',
-      source: existing.source, // Keep original source
-      createdAt: existing.createdAt,
-      updatedAt: new Date()
+    try {
+      const model = await getAIModel('anthropic/claude-3.7-sonnet');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: mergedContactSchema,
+        maxTokens: 300,
+        prompt: promptText
+      })
+
+      const mergedContact: Contact = {
+        id: existing.id,
+        name: object.name,
+        company: object.company,
+        role: object.role,
+        location: object.location,
+        contactInfo: object.contactInfo,
+        notes: object.notes || '',
+        source: existing.source,
+        createdAt: existing.createdAt,
+        updatedAt: new Date()
+      }
+
+      // Return different format for preview vs actual merge
+      if (previewOnly) {
+        return NextResponse.json({ 
+          success: true,
+          merged: mergedContact
+        })
+      }
+
+      return NextResponse.json({ 
+        success: true,
+        mergedContact
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'AI service not configured',
+          details: error.message,
+          action: 'Please configure your API keys in Settings > AI Keys'
+        }, { status: 402 })
+      }
+      
+      console.error("Error merging contacts:", error)
+      return NextResponse.json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : "Failed to merge contacts" 
+      }, { status: 500 })
     }
-
-    return NextResponse.json({ 
-      success: true,
-      mergedContact
-    })
   } catch (error) {
     console.error("Error merging contacts:", error)
     return NextResponse.json({ 

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { generateObject } from 'ai'
 import { z } from 'zod'
-import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const summarySchema = z.object({
   summary: z.string().describe('A concise 2-3 sentence summary with key numbers and findings'),
@@ -47,10 +48,17 @@ export async function POST(request: NextRequest) {
       reason: match.reason
     }))
     
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3.7-sonnet'),
-      schema: summarySchema,
-      prompt: `Analyze these ${contacts.length} contacts that match the query "${query}".
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    
+    const promptText = `Analyze these ${contacts.length} contacts that match the query "${query}".
       
 Contacts found:
 ${JSON.stringify(contactSummaries, null, 2)}
@@ -60,10 +68,33 @@ Provide:
 2. 3-4 key insights (patterns, trends, or notable findings)
 3. Total number of matches
 
-Be concise and highlight the most important information that answers the user's query.`
-    })
+Be concise and highlight the most important information that answers the user's query.`;
+
+    try {
+      const model = await getAIModel('anthropic/claude-3.7-sonnet');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: summarySchema,
+        maxTokens: 200,
+        prompt: promptText
+      })
+      
+      return NextResponse.json(object)
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
+        return NextResponse.json(
+          { 
+            error: 'AI service not configured', 
+            details: error.message,
+            action: 'Please configure your API keys in Settings > AI Keys'
+          },
+          { status: 402 }
+        )
+      }
+      throw error;
+    }
     
-    return NextResponse.json(object)
   } catch (error) {
     console.error('Summary generation error:', error)
     

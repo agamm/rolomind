@@ -70,14 +70,10 @@ describe('Custom Parser with LLM', () => {
       const { normalizeCsvBatch } = await import('@/app/api/import/parsers/llm-normalizer')
       const mockNormalizeCsvBatch = vi.mocked(normalizeCsvBatch)
       
-      mockNormalizeCsvBatch.mockResolvedValueOnce({
-        normalized: [],
-        errors: []
-      })
-      
       const contacts = await customParser.parse(emptyCsv)
       
-      expect(mockNormalizeCsvBatch).toHaveBeenCalledWith([], ['Header1', 'Header2', 'Header3'])
+      // Should not call normalizer for empty CSV
+      expect(mockNormalizeCsvBatch).not.toHaveBeenCalled()
       expect(contacts).toHaveLength(0)
     })
 

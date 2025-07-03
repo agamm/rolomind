@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, CreditCard, User, ChevronDown } from "lucide-react"
+import { LogOut, CreditCard, User, ChevronDown, Key } from "lucide-react"
 
 interface TopNavProps {
   contactCount: number
@@ -62,7 +62,14 @@ export function TopNav({
                 onClick={() => router.push("/dashboard/billing")}
               >
                 <CreditCard className="h-4 w-4 mr-2" />
-                Billing
+                <span>Billing</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => router.push("/dashboard/ai-keys")}
+              >
+                <Key className="h-4 w-4 mr-2" />
+                <span>AI Keys</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem

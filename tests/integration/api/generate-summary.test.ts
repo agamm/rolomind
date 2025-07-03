@@ -1,5 +1,25 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { NextRequest } from 'next/server'
 import '../../mocks/ai'
+
+// Mock authentication
+vi.mock('@/lib/auth/server', () => ({
+  getServerSession: vi.fn().mockResolvedValue({
+    user: { id: 'test-user', email: 'test@example.com' }
+  }),
+  getUserApiKeys: vi.fn().mockResolvedValue({
+    openrouterApiKey: 'test-key',
+    openaiApiKey: 'test-key'
+  })
+}))
+
+// Mock AI client
+vi.mock('@/lib/ai-client', () => ({
+  getAIModel: vi.fn().mockResolvedValue({
+    // Mock model object
+    name: 'test-model'
+  })
+}))
 
 describe('Generate Summary API', () => {
   beforeEach(() => {
@@ -32,7 +52,7 @@ describe('Generate Summary API', () => {
       }
     ]
 
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -67,7 +87,7 @@ describe('Generate Summary API', () => {
       reason: `Match reason ${i}`
     }))
 
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -94,7 +114,7 @@ describe('Generate Summary API', () => {
   it('should handle empty results gracefully', async () => {
     const handler = await import('@/app/api/generate-summary/route')
     
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -113,7 +133,7 @@ describe('Generate Summary API', () => {
   it('should validate query parameter', async () => {
     const handler = await import('@/app/api/generate-summary/route')
     
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -135,7 +155,7 @@ describe('Generate Summary API', () => {
     
     const handler = await import('@/app/api/generate-summary/route')
     
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -157,7 +177,7 @@ describe('Generate Summary API', () => {
     
     const handler = await import('@/app/api/generate-summary/route')
     
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -190,7 +210,7 @@ describe('Generate Summary API', () => {
       }
     ]
 
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -224,7 +244,7 @@ describe('Generate Summary API', () => {
       reason: 'Remote manager'
     }))
 
-    const request = new Request('http://localhost:3000/api/generate-summary', {
+    const request = new NextRequest('http://localhost:3000/api/generate-summary', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

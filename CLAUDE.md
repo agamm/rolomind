@@ -1,5 +1,4 @@
-- I already run npm run dev, never run it yourself
-- Always test the functionality of the app in the browser before concluding the changes worked and continueing to the next todo.
+- I already run the server all the time in the background with `npm run dev`, never run it yourself
 - Keep files to less than 200 lines, split to hooks/functions to make everything readable.
 - Put components in the right folder or create one for a group of them.
 - components/ui is a special dir, don't change it, it is used for shadcn
@@ -7,6 +6,13 @@
 - Always remove old unused code/componentes/files that isn't needed anymore.
 - Don't add test files unless I ask you to.
 - Add --force to npm installs in this project
+- Use react-query when querying/fetching http requests
+- Don't abstract with too many functions unless it really imroves simplicity and readability.
+
+Local Development Auth:
+- Run `npm run db:seed` to create a test user (if first time)
+- Email: test@gmail.com
+- Password: 123123123
 
 App functionality:
 - Searching "CEOs in Texas" then submitting should show loading (this should always return N>20 results).

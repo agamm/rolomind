@@ -5,6 +5,83 @@ import * as rolodexParser from "./parsers/rolodex-parser"
 import * as googleParser from "./parsers/google-parser"
 import * as customParser from "./parsers/custom-parser"
 import type { Contact, RawContactData } from "@/types/contact"
+import { getServerSession } from '@/lib/auth/server'
+
+// Export parser detection function
+export function detectParserType(headers: string[]): string {
+  if (rolodexParser.isApplicableParser(headers)) {
+    return 'rolodex'
+  } else if (linkedinParser.isApplicableParser(headers)) {
+    return 'linkedin'
+  } else if (googleParser.isApplicableParser(headers)) {
+    return 'google'
+  }
+  return 'custom' // default (AI)
+}
+
+// Export function to parse a single row for preview
+export async function parsePreviewRow(
+  headers: string[], 
+  row: RawContactData, 
+  parserType: string
+): Promise<Partial<Contact> | null> {
+  try {
+    switch (parserType) {
+      case 'rolodex': {
+        const csvContent = [headers.join(','), Object.values(row).join(',')].join('\n')
+        const contacts = rolodexParser.parse(csvContent)
+        return contacts[0] || null
+      }
+      case 'linkedin': {
+        const csvContent = [headers.join(','), Object.values(row).join(',')].join('\n')
+        const contacts = linkedinParser.parse(csvContent)
+        return contacts[0] || null
+      }
+      case 'google': {
+        const csvContent = [headers.join(','), Object.values(row).join(',')].join('\n')
+        const contacts = googleParser.parse(csvContent)
+        return contacts[0] || null
+      }
+      case 'custom':
+      case 'llm-normalizer': {
+        // For AI normalization, try to use the LLM normalizer
+        try {
+          const { normalizeContactWithLLM } = await import('./parsers/llm-normalizer')
+          return await normalizeContactWithLLM(row, headers)
+        } catch (error) {
+          console.error('LLM preview error:', error)
+          // Fallback: return a basic preview based on the row data
+          const name = row['Name'] || row['name'] || row['Full Name'] || Object.values(row)[0] || 'Contact'
+          const company = row['Company'] || row['company'] || row['Job']?.split('@')[1]?.trim()
+          const role = row['Role'] || row['role'] || row['Job']?.split('@')[0]?.trim()
+          const location = row['Location'] || row['location'] || row['City']
+          const email = row['Email'] || row['email']
+          const phone = row['Phone'] || row['phone']
+          const notes = row['Notes'] || row['notes'] || row['Met at']
+          
+          return {
+            name,
+            company,
+            role,
+            location,
+            contactInfo: {
+              emails: email ? [email] : [],
+              phones: phone ? [phone] : [],
+              linkedinUrl: row['LinkedIn'] || row['linkedin'] || undefined,
+              otherUrls: []
+            },
+            notes: notes || ''
+          }
+        }
+      }
+      default:
+        return null
+    }
+  } catch (error) {
+    console.error('Preview parsing error:', error)
+    return null
+  }
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -48,15 +125,7 @@ export async function POST(request: NextRequest) {
     
     if (phase === 'detect' || !phase) {
       // Quick detection phase - just determine the parser type
-      let parserType = 'custom' // default (AI)
-      
-      if (rolodexParser.isApplicableParser(headers)) {
-        parserType = 'rolodex'
-      } else if (linkedinParser.isApplicableParser(headers)) {
-        parserType = 'linkedin'
-      } else if (googleParser.isApplicableParser(headers)) {
-        parserType = 'google'
-      }
+      const parserType = detectParserType(headers)
       
       return NextResponse.json({ 
         success: true,
@@ -83,9 +152,24 @@ export async function POST(request: NextRequest) {
       normalizedContacts = googleParser.parse(content)
       parserUsed = 'google'
     } else {
+      // Check authentication for AI normalization
+      const session = await getServerSession();
+      if (!session?.user) {
+        return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      }
+
+      console.log('Using custom parser for AI normalization')
+      console.log('Row count:', rows.length)
+      
       // Use custom parser (AI) for other formats
-      normalizedContacts = await customParser.parse(content)
-      parserUsed = 'custom'
+      try {
+        normalizedContacts = await customParser.parse(content)
+        parserUsed = 'custom'
+        console.log('Custom parser returned', normalizedContacts.length, 'contacts')
+      } catch (error) {
+        console.error('Custom parser error:', error)
+        throw error
+      }
     }
 
     // Return normalized contacts for client-side duplicate checking

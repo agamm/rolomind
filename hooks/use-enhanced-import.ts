@@ -4,6 +4,13 @@ import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
+import { CONTACT_LIMITS } from '@/lib/config'
+
+// Simple contact size estimation for UI purposes
+function getContactTokenCount(contact: Contact): number {
+  const contactString = JSON.stringify(contact);
+  return Math.ceil(contactString.length / 3); // Rough estimate: 3 chars per token
+}
 
 interface ImportResponse {
   success: boolean
@@ -19,14 +26,23 @@ interface ImportResponse {
 }
 
 export interface ImportProgress {
-  status: 'idle' | 'detecting' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
+  status: 'idle' | 'detecting' | 'preview' | 'processing' | 'normalizing' | 'checking-duplicates' | 'resolving' | 'saving' | 'complete' | 'error'
   parserType?: 'linkedin' | 'rolodex' | 'google' | 'custom' | 'llm-normalizer'
   progress?: {
     current: number
     total: number
     message?: string
   }
+  mergeProgress?: {
+    current: number
+    total: number
+    message?: string
+  }
   error?: string
+  csvHeaders?: string[]
+  sampleRow?: Record<string, string>
+  pendingFile?: File
+  rowCount?: number
 }
 
 export function useEnhancedImport(onComplete?: () => void) {
@@ -35,10 +51,20 @@ export function useEnhancedImport(onComplete?: () => void) {
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
   const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
   const [importProgress, setImportProgress] = useState<ImportProgress>({ status: 'idle' })
+  const [oversizedContacts, setOversizedContacts] = useState<Array<{ contact: Contact; tokenCount: number; index: number }>>([])
+  const [pendingImportContacts, setPendingImportContacts] = useState<Contact[]>([])
   
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (file: File): Promise<ImportResponse> => {
+      // Check current contact count before starting
+      const existingContacts = await getAllContacts()
+      const currentCount = existingContacts.length
+      
+      if (currentCount >= CONTACT_LIMITS.MAX_CONTACTS) {
+        throw new Error(`Cannot import contacts. You have reached the maximum limit of ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts. Please contact support at <a href="mailto:help@rolomind.com" class="underline">help@rolomind.com</a> for assistance.`)
+      }
+      
       setImportProgress({ status: 'detecting' })
       
       const formData = new FormData()
@@ -62,6 +88,18 @@ export function useEnhancedImport(onComplete?: () => void) {
                          detectData.parserUsed === 'google' ? 'google' :
                          detectData.parserUsed === 'custom' ? 'custom' : 'llm-normalizer'
       
+      // Parse CSV to get headers and sample row for mapping dialog
+      const Papa = (await import('papaparse')).default
+      const csvContent = await file.text()
+      const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+        header: true,
+        skipEmptyLines: true,
+        preview: 2 // Only need headers and one sample row
+      })
+      
+      const csvHeaders = parseResult.meta.fields || []
+      const sampleRow = parseResult.data[0] || {}
+      
       // Show format detection animation
       setImportProgress({
         status: 'detecting',
@@ -70,11 +108,24 @@ export function useEnhancedImport(onComplete?: () => void) {
           current: 0,
           total: detectData.rowCount || 0,
           message: 'Format detected!'
-        }
+        },
+        csvHeaders,
+        sampleRow,
+        pendingFile: file,
+        rowCount: detectData.rowCount
       })
       
       // Wait to show the format selection animation
       await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Show preview dialog
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'preview'
+      }))
+      
+      // Return early - the actual processing will happen when user confirms preview
+      return { success: true, phase: 'detection', parserUsed: parserType }
       
       // Phase 2: Full processing
       // First update status to processing/normalizing
@@ -87,7 +138,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           message: parserType === 'linkedin' 
             ? 'Processing LinkedIn contacts...' 
             : parserType === 'rolodex'
-            ? 'Processing Rolodex export...'
+            ? 'Processing Rolomind export...'
             : parserType === 'google'
             ? 'Processing Google contacts...'
             : 'AI is analyzing your contacts...'
@@ -102,7 +153,11 @@ export function useEnhancedImport(onComplete?: () => void) {
         })
         
         if (!processResponse.ok) {
-          throw new Error('Processing failed')
+          const errorData = await processResponse.json()
+          if (processResponse.status === 402) {
+            throw new Error(errorData.details || errorData.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
+          }
+          throw new Error(errorData.error || 'Processing failed')
         }
         
         const { readJsonStream } = await import('@/lib/stream-utils')
@@ -125,6 +180,8 @@ export function useEnhancedImport(onComplete?: () => void) {
               phase: 'complete',
               ...data
             }
+          } else if (data.type === 'error') {
+            throw new Error(data.message || 'AI normalization failed')
           }
         }
         
@@ -132,7 +189,7 @@ export function useEnhancedImport(onComplete?: () => void) {
           throw new Error('No data received from stream')
         }
         
-        return finalData
+        return finalData as ImportResponse
       } else {
         // Use regular endpoint for other parsers
         const processResponse = await fetch('/api/import?phase=process', {
@@ -143,6 +200,9 @@ export function useEnhancedImport(onComplete?: () => void) {
         const processData = await processResponse.json()
         
         if (!processResponse.ok) {
+          if (processResponse.status === 402) {
+            throw new Error(processData.error || 'Insufficient credits for AI normalization')
+          }
           throw new Error(processData.error || 'Processing failed')
         }
         
@@ -150,13 +210,63 @@ export function useEnhancedImport(onComplete?: () => void) {
       }
     },
     onSuccess: async (data) => {
+      // If we're in detection phase, don't process contacts yet
+      if (data.phase === 'detection') {
+        return
+      }
+      
+      if (!data.contacts || data.contacts.length === 0) {
+        toast.error('No contacts found in the import file')
+        setImportProgress({ status: 'idle' })
+        return
+      }
+
+      // First check for oversized contacts
+      const oversized = data.contacts
+        .map((contact, index) => ({
+          contact,
+          tokenCount: getContactTokenCount(contact),
+          index
+        }))
+        .filter(item => item.tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT)
+
+      if (oversized.length > 0) {
+        // Store oversized contacts for modal
+        setOversizedContacts(oversized)
+        setPendingImportContacts(data.contacts)
+        
+        // Show warning toast
+        toast.warning(`${oversized.length} oversized contact${oversized.length > 1 ? 's' : ''} detected`)
+        
+        // Don't proceed until user decides
+        return
+      }
+
+      // No oversized contacts, proceed with duplicate check
+      await checkDuplicatesAndSave(data.contacts)
+    },
+    onError: (error) => {
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Import failed'
+      }))
+      
+      // Show appropriate toast for contact limit errors
+      if (error instanceof Error && error.message.includes('maximum limit')) {
+        toast.error('Contact limit reached. Please delete some contacts before importing new ones.')
+      }
+    }
+  })
+
+  const checkDuplicatesAndSave = async (contacts: Contact[]) => {
       // Show checking duplicates status
       setImportProgress({
         status: 'checking-duplicates',
         parserType: importProgress.parserType,
         progress: {
           current: 0,
-          total: data.processed?.normalized || 0,
+          total: contacts.length,
           message: 'Checking for duplicate contacts...'
         }
       })
@@ -164,8 +274,23 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Get existing contacts from local database
       const existingContacts = await getAllContacts()
       
+      // Check if importing would exceed the contact limit
+      const currentCount = existingContacts.length
+      const newCount = contacts.length
+      const totalAfterImport = currentCount + newCount
+      
+      if (totalAfterImport > CONTACT_LIMITS.MAX_CONTACTS) {
+        const availableSlots = Math.max(0, CONTACT_LIMITS.MAX_CONTACTS - currentCount)
+        setImportProgress({
+          status: 'error',
+          error: `Cannot import ${newCount} contacts. You have ${currentCount.toLocaleString()} contacts and the maximum is ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()}. Only ${availableSlots.toLocaleString()} more contacts can be added. Please contact support at <a href="mailto:help@rolomind.com" class="underline">help@rolomind.com</a> for assistance.`
+        })
+        toast.error(`Contact limit exceeded. Maximum ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts allowed. Contact support for help.`)
+        return
+      }
+      
       // Find duplicates
-      const contactsWithDuplicates = (data.contacts || []).map(contact => {
+      const contactsWithDuplicates = contacts.map(contact => {
         const duplicateMatches = findDuplicates(existingContacts, contact)
         return { contact, duplicates: duplicateMatches }
       })
@@ -217,14 +342,7 @@ export function useEnhancedImport(onComplete?: () => void) {
         // No duplicates, save immediately
         await saveContacts(uniqueContacts)
       }
-    },
-    onError: (error) => {
-      setImportProgress({
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Import failed'
-      })
-    }
-  })
+  }
   
   // Save contacts to local database
   const saveContacts = async (contacts: Contact[]) => {
@@ -267,12 +385,30 @@ export function useEnhancedImport(onComplete?: () => void) {
     }
   }
   
-  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all') => {
+  const handleDuplicateDecision = async (action: 'merge' | 'skip' | 'keep-both' | 'cancel' | 'merge-all' | 'skip-all') => {
     if (!currentDuplicate) return
     
     // Handle cancel - stop entire import
     if (action === 'cancel') {
       cancelImport()
+      return
+    }
+    
+    // Handle skip-all
+    if (action === 'skip-all') {
+      const allDuplicates = [currentDuplicate, ...duplicates.filter(d => d !== currentDuplicate)]
+      toast.info(`Skipped ${allDuplicates.length} duplicate contacts`)
+      
+      // Clear duplicates and move to saving unique contacts
+      setDuplicates([])
+      setCurrentDuplicate(null)
+      
+      if (resolvedContacts.length > 0) {
+        await saveContacts(resolvedContacts)
+      } else {
+        setImportProgress({ status: 'idle' })
+        toast.info('Import completed - all duplicates were skipped')
+      }
       return
     }
     
@@ -283,16 +419,16 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         toast.info(`Merging ${allDuplicates.length} contacts...`)
         
-        // Update import progress to show merging status
-        setImportProgress({
-          status: 'processing',
-          parserType: importProgress.parserType,
-          progress: {
+        // Keep status as 'resolving' to prevent showing import modal
+        setImportProgress(prev => ({
+          ...prev,
+          status: 'resolving',
+          mergeProgress: {
             current: 0,
             total: allDuplicates.length,
             message: 'Merging duplicate contacts...'
           }
-        })
+        }))
         
         // Process merges in batches
         const BATCH_SIZE = 20
@@ -337,16 +473,15 @@ export function useEnhancedImport(onComplete?: () => void) {
             }
             totalProcessed++
             
-            // Update progress
-            setImportProgress({
-              status: 'processing',
-              parserType: importProgress.parserType,
-              progress: {
+            // Update merge progress (not regular progress to avoid showing modal)
+            setImportProgress(prev => ({
+              ...prev,
+              mergeProgress: {
                 current: totalProcessed,
                 total: allDuplicates.length,
                 message: `Merged ${totalProcessed} of ${allDuplicates.length} contacts...`
               }
-            })
+            }))
           }
           
           // Show toast update every batch
@@ -494,29 +629,182 @@ export function useEnhancedImport(onComplete?: () => void) {
   }
   
   const resetImport = () => {
+    importMutation.reset()
     setImportProgress({ status: 'idle' })
     setDuplicates([])
     setCurrentDuplicate(null)
     setResolvedContacts([])
+    setOversizedContacts([])
+    setPendingImportContacts([])
   }
   
   const cancelImport = () => {
-    // Cancel any pending mutations
-    importMutation.reset()
-    
-    // Reset state
     resetImport()
-    
     toast.info('Import cancelled')
   }
+
+  const handleOversizedDecision = async (action: 'skip-all' | 'skip-selected' | 'continue', selectedIndices?: number[]) => {
+    let contactsToImport = pendingImportContacts
+
+    if (action === 'skip-all') {
+      // Filter out all oversized contacts
+      const oversizedIndices = new Set(oversizedContacts.map(oc => oc.index))
+      contactsToImport = pendingImportContacts.filter((_, index) => !oversizedIndices.has(index))
+      toast.info(`Skipped ${oversizedContacts.length} oversized contacts`)
+    } else if (action === 'skip-selected' && selectedIndices) {
+      // Filter out selected oversized contacts
+      const skipIndices = new Set(selectedIndices)
+      contactsToImport = pendingImportContacts.filter((_, index) => !skipIndices.has(index))
+      toast.info(`Skipped ${selectedIndices.length} oversized contacts`)
+    }
+    // If 'continue', import all including oversized
+
+    // Clear oversized state
+    setOversizedContacts([])
+    setPendingImportContacts([])
+
+    // Proceed with duplicate check
+    await checkDuplicatesAndSave(contactsToImport)
+  }
   
+  const continueImportAfterPreview = async () => {
+    if (!importProgress.pendingFile || !importProgress.parserType) {
+      toast.error('Import data not found')
+      return
+    }
+    
+    const file = importProgress.pendingFile
+    const parserType = importProgress.parserType
+    
+    // Update status to processing/normalizing
+    setImportProgress({
+      status: (parserType === 'linkedin' || parserType === 'rolodex' || parserType === 'google') ? 'processing' : 'normalizing',
+      parserType,
+      progress: importProgress.progress
+    })
+    
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      
+      // Use streaming for custom parser (AI)
+      if (parserType === 'custom' || parserType === 'llm-normalizer') {
+        const processResponse = await fetch('/api/import-ai-stream?phase=process', {
+          method: 'POST',
+          body: formData
+        })
+        
+        if (!processResponse.ok) {
+          const errorData = await processResponse.json()
+          if (processResponse.status === 402) {
+            throw new Error(errorData.details || errorData.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
+          }
+          throw new Error(errorData.error || 'Processing failed')
+        }
+        
+        const { readJsonStream } = await import('@/lib/stream-utils')
+        let finalData: ImportResponse | null = null
+        
+        for await (const data of readJsonStream(processResponse)) {
+          if (data.type === 'progress') {
+            setImportProgress({
+              status: 'normalizing',
+              parserType,
+              progress: {
+                current: data.current,
+                total: data.total,
+                message: `AI is analyzing contact ${data.current} of ${data.total}...`
+              }
+            })
+          } else if (data.type === 'complete') {
+            finalData = {
+              success: true,
+              phase: 'complete',
+              ...data
+            }
+          } else if (data.type === 'error') {
+            throw new Error(data.message || 'AI normalization failed')
+          }
+        }
+        
+        if (finalData && finalData.contacts) {
+          await handleImportSuccess(finalData)
+        } else {
+          throw new Error('No contacts found in the import file')
+        }
+      } else {
+        // Regular processing for non-AI parsers
+        const processFormData = new FormData()
+        processFormData.append('file', file)
+        
+        const processResponse = await fetch(`/api/import?phase=process&parserType=${parserType}`, {
+          method: 'POST',
+          body: processFormData
+        })
+        
+        const processData = await processResponse.json()
+        
+        if (!processResponse.ok) {
+          throw new Error(processData.error || 'Processing failed')
+        }
+        
+        if (processData.contacts) {
+          await handleImportSuccess(processData)
+        }
+      }
+    } catch (error) {
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Import failed'
+      }))
+      // Don't show toast - error is shown in modal
+    }
+  }
+  
+  const handleImportSuccess = async (data: ImportResponse) => {
+    if (!data.contacts || data.contacts.length === 0) {
+      // Show error in modal instead of toast
+      setImportProgress(prev => ({
+        ...prev,
+        status: 'error',
+        error: 'No contacts found in the import file. The AI was unable to extract contact information from your CSV.'
+      }))
+      return
+    }
+
+    // First check for oversized contacts
+    const oversized = data.contacts
+      .map((contact, index) => ({
+        contact,
+        tokenCount: getContactTokenCount(contact),
+        index
+      }))
+      .filter(item => item.tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT)
+
+    if (oversized.length > 0) {
+      // Store oversized contacts for modal
+      setOversizedContacts(oversized)
+      setPendingImportContacts(data.contacts)
+      
+      // Show warning toast
+      toast.warning(`${oversized.length} oversized contact${oversized.length > 1 ? 's' : ''} detected`)
+      
+      // Don't proceed until user decides
+      return
+    }
+
+    // No oversized contacts, proceed with duplicate check
+    await checkDuplicatesAndSave(data.contacts)
+  }
+
   return {
     importFile: (file: File) => {
       // Set detecting status immediately before mutation
       setImportProgress({ status: 'detecting' })
       importMutation.mutate(file)
     },
-    isImporting: importMutation.isPending,
+    isImporting: importMutation.isPending || importProgress.status === 'normalizing' || importProgress.status === 'processing',
     isSaving: false,
     currentDuplicate,
     duplicatesCount: duplicates.length,
@@ -524,6 +812,9 @@ export function useEnhancedImport(onComplete?: () => void) {
     error: importMutation.error,
     importProgress,
     resetImport,
-    cancelImport
+    cancelImport,
+    oversizedContacts,
+    handleOversizedDecision,
+    continueImportAfterPreview
   }
 }

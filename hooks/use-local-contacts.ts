@@ -11,6 +11,10 @@ import {
 import type { Contact } from '@/types/contact';
 import Papa from 'papaparse';
 import { useState, useEffect } from 'react';
+import { 
+  CONTACT_LIMITS,
+  getContactTokenCount 
+} from '@/lib/config';
 
 // Hook to get all contacts with real-time updates
 export function useContacts(searchQuery?: string) {
@@ -57,6 +61,31 @@ export function useContact(id: string) {
 export function useSaveContacts() {
   return {
     mutateAsync: async (contacts: Contact[]) => {
+      // Check contact limit
+      const currentCount = await db.contacts.count();
+      if ((currentCount + contacts.length) > CONTACT_LIMITS.MAX_CONTACTS) {
+        throw new Error(
+          `Cannot add ${contacts.length} contacts. Would exceed limit of ${CONTACT_LIMITS.MAX_CONTACTS} contacts. ` +
+          `Current: ${currentCount}, Limit: ${CONTACT_LIMITS.MAX_CONTACTS}`
+        );
+      }
+      
+      // Validate each contact
+      const validationErrors: string[] = [];
+      contacts.forEach((contact, index) => {
+        if (!contact.name || contact.name.trim().length === 0) {
+          validationErrors.push(`Contact ${index + 1}: Must have a name`);
+        }
+        const tokenCount = getContactTokenCount(contact);
+        if (tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT) {
+          validationErrors.push(`Contact ${index + 1} (${contact.name}): Exceeds token limit (${tokenCount}/${CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} tokens)`);
+        }
+      });
+      
+      if (validationErrors.length > 0) {
+        throw new Error(`Contact validation failed:\n${validationErrors.join('\n')}`);
+      }
+      
       await createContactsBatch(contacts);
     },
     mutate: (contacts: Contact[]) => {
@@ -69,6 +98,24 @@ export function useSaveContacts() {
 export function useCreateContact() {
   return {
     mutateAsync: async (contact: Contact) => {
+      // Check contact limit
+      const currentCount = await db.contacts.count();
+      if ((currentCount + 1) > CONTACT_LIMITS.MAX_CONTACTS) {
+        throw new Error(
+          `Cannot add contact. Limit of ${CONTACT_LIMITS.MAX_CONTACTS} contacts reached. ` +
+          `Please delete some contacts first.`
+        );
+      }
+      
+      // Validate contact
+      if (!contact.name || contact.name.trim().length === 0) {
+        throw new Error('Contact must have a name');
+      }
+      const tokenCount = getContactTokenCount(contact);
+      if (tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT) {
+        throw new Error(`Contact exceeds token limit (${tokenCount}/${CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} tokens)`);
+      }
+      
       return await createContact(contact);
     },
     mutate: (contact: Contact) => {
@@ -81,6 +128,15 @@ export function useCreateContact() {
 export function useUpdateContact() {
   return {
     mutateAsync: async (contact: Contact) => {
+      // Validate contact
+      if (!contact.name || contact.name.trim().length === 0) {
+        throw new Error('Contact must have a name');
+      }
+      const tokenCount = getContactTokenCount(contact);
+      if (tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT) {
+        throw new Error(`Contact exceeds token limit (${tokenCount}/${CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} tokens)`);
+      }
+      
       await updateContact(contact);
     },
     mutate: (contact: Contact) => {

@@ -24,12 +24,31 @@ export async function parse(csvContent: string): Promise<Contact[]> {
   const headers = parseResult.meta.fields || []
   const rows = parseResult.data
 
+  console.log('Custom parser - headers:', headers)
+  console.log('Custom parser - row count:', rows.length)
+  console.log('Custom parser - sample row:', rows[0])
+
+  // Filter out empty rows
+  const validRows = rows.filter(row => {
+    // Check if row has any non-empty values
+    return Object.values(row).some(value => value && value.toString().trim() !== '')
+  })
+
+  console.log('Custom parser - valid rows:', validRows.length)
+
+  if (validRows.length === 0) {
+    console.warn('No valid data rows found in CSV file')
+    return []
+  }
+
   // Use AI to normalize the data
-  const { normalized, errors } = await normalizeCsvBatch(rows, headers)
+  const { normalized, errors } = await normalizeCsvBatch(validRows, headers)
   
   if (errors.length > 0) {
     console.warn('Normalization errors:', errors)
   }
+
+  console.log('Custom parser - normalized contacts:', normalized.length)
 
   return normalized
 }

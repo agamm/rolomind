@@ -26,7 +26,21 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">2. Age Restriction</h2>
+              <h2 className="text-2xl font-semibold">2. Alpha Product Disclaimer</h2>
+              <p className="text-muted-foreground">
+                <strong>Rolomind is currently in alpha stage.</strong> This means the Service is in early development and may contain bugs, 
+                incomplete features, or other issues. The Service may be modified, discontinued, or completely changed at any time without notice. 
+                We make no guarantees about the availability, reliability, or functionality of the Service during this alpha period.
+              </p>
+              <p className="text-muted-foreground">
+                <strong>Service Cancellation:</strong> We reserve the right to cancel, discontinue, or terminate the Service at any time, 
+                for any reason, without prior notice. We may also suspend or terminate access for individual users at our sole discretion 
+                for any reason, including but not limited to violation of these terms, technical issues, or business reasons.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold">3. Age Restriction</h2>
               <p className="text-muted-foreground">
                 <strong>You must be at least 18 years old to use this Service.</strong> By using Rolomind, you represent and warrant that you are 18 years of age or older. 
                 We do not knowingly collect or solicit personal information from anyone under the age of 18. 
@@ -35,7 +49,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">3. User Accounts</h2>
+              <h2 className="text-2xl font-semibold">4. User Accounts</h2>
               <p className="text-muted-foreground">
                 When you create an account with us, you must provide information that is accurate, complete, and current at all times. 
                 You are responsible for safeguarding the password and for all activities that occur under your account. 
@@ -44,7 +58,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">4. Acceptable Use</h2>
+              <h2 className="text-2xl font-semibold">5. Acceptable Use</h2>
               <p className="text-muted-foreground">You agree not to use the Service:</p>
               <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
                 <li>For any unlawful purpose or to solicit others to perform unlawful acts</li>
@@ -61,7 +75,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">5. Privacy and Data Protection</h2>
+              <h2 className="text-2xl font-semibold">6. Privacy and Data Protection</h2>
               <p className="text-muted-foreground">
                 Your use of the Service is also governed by our Privacy Policy. 
                 By using Rolomind, you consent to the collection and use of information as detailed in our Privacy Policy. 
@@ -70,7 +84,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">6. Contact Data Management</h2>
+              <h2 className="text-2xl font-semibold">7. Contact Data Management</h2>
               <p className="text-muted-foreground">
                 You represent and warrant that you have the necessary rights and permissions to upload, store, and manage any contact information in Rolomind. 
                 You are solely responsible for ensuring compliance with applicable laws regarding the collection, storage, and use of personal information of your contacts.
@@ -78,7 +92,29 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">7. Intellectual Property Rights</h2>
+              <h2 className="text-2xl font-semibold">8. Bring Your Own API Keys</h2>
+              <p className="text-muted-foreground">
+                <strong>API Key Requirement:</strong> To use Rolomind&apos;s AI-powered features, you must provide your own API keys from third-party AI service providers. 
+                Specifically, an OpenRouter API key is required for core AI functionality, and an OpenAI API key is optional for voice transcription features.
+              </p>
+              <p className="text-muted-foreground">
+                <strong>Your Responsibility:</strong> You are solely responsible for:
+              </p>
+              <ul className="list-disc pl-6 space-y-2 text-muted-foreground">
+                <li>Obtaining and maintaining valid API keys from the respective providers</li>
+                <li>Ensuring your API keys have sufficient usage credits or allowances</li>
+                <li>Managing costs and billing associated with your API usage</li>
+                <li>Compliance with the terms of service of the API providers</li>
+                <li>Securing your API keys and preventing unauthorized access</li>
+              </ul>
+              <p className="text-muted-foreground">
+                <strong>Service Limitations:</strong> Without valid API keys, AI-powered features will not function. Rolomind is not responsible for any costs, 
+                limitations, or restrictions imposed by third-party API providers. We do not guarantee the availability, reliability, or performance of third-party AI services.
+              </p>
+            </section>
+
+            <section className="space-y-4">
+              <h2 className="text-2xl font-semibold">9. Intellectual Property Rights</h2>
               <p className="text-muted-foreground">
                 The Service and its original content, features, and functionality are and will remain the exclusive property of Rolomind and its licensors. 
                 The Service is protected by copyright, trademark, and other laws. Our trademarks and trade dress may not be used in connection with any product or service without our prior written consent.
@@ -86,16 +122,22 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">8. Termination</h2>
+              <h2 className="text-2xl font-semibold">10. Termination</h2>
               <p className="text-muted-foreground">
                 We may terminate or suspend your account and bar access to the Service immediately, without prior notice or liability, 
                 under our sole discretion, for any reason whatsoever, including without limitation if you breach the Terms. 
-                Upon termination, your right to use the Service will immediately cease.
+                Given the alpha nature of this Service, we reserve the right to remove any user for any reason, including but not limited to 
+                technical issues, capacity limitations, business decisions, or any other reason we deem appropriate.
+              </p>
+              <p className="text-muted-foreground">
+                Upon termination, your right to use the Service will immediately cease. We are not obligated to provide advance notice 
+                of termination, though we may do so at our discretion. You may also terminate your account at any time by contacting us 
+                or by ceasing to use the Service.
               </p>
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">9. Disclaimer</h2>
+              <h2 className="text-2xl font-semibold">11. Disclaimer</h2>
               <p className="text-muted-foreground">
                 The Service is provided on an &quot;AS IS&quot; and &quot;AS AVAILABLE&quot; basis. The Service is provided without warranties of any kind, 
                 whether express or implied, including, but not limited to, implied warranties of merchantability, fitness for a particular purpose, 
@@ -104,7 +146,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">10. Limitation of Liability</h2>
+              <h2 className="text-2xl font-semibold">12. Limitation of Liability</h2>
               <p className="text-muted-foreground">
                 In no event shall Rolomind, nor its directors, employees, partners, agents, suppliers, or affiliates, be liable for any indirect, 
                 incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, 
@@ -113,7 +155,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">11. Governing Law</h2>
+              <h2 className="text-2xl font-semibold">13. Governing Law</h2>
               <p className="text-muted-foreground">
                 These Terms shall be governed and construed in accordance with the laws of the United States, without regard to its conflict of law provisions. 
                 Our failure to enforce any right or provision of these Terms will not be considered a waiver of those rights.
@@ -121,7 +163,7 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">12. Changes to Terms</h2>
+              <h2 className="text-2xl font-semibold">14. Changes to Terms</h2>
               <p className="text-muted-foreground">
                 We reserve the right, at our sole discretion, to modify or replace these Terms at any time. 
                 If a revision is material, we will provide at least 30 days notice prior to any new terms taking effect.
@@ -129,12 +171,12 @@ export default function TermsPage() {
             </section>
 
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold">13. Contact Information</h2>
+              <h2 className="text-2xl font-semibold">15. Contact Information</h2>
               <p className="text-muted-foreground">
                 If you have any questions about these Terms, please contact us at:
               </p>
               <p className="text-muted-foreground">
-                Email: help@rolomind.com<br />
+                Email: <a href="mailto:help@rolomind.com" className="text-primary hover:underline">help@rolomind.com</a><br />
                 Address: [Your Company Address]
               </p>
             </section>

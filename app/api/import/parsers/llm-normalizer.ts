@@ -2,12 +2,13 @@ import { generateObject } from 'ai'
 import { z } from 'zod'
 import { Contact, RawContactData } from '@/types/contact'
 import { v4 as uuidv4 } from 'uuid'
-import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const normalizedContactSchema = z.object({
   name: z.string().describe('Full name of the contact'),
-  phones: z.array(z.string()).describe('Phone numbers, normalized to include country code if possible'),
-  emails: z.array(z.string()).describe('Email addresses'),
+  phones: z.array(z.string()).describe('Phone numbers, normalized to include country code if possible').default([]),
+  emails: z.array(z.string()).describe('Email addresses').default([]),
   linkedinUrl: z.string().optional().describe('LinkedIn profile URL'),
   company: z.string().optional().describe('Company name'),
   role: z.string().optional().describe('Job title, position or role'),
@@ -20,10 +21,13 @@ export async function normalizeContactWithLLM(
   headers: string[]
 ): Promise<Partial<Contact>> {
   try {
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
-      schema: normalizedContactSchema,
-      prompt: `Extract and normalize contact information from this CSV row data.
+    // Get session for user tracking
+    const session = await getServerSession();
+    if (!session?.user) {
+      throw new Error('Authentication required for AI normalization');
+    }
+
+    const promptText = `Extract and normalize contact information from this CSV row data.
 
 Headers: ${headers.join(', ')}
 Data: ${JSON.stringify(rawData, null, 2)}
@@ -38,8 +42,42 @@ Instructions:
 7. Extract location (city, state, country) if available
 8. Put any other relevant information into notes (but NOT company, role, or location)
 
-Be thorough in extracting all available contact information.`
-    })
+Be thorough in extracting all available contact information.`;
+
+    console.log('Calling AI client with prompt length:', promptText.length)
+    console.log('Sample data:', JSON.stringify(rawData).slice(0, 200))
+    
+    let object;
+    try {
+      const model = await getAIModel('anthropic/claude-3-haiku');
+      
+      const result = await generateObject({
+        model: model,
+        schema: normalizedContactSchema,
+        maxTokens: 100,
+        prompt: promptText,
+        temperature: 0.3, // Lower temperature for more consistent parsing
+        mode: 'json' // Ensure JSON mode
+      })
+      object = result.object
+      console.log('Successfully parsed contact:', object.name)
+    } catch (genError) {
+      console.error('generateObject error:', genError)
+      console.error('Failed on data:', rawData)
+      
+      // Check for specific error types
+      if (genError instanceof Error) {
+        if (genError.message.includes('API key not configured')) {
+          throw new Error('AI service not configured. Please add your OpenRouter API key in Settings > AI Keys.')
+        } else if (genError.message.includes('parse') || genError.message.includes('No object generated')) {
+          console.error('Failed to parse LLM response. Raw data:', JSON.stringify(rawData))
+          // Try a simpler extraction
+          const name = rawData.Name || rawData.name || rawData['Full Name'] || 'Unknown Contact'
+          throw new Error(`LLM could not parse contact "${name}". Data may be malformed or incomplete.`)
+        }
+      }
+      throw genError
+    }
 
     const contact: Partial<Contact> = {
       id: uuidv4(),
@@ -73,17 +111,22 @@ export async function normalizeCsvBatch(
   const normalized: Contact[] = []
   const errors: string[] = []
   
+  console.log('LLM normalizer - starting batch processing for', rows.length, 'rows')
+  console.log('LLM normalizer - headers:', headers)
+  
   // Process in small batches to avoid rate limits
   const BATCH_SIZE = 5
   
   for (let i = 0; i < rows.length; i += BATCH_SIZE) {
     const batch = rows.slice(i, i + BATCH_SIZE)
+    console.log(`LLM normalizer - processing batch ${i / BATCH_SIZE + 1}, rows ${i + 1}-${i + batch.length}`)
     
     const promises = batch.map(async (row, index) => {
       try {
         const contact = await normalizeContactWithLLM(row, headers)
         return { success: true, contact, index: i + index }
       } catch (error) {
+        console.error(`LLM normalizer - error on row ${i + index + 1}:`, error)
         return { 
           success: false, 
           error: error instanceof Error ? error.message : 'Unknown error',
@@ -102,11 +145,15 @@ export async function normalizeCsvBatch(
       }
     }
     
+    console.log(`LLM normalizer - batch complete, normalized ${normalized.length} contacts so far`)
+    
     // Add delay between batches to avoid rate limits
     if (i + BATCH_SIZE < rows.length) {
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
   }
+  
+  console.log('LLM normalizer - complete. Normalized:', normalized.length, 'Errors:', errors.length)
   
   return { normalized, errors }
 }

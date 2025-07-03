@@ -8,6 +8,8 @@ export const user = sqliteTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
+  openrouterApiKey: text("openrouter_api_key"),
+  openaiApiKey: text("openai_api_key"),
   createdAt: integer("created_at", { mode: "timestamp" })
     .$defaultFn(() => /* @__PURE__ */ new Date())
     .notNull(),

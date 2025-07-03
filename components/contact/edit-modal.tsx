@@ -13,11 +13,13 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Loader2, Plus, X, Trash2 } from 'lucide-react'
+import { Loader2, Plus, X, Trash2, AlertTriangle } from 'lucide-react'
 import { useVoiceRecorder } from '@/hooks/use-voice-recorder'
 import { VoiceRecorder } from '@/components/ui/voice-recorder'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 interface EditContactModalProps {
   contact: Contact | null
@@ -32,6 +34,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
   const [isSaving, setIsSaving] = useState(false)
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
   const [updatedFields, setUpdatedFields] = useState<Set<string>>(new Set())
+  const [tokenCount, setTokenCount] = useState(0)
   
   const {
     isRecording,
@@ -62,12 +65,32 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
       })
       // Clear highlights when switching contacts
       setUpdatedFields(new Set())
+      // Calculate initial token count
+      setTokenCount(getContactTokenCount(contact))
     }
   }, [contact])
+
+  // Update token count when form data changes
+  useEffect(() => {
+    if (contact && formData.name) {
+      const tempContact: Contact = {
+        ...contact,
+        ...formData,
+        updatedAt: contact.updatedAt
+      }
+      setTokenCount(getContactTokenCount(tempContact))
+    }
+  }, [formData, contact])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!contact) return
+
+    // Check token limit before saving
+    if (tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT) {
+      toast.error(`Contact exceeds the ${CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} token limit. Please reduce the content, especially in the notes field.`)
+      return
+    }
 
     setIsSaving(true)
     try {
@@ -267,6 +290,17 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Token Limit Warning */}
+          {tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT && (
+            <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                This contact exceeds the {CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} token limit ({tokenCount} tokens).
+                Please reduce the content to save changes.
+              </AlertDescription>
+            </Alert>
+          )}
+          
           {/* Voice Recording Section */}
           <VoiceRecorder
             isRecording={isRecording}
@@ -465,7 +499,17 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes</Label>
+            <div className="flex items-center justify-between">
+              <Label htmlFor="notes">Notes</Label>
+              <span className={cn(
+                "text-xs",
+                tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT 
+                  ? "text-amber-600 dark:text-amber-400 font-medium" 
+                  : "text-muted-foreground"
+              )}>
+                {tokenCount} / {CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT} tokens
+              </span>
+            </div>
             <Textarea
               id="notes"
               value={formData.notes || ''}
@@ -500,7 +544,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSaving}>
+              <Button type="submit" disabled={isSaving || tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT}>
                 {isSaving ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />

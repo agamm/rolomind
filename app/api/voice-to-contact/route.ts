@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateObject, experimental_transcribe } from 'ai'
-import { openai } from '@ai-sdk/openai'
 import { z } from 'zod'
 import type { Contact } from '@/types/contact'
-import { openrouter } from '@/lib/openrouter-config'
+import { getServerSession } from '@/lib/auth/server'
+import { getAIModel } from '@/lib/ai-client'
 
 const contactUpdateSchema = z.object({
   name: z.string().optional().describe('Updated name if mentioned'),
@@ -34,14 +34,38 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Transcribe audio using OpenAI Whisper
+    // Check audio file size - estimate duration based on file size
+    // Typical audio bitrates:
+    // - webm/opus: ~32 kbps = ~240 KB per minute
+    // - mp3 128kbps: ~960 KB per minute  
+    // - wav: ~10 MB per minute
+    // Use conservative estimate of 1 MB max for ~1 minute
+    const MAX_AUDIO_SIZE = 1 * 1024 * 1024; // 1 MB
+    
+    if (audioFile.size > MAX_AUDIO_SIZE) {
+      const estimatedMinutes = Math.round(audioFile.size / (1024 * 1024));
+      return NextResponse.json(
+        { 
+          success: false, 
+          error: `Audio file too long. Please keep recordings under 1 minute. Estimated duration: ${estimatedMinutes} minutes.` 
+        },
+        { status: 400 }
+      )
+    }
+
+    const session = await getServerSession();
+    
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+
     const transcribedText = await transcribeAudio(audioFile)
 
-    // Use AI to extract structured information from the transcription
-    const { object } = await generateObject({
-      model: openrouter('anthropic/claude-3-haiku'),
-      schema: contactUpdateSchema,
-      prompt: `Extract contact information updates from this voice transcription about a contact.
+    const promptText = `Extract contact information updates from this voice transcription about a contact.
       
 Current contact information:
 ${JSON.stringify(currentContact, null, 2)}
@@ -67,72 +91,88 @@ Examples of what to extract:
 - "They're now the CTO" → role: "CTO"
 - "Remove their phone number" → fieldsToRemove: ["phones"]
 - "They mentioned they love hiking" → notesComplete: "[existing notes]\n\nLoves hiking"
-`
-    })
+`;
 
-    // Merge the extracted information with the current contact
-    let mergedNotes = currentContact.notes || ''
-    
-    // Handle notes updates
-    if (object.notesComplete) {
-      // AI provided complete updated notes
-      mergedNotes = object.notesComplete
-    }
-    
-    const updatedContact: Contact = {
-      ...currentContact,
-      name: object.name || currentContact.name,
-      company: object.company || currentContact.company,
-      role: object.role || currentContact.role,
-      location: object.location || currentContact.location,
-      contactInfo: {
-        emails: [...new Set([...currentContact.contactInfo.emails, ...(object.emails || [])])],
-        phones: [...new Set([...currentContact.contactInfo.phones, ...(object.phones || [])])],
-        linkedinUrl: object.linkedinUrl || currentContact.contactInfo.linkedinUrl,
-        otherUrls: [
-          ...(currentContact.contactInfo.otherUrls || []),
-          ...(object.otherUrls || [])
-        ]
-      },
-      notes: mergedNotes,
-      updatedAt: new Date()
-    }
-
-    // Handle field removals if any
-    if (object.fieldsToRemove) {
-      object.fieldsToRemove.forEach(field => {
-        switch (field) {
-          case 'company':
-            updatedContact.company = undefined
-            break
-          case 'role':
-            updatedContact.role = undefined
-            break
-          case 'location':
-            updatedContact.location = undefined
-            break
-          case 'emails':
-            updatedContact.contactInfo.emails = []
-            break
-          case 'phones':
-            updatedContact.contactInfo.phones = []
-            break
-          case 'linkedinUrl':
-            updatedContact.contactInfo.linkedinUrl = undefined
-            break
-          case 'otherUrls':
-            updatedContact.contactInfo.otherUrls = []
-            break
-        }
+    try {
+      const model = await getAIModel('anthropic/claude-3-haiku');
+      
+      const { object } = await generateObject({
+        model: model,
+        schema: contactUpdateSchema,
+        maxTokens: 200,
+        prompt: promptText
       })
-    }
 
-    return NextResponse.json({
-      success: true,
-      updatedContact,
-      changes: object,
-      transcription: transcribedText
-    })
+      let mergedNotes = currentContact.notes || ''
+      
+      if (object.notesComplete) {
+        mergedNotes = object.notesComplete
+      }
+      
+      const updatedContact: Contact = {
+        ...currentContact,
+        name: object.name || currentContact.name,
+        company: object.company || currentContact.company,
+        role: object.role || currentContact.role,
+        location: object.location || currentContact.location,
+        contactInfo: {
+          emails: [...new Set([...currentContact.contactInfo.emails, ...(object.emails || [])])],
+          phones: [...new Set([...currentContact.contactInfo.phones, ...(object.phones || [])])],
+          linkedinUrl: object.linkedinUrl || currentContact.contactInfo.linkedinUrl,
+          otherUrls: [
+            ...(currentContact.contactInfo.otherUrls || []),
+            ...(object.otherUrls || [])
+          ]
+        },
+        notes: mergedNotes,
+        updatedAt: new Date()
+      }
+
+      if (object.fieldsToRemove) {
+        object.fieldsToRemove.forEach(field => {
+          switch (field) {
+            case 'company':
+              updatedContact.company = undefined
+              break
+            case 'role':
+              updatedContact.role = undefined
+              break
+            case 'location':
+              updatedContact.location = undefined
+              break
+            case 'emails':
+              updatedContact.contactInfo.emails = []
+              break
+            case 'phones':
+              updatedContact.contactInfo.phones = []
+              break
+            case 'linkedinUrl':
+              updatedContact.contactInfo.linkedinUrl = undefined
+              break
+            case 'otherUrls':
+              updatedContact.contactInfo.otherUrls = []
+              break
+          }
+        })
+      }
+
+      return NextResponse.json({
+        success: true,
+        updatedContact,
+        changes: object,
+        transcription: transcribedText
+      })
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('API key not configured')) {
+        return NextResponse.json({ 
+          success: false,
+          error: 'AI service not configured',
+          details: error.message,
+          action: 'Please configure your API keys in Settings > AI Keys'
+        }, { status: 402 })
+      }
+      throw error;
+    }
   } catch (error) {
     console.error("Error processing voice recording:", error)
     const errorMessage = error instanceof Error ? error.message : "Failed to process voice recording"
@@ -145,23 +185,28 @@ Examples of what to extract:
 
 async function transcribeAudio(audioFile: File): Promise<string> {
   try {
-    // Check if OpenAI API key is configured
-    if (!process.env.OPENAI_API_KEY) {
-      throw new Error('OpenAI API key is not configured. Voice transcription requires OPENAI_API_KEY.')
-    }
+    const { getAIClient } = await import('@/lib/ai-client');
+    const aiClient = await getAIClient(true); // Use OpenAI for transcription
 
-    // Use the AI SDK's experimental transcribe function with OpenAI's Whisper
     const arrayBuffer = await audioFile.arrayBuffer()
     const audio = new Uint8Array(arrayBuffer)
     
+    // Type guard to ensure we have the transcription method
+    if (!('transcription' in aiClient)) {
+      throw new Error('Transcription not available - OpenAI client not configured properly')
+    }
+    
     const { text } = await experimental_transcribe({
-      model: openai.transcription('whisper-1'),
+      model: aiClient.transcription('whisper-1'),
       audio: audio,
     })
 
     return text
   } catch (error) {
     console.error('Transcription error:', error)
+    if (error instanceof Error && error.message.includes('API key not configured')) {
+      throw new Error('OpenAI API key not configured. Please add your OpenAI API key in Settings > AI Keys for voice transcription features.')
+    }
     throw new Error(error instanceof Error ? error.message : 'Failed to transcribe audio')
   }
 }

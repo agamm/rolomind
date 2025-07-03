@@ -85,9 +85,20 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
     if (hasAISearchNoResults) return []
     
     // Start with either AI results or all contacts
-    const baseContacts = aiResults && aiResults.length > 0 
-      ? aiResults.map(result => result.contact)
-      : contacts
+    let baseContacts = contacts
+    
+    if (aiResults && aiResults.length > 0) {
+      // Create a Set of current contact IDs for efficient lookup
+      const currentContactIds = new Set(contacts.map(c => c.id))
+      
+      // Filter AI results to only include contacts that still exist
+      const validAiResults = aiResults.filter(result => currentContactIds.has(result.contact.id))
+      
+      // Map to the actual contact objects from the current contacts list
+      baseContacts = validAiResults.map(result => 
+        contacts.find(c => c.id === result.contact.id)!
+      ).filter(Boolean) // Remove any undefined values
+    }
     
     // Apply search filter if there's a query
     if (!searchQuery.trim()) return baseContacts
@@ -301,6 +312,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {paginatedContacts.map((contact, index) => {
+                  // Find AI reason by matching contact ID
                   const aiResult = aiResults?.find(result => result.contact.id === contact.id)
                   return (
                     <div 

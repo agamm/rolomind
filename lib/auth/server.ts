@@ -2,6 +2,9 @@ import { headers } from "next/headers";
 import { auth } from "./auth";
 import { Polar } from "@polar-sh/sdk";
 import { env } from "@/lib/env";
+import { db } from "@/db/sqlite";
+import { user } from "@/db/sqlite/schema";
+import { eq } from "drizzle-orm";
 
 export async function getServerSession() {
   const session = await auth.api.getSession({
@@ -25,6 +28,11 @@ export async function isPayingCustomer() {
   const session = await getServerSession();
   
   if (!session?.user?.email) {
+    return false;
+  }
+
+  if (!env.POLAR_ACCESS_TOKEN) {
+    console.warn("POLAR_ACCESS_TOKEN not configured");
     return false;
   }
 
@@ -66,6 +74,11 @@ export async function getCustomerState() {
     return null;
   }
 
+  if (!env.POLAR_ACCESS_TOKEN) {
+    console.warn("POLAR_ACCESS_TOKEN not configured");
+    return null;
+  }
+
   try {
     const polarClient = new Polar({
       accessToken: env.POLAR_ACCESS_TOKEN,
@@ -88,10 +101,8 @@ export async function getCustomerState() {
       customerId: customer.id,
     });
 
-    // Get benefits
-    const benefits = await polarClient.benefits.list({
-      customerId: customer.id,
-    });
+    // Get benefits for the organization
+    const benefits = await polarClient.benefits.list({});
 
     return {
       customer,
@@ -106,3 +117,57 @@ export async function getCustomerState() {
     return null;
   }
 }
+
+export async function getUserApiKeys() {
+  const session = await getServerSession();
+  
+  if (!session?.user?.id) {
+    return null;
+  }
+
+  try {
+    const userRecord = await db.select()
+      .from(user)
+      .where(eq(user.id, session.user.id))
+      .limit(1);
+
+    const userData = userRecord[0];
+    return {
+      openrouterApiKey: userData?.openrouterApiKey,
+      openaiApiKey: userData?.openaiApiKey,
+    };
+  } catch (error) {
+    console.error("Error getting user API keys:", error);
+    return null;
+  }
+}
+
+export async function updateUserApiKeys(openrouterApiKey?: string, openaiApiKey?: string) {
+  const session = await getServerSession();
+  
+  if (!session?.user?.id) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    const updateData: { openrouterApiKey?: string; openaiApiKey?: string } = {};
+    
+    if (openrouterApiKey !== undefined) {
+      updateData.openrouterApiKey = openrouterApiKey;
+    }
+    
+    if (openaiApiKey !== undefined) {
+      updateData.openaiApiKey = openaiApiKey;
+    }
+
+    await db.update(user)
+      .set(updateData)
+      .where(eq(user.id, session.user.id));
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating user API keys:", error);
+    throw error;
+  }
+}
+

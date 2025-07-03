@@ -22,13 +22,39 @@ vi.mock('@/lib/openrouter-config', () => ({
   openrouter: vi.fn(() => 'claude-3-haiku-model')
 }))
 
+// Mock authentication
+vi.mock('@/lib/auth/server', () => ({
+  getServerSession: vi.fn().mockResolvedValue({
+    user: { id: 'test-user', email: 'test@example.com' }
+  }),
+  getUserApiKeys: vi.fn().mockResolvedValue({
+    openrouterApiKey: 'test-key',
+    openaiApiKey: 'test-key'
+  })
+}))
+
+// Mock AI client
+vi.mock('@/lib/ai-client', () => ({
+  getAIModel: vi.fn().mockResolvedValue({
+    // Mock model object
+    name: 'test-model'
+  }),
+  getAIClient: vi.fn().mockResolvedValue({
+    transcription: vi.fn().mockReturnValue('whisper-1-model')
+  })
+}))
+
+// Mock Next.js headers
+vi.mock('next/headers', () => ({
+  headers: vi.fn().mockResolvedValue(new Map())
+}))
+
 describe('Voice to Contact API Route', () => {
   let mockTranscribe: any
   let mockGenerateObject: any
 
   beforeEach(async () => {
     vi.clearAllMocks()
-    process.env.OPENAI_API_KEY = 'test-key'
     
     // Get the mocked functions
     const aiModule = await import('ai')
@@ -46,7 +72,7 @@ describe('Voice to Contact API Route', () => {
   })
 
   afterEach(() => {
-    vi.resetAllMocks()
+    vi.clearAllMocks()
   })
 
   it('should merge voice transcription data with existing contact using LLM', async () => {
@@ -93,9 +119,10 @@ describe('Voice to Contact API Route', () => {
     
     // Verify LLM was called with correct prompt including existing contact data
     expect(mockGenerateObject).toHaveBeenCalledWith({
-      model: 'claude-3-haiku-model',
+      model: { name: 'test-model' },
       schema: expect.any(Object),
-      prompt: expect.stringContaining('Current contact information:')
+      prompt: expect.stringContaining('Current contact information:'),
+      maxTokens: 200
     })
 
     const llmPrompt = mockGenerateObject.mock.calls[0][0].prompt
@@ -282,7 +309,9 @@ describe('Voice to Contact API Route', () => {
   })
 
   it('should return error when OpenAI API key is not configured', async () => {
-    delete process.env.OPENAI_API_KEY
+    // Mock the AI client to throw an API key error
+    const { getAIClient } = await import('@/lib/ai-client')
+    vi.mocked(getAIClient).mockRejectedValueOnce(new Error('OpenAI API key not configured'))
 
     const audioBlob = new Blob(['audio data'], { type: 'audio/webm' })
     const formData = new FormData()
@@ -299,6 +328,6 @@ describe('Voice to Contact API Route', () => {
 
     expect(response.status).toBe(500)
     expect(data.success).toBe(false)
-    expect(data.error).toContain('OpenAI API key is not configured')
+    expect(data.error).toContain('OpenAI API key not configured')
   })
 })
