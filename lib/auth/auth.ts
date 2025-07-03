@@ -62,7 +62,7 @@ export const auth = betterAuth({
       // Better-auth already checks if user exists before calling this
       // This function is only called for existing users
       await resend.emails.send({
-        from: "no-reply@rolomind.com",
+        from: "no-reply@mail.rolomind.com",
         to: user.email,
         subject: "Reset your password",
         html: `

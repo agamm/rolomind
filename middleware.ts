@@ -11,6 +11,8 @@ export async function middleware(request: NextRequest) {
     "/api/auth",
     "/sign-in", 
     "/sign-up",
+    "/forgot-password",
+    "/reset-password",
     "/terms",
     "/privacy",
   ];
