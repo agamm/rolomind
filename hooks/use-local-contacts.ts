@@ -1,12 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '@/db/indexdb';
+import { getCurrentUserDatabase, initializeUserDatabase } from '@/db/indexdb';
 import { 
   createContact, 
   createContactsBatch, 
   updateContact, 
   deleteContact, 
   deleteAllContacts,
-  searchContacts 
+  searchContacts,
+  getAllContacts,
+  getContactsCount 
 } from '@/db/indexdb/contacts';
 import type { Contact } from '@/types/contact';
 import Papa from 'papaparse';
@@ -15,25 +17,38 @@ import {
   CONTACT_LIMITS,
   getContactTokenCount 
 } from '@/lib/config';
+import { useSession } from '@/lib/auth/auth-client';
 
 // Hook to get all contacts with real-time updates
 export function useContacts(searchQuery?: string) {
   const [error, setError] = useState<Error | null>(null);
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
   
   const contacts = useLiveQuery(
     async () => {
       try {
         setError(null);
+        if (!session?.user?.email) {
+          return [];
+        }
+        
         if (searchQuery && searchQuery.trim()) {
           return await searchContacts(searchQuery);
         }
-        return await db.contacts.toArray();
+        return await getAllContacts();
       } catch (err) {
         setError(err instanceof Error ? err : new Error('Failed to load contacts'));
         return [];
       }
     },
-    [searchQuery]
+    [searchQuery, session?.user?.email]
   );
 
   return {
@@ -45,9 +60,21 @@ export function useContacts(searchQuery?: string) {
 
 // Hook to get a single contact
 export function useContact(id: string) {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   const contact = useLiveQuery(
-    async () => await db.contacts.get(id),
-    [id]
+    async () => {
+      if (!session?.user?.email) return undefined;
+      return await getCurrentUserDatabase().contacts.get(id);
+    },
+    [id, session?.user?.email]
   );
 
   return {
@@ -59,10 +86,23 @@ export function useContact(id: string) {
 
 // Hook for saving contacts
 export function useSaveContacts() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     mutateAsync: async (contacts: Contact[]) => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
+      
       // Check contact limit
-      const currentCount = await db.contacts.count();
+      const currentCount = await getContactsCount();
       if ((currentCount + contacts.length) > CONTACT_LIMITS.MAX_CONTACTS) {
         throw new Error(
           `Cannot add ${contacts.length} contacts. Would exceed limit of ${CONTACT_LIMITS.MAX_CONTACTS} contacts. ` +
@@ -89,6 +129,7 @@ export function useSaveContacts() {
       await createContactsBatch(contacts);
     },
     mutate: (contacts: Contact[]) => {
+      if (!session?.user?.email) return;
       createContactsBatch(contacts).catch(console.error);
     }
   };
@@ -96,10 +137,23 @@ export function useSaveContacts() {
 
 // Hook for creating a single contact
 export function useCreateContact() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     mutateAsync: async (contact: Contact) => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
+      
       // Check contact limit
-      const currentCount = await db.contacts.count();
+      const currentCount = await getContactsCount();
       if ((currentCount + 1) > CONTACT_LIMITS.MAX_CONTACTS) {
         throw new Error(
           `Cannot add contact. Limit of ${CONTACT_LIMITS.MAX_CONTACTS} contacts reached. ` +
@@ -119,6 +173,7 @@ export function useCreateContact() {
       return await createContact(contact);
     },
     mutate: (contact: Contact) => {
+      if (!session?.user?.email) return;
       createContact(contact).catch(console.error);
     }
   };
@@ -126,8 +181,21 @@ export function useCreateContact() {
 
 // Hook for updating a contact
 export function useUpdateContact() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     mutateAsync: async (contact: Contact) => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
+      
       // Validate contact
       if (!contact.name || contact.name.trim().length === 0) {
         throw new Error('Contact must have a name');
@@ -140,6 +208,7 @@ export function useUpdateContact() {
       await updateContact(contact);
     },
     mutate: (contact: Contact) => {
+      if (!session?.user?.email) return;
       updateContact(contact).catch(console.error);
     }
   };
@@ -147,11 +216,24 @@ export function useUpdateContact() {
 
 // Hook for deleting a contact
 export function useDeleteContact() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     mutateAsync: async (id: string) => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
       await deleteContact(id);
     },
     mutate: (id: string) => {
+      if (!session?.user?.email) return;
       deleteContact(id).catch(console.error);
     }
   };
@@ -159,11 +241,24 @@ export function useDeleteContact() {
 
 // Hook for deleting all contacts
 export function useDeleteAllContacts() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     mutateAsync: async () => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
       await deleteAllContacts();
     },
     mutate: () => {
+      if (!session?.user?.email) return;
       deleteAllContacts().catch(console.error);
     },
     isPending: false
@@ -172,10 +267,23 @@ export function useDeleteAllContacts() {
 
 // Hook for exporting contacts to CSV
 export function useExportContacts() {
+  const { data: session } = useSession();
+  
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email);
+    }
+  }, [session?.user?.email]);
+  
   return {
     exportToCSV: async (contacts?: Contact[]) => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated');
+      }
+      
       // If no contacts provided, get all from database
-      const contactsToExport = contacts || await db.contacts.toArray();
+      const contactsToExport = contacts || await getAllContacts();
       
       // Transform contacts to CSV format
       const csvData = contactsToExport.map(contact => ({

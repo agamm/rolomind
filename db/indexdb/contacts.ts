@@ -1,15 +1,20 @@
-import { db } from './index';
+import { getCurrentUserDatabase } from './index';
 import type { Contact } from '@/types/contact';
 import { v4 as uuidv4 } from 'uuid';
 
+// Helper to get current user database
+function getDatabase() {
+  return getCurrentUserDatabase();
+}
+
 // Get all contacts
 export async function getAllContacts(): Promise<Contact[]> {
-  return await db.contacts.toArray();
+  return await getDatabase().contacts.toArray();
 }
 
 // Get contact by ID
 export async function getContactById(id: string): Promise<Contact | undefined> {
-  return await db.contacts.get(id);
+  return await getDatabase().contacts.get(id);
 }
 
 // Create multiple contacts using bulk operation
@@ -21,7 +26,7 @@ export async function createContactsBatch(contacts: Contact[]): Promise<void> {
     updatedAt: contact.updatedAt || new Date()
   }));
   
-  await db.contacts.bulkAdd(contactsWithIds);
+  await getDatabase().contacts.bulkAdd(contactsWithIds);
 }
 
 // Create single contact
@@ -34,13 +39,13 @@ export async function createContact(contact: Contact): Promise<string> {
     updatedAt: contact.updatedAt || new Date()
   };
   
-  await db.contacts.add(newContact);
+  await getDatabase().contacts.add(newContact);
   return id;
 }
 
 // Update contact
 export async function updateContact(contact: Contact): Promise<void> {
-  await db.contacts.put({
+  await getDatabase().contacts.put({
     ...contact,
     updatedAt: new Date()
   });
@@ -53,34 +58,34 @@ export async function updateContactsBatch(contacts: Contact[]): Promise<void> {
     updatedAt: new Date()
   }));
   
-  await db.contacts.bulkPut(updatedContacts);
+  await getDatabase().contacts.bulkPut(updatedContacts);
 }
 
 // Delete contact by ID
 export async function deleteContact(id: string): Promise<void> {
-  await db.contacts.delete(id);
+  await getDatabase().contacts.delete(id);
 }
 
 // Delete multiple contacts using bulk operation
 export async function deleteContactsBatch(ids: string[]): Promise<void> {
-  await db.contacts.bulkDelete(ids);
+  await getDatabase().contacts.bulkDelete(ids);
 }
 
 // Delete all contacts
 export async function deleteAllContacts(): Promise<void> {
-  await db.contacts.clear();
+  await getDatabase().contacts.clear();
 }
 
 // Get contacts count
 export async function getContactsCount(): Promise<number> {
-  return await db.contacts.count();
+  return await getDatabase().contacts.count();
 }
 
 // Search contacts by query
 export async function searchContacts(query: string): Promise<Contact[]> {
   const lowercaseQuery = query.toLowerCase();
   
-  return await db.contacts
+  return await getDatabase().contacts
     .filter(contact => {
       return contact.name.toLowerCase().includes(lowercaseQuery) ||
         (contact.company?.toLowerCase().includes(lowercaseQuery) ?? false) ||
@@ -92,7 +97,7 @@ export async function searchContacts(query: string): Promise<Contact[]> {
 
 // Get contacts by source
 export async function getContactsBySource(source: 'google' | 'linkedin' | 'manual'): Promise<Contact[]> {
-  return await db.contacts
+  return await getDatabase().contacts
     .where('source')
     .equals(source)
     .toArray();

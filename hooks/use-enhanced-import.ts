@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
 import { CONTACT_LIMITS } from '@/lib/config'
+import { useSession } from '@/lib/auth/auth-client'
+import { initializeUserDatabase } from '@/db/indexdb'
 
 // Simple contact size estimation for UI purposes
 function getContactTokenCount(contact: Contact): number {
@@ -47,6 +49,7 @@ export interface ImportProgress {
 
 export function useEnhancedImport(onComplete?: () => void) {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
   const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([])
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
   const [resolvedContacts, setResolvedContacts] = useState<Contact[]>([])
@@ -54,9 +57,20 @@ export function useEnhancedImport(onComplete?: () => void) {
   const [oversizedContacts, setOversizedContacts] = useState<Array<{ contact: Contact; tokenCount: number; index: number }>>([])
   const [pendingImportContacts, setPendingImportContacts] = useState<Contact[]>([])
   
+  // Initialize user database when session changes
+  useEffect(() => {
+    if (session?.user?.email) {
+      initializeUserDatabase(session.user.email)
+    }
+  }, [session?.user?.email])
+  
   // Import mutation
   const importMutation = useMutation({
     mutationFn: async (file: File): Promise<ImportResponse> => {
+      if (!session?.user?.email) {
+        throw new Error('User not authenticated')
+      }
+      
       // Check current contact count before starting
       const existingContacts = await getAllContacts()
       const currentCount = existingContacts.length
