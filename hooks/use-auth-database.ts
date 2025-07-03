@@ -10,17 +10,20 @@ export function useAuthDatabase() {
   const { data: session } = useSession();
 
   useEffect(() => {
-    if (session?.user?.email) {
+    if (session?.user?.email && session?.user?.id) {
       // User is authenticated, initialize their database
-      initializeUserDatabase(session.user.email);
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     } else {
       // User is not authenticated, clear database reference
       clearUserDatabase();
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
 
   return {
     isAuthenticated: !!session?.user?.email,
-    userEmail: session?.user?.email
+    userEmail: session?.user?.email,
+    userId: session?.user?.id
   };
 }

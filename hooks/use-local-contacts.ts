@@ -26,10 +26,12 @@ export function useContacts(searchQuery?: string) {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   const contacts = useLiveQuery(
     async () => {
@@ -64,15 +66,18 @@ export function useContact(id: string) {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   const contact = useLiveQuery(
     async () => {
       if (!session?.user?.email) return undefined;
-      return await getCurrentUserDatabase().contacts.get(id);
+      const db = await getCurrentUserDatabase();
+      return await db.contacts.get(id);
     },
     [id, session?.user?.email]
   );
@@ -90,10 +95,12 @@ export function useSaveContacts() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     mutateAsync: async (contacts: Contact[]) => {
@@ -141,10 +148,12 @@ export function useCreateContact() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     mutateAsync: async (contact: Contact) => {
@@ -185,10 +194,12 @@ export function useUpdateContact() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     mutateAsync: async (contact: Contact) => {
@@ -220,10 +231,12 @@ export function useDeleteContact() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     mutateAsync: async (id: string) => {
@@ -245,10 +258,12 @@ export function useDeleteAllContacts() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     mutateAsync: async () => {
@@ -271,10 +286,12 @@ export function useExportContacts() {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email);
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error);
+      });
     }
-  }, [session?.user?.email]);
+  }, [session?.user?.email, session?.user?.id]);
   
   return {
     exportToCSV: async (contacts?: Contact[]) => {

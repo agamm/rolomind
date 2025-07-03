@@ -43,6 +43,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dexie": "^4.0.11",
+    "dexie-encrypted": "^2.0.0",
     "dexie-react-hooks": "^1.1.7",
     "drizzle-orm": "^0.44.2",
     "lucide-react": "^0.511.0",
@@ -55,6 +56,7 @@
     "sonner": "^2.0.3",
     "tailwind-merge": "^3.3.0",
     "tokenx": "^1.0.1",
+    "tweetnacl": "^1.0.3",
     "uuid": "^11.1.0",
     "zod": "^3.25.56"
   },

@@ -59,10 +59,12 @@ export function useEnhancedImport(onComplete?: () => void) {
   
   // Initialize user database when session changes
   useEffect(() => {
-    if (session?.user?.email) {
-      initializeUserDatabase(session.user.email)
+    if (session?.user?.email && session?.user?.id) {
+      initializeUserDatabase(session.user.email, session.user.id).catch(error => {
+        console.error('Failed to initialize user database:', error)
+      })
     }
-  }, [session?.user?.email])
+  }, [session?.user?.email, session?.user?.id])
   
   // Import mutation
   const importMutation = useMutation({
