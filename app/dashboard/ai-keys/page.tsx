@@ -125,7 +125,7 @@ export default function AIKeysPage() {
             <CardDescription>
               Used for AI-powered contact search, merging, and processing features.
               <Link 
-                href="https://openrouter.ai/" 
+                href="https://openrouter.ai/settings/keys" 
                 target="_blank" 
                 className="inline-flex items-center gap-1 ml-2 text-primary hover:underline"
               >
@@ -181,9 +181,8 @@ export default function AIKeysPage() {
               {!instructionsCollapsed.openrouter && (
                 <div className="ml-4 mt-2 space-y-2">
                   <ol className="list-decimal list-inside space-y-1">
-                    <li>Visit <Link href="https://openrouter.ai/" target="_blank" className="text-primary hover:underline">openrouter.ai</Link></li>
+                    <li>Visit <Link href="https://openrouter.ai/settings/keys" target="_blank" className="text-primary hover:underline">OpenRouter API Keys</Link></li>
                     <li>Sign up or log in to your account</li>
-                    <li>Navigate to the &quot;API Keys&quot; section</li>
                     <li>Create a new API key</li>
                     <li>Copy and paste it above</li>
                   </ol>
