@@ -37,7 +37,8 @@ export async function parse(csvContent: string): Promise<Contact[]> {
   console.log('Custom parser - valid rows:', validRows.length)
 
   if (validRows.length === 0) {
-    throw new Error('No valid data rows found in CSV file')
+    console.warn('No valid data rows found in CSV file')
+    return []
   }
 
   // Use AI to normalize the data

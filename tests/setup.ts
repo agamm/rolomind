@@ -5,7 +5,11 @@ vi.mock('@/lib/env', () => ({
   env: {
     DATABASE_URL: 'file:./test.db',
     DATABASE_AUTH_TOKEN: undefined,
-    OPENROUTER_API_KEY: 'test-api-key'
+    BETTER_AUTH_URL: 'http://localhost:3000',
+    BETTER_AUTH_SECRET: '12345678901234567890123456789012',
+    POLAR_ACCESS_TOKEN: 'test-polar-token',
+    POLAR_SERVER: 'sandbox' as const,
+    POLAR_PRODUCT_ID: 'test-product-id-12345'
   }
 }))
 

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2, ExternalLink } from "lucide-react";
 import { authClient } from "@/lib/auth/auth-client";
+import { env } from "@/lib/env";
 
 interface BillingActionsProps {
   variant?: "default" | "outline";
@@ -33,7 +34,7 @@ export function BillingActions({ variant = "default", hasSubscription = true }: 
     try {
       setCheckoutLoading(true);
       const response = await authClient.checkout({
-        products: ["3edbd9f4-735b-49d6-96aa-1fbe47a39908"]
+        products: [env.POLAR_PRODUCT_ID]
       });
       if (response.data?.url) {
         window.location.href = response.data.url;

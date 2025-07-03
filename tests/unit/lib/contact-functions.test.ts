@@ -3,7 +3,7 @@ import {
   findMinimalContacts,
   findContactsWithoutNotes,
   getContactDataScore
-} from '../config';
+} from '@/lib/config';
 import { Contact } from '@/types/contact';
 
 // Helper to create a test contact

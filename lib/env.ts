@@ -9,6 +9,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: z.string().min(32),
     POLAR_ACCESS_TOKEN: z.string().min(1),
     POLAR_SERVER: z.enum(['sandbox', 'production']).default('sandbox'),
+    POLAR_PRODUCT_ID: z.string().min(1),
   },
   client: {
     // Add client-side env vars here if needed
@@ -20,6 +21,7 @@ export const env = createEnv({
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     POLAR_ACCESS_TOKEN: process.env.POLAR_ACCESS_TOKEN,
     POLAR_SERVER: process.env.POLAR_SERVER,
+    POLAR_PRODUCT_ID: process.env.POLAR_PRODUCT_ID,
   },
   emptyStringAsUndefined: true,
 });

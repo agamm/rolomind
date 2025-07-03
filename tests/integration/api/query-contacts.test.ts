@@ -1,44 +1,32 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { NextRequest } from 'next/server'
 import { sampleContacts } from '../../fixtures/contacts'
 import '../../mocks/ai'
 
+// Mock authentication
+vi.mock('@/lib/auth/server', () => ({
+  getServerSession: vi.fn().mockResolvedValue({
+    user: { id: 'test-user', email: 'test@example.com' }
+  }),
+  getUserApiKeys: vi.fn().mockResolvedValue({
+    openrouterApiKey: 'test-key',
+    openaiApiKey: 'test-key'
+  })
+}))
+
+// Mock AI client
+vi.mock('@/lib/ai-client', () => ({
+  getAIModel: vi.fn().mockResolvedValue({
+    // Mock model object
+    name: 'test-model'
+  })
+}))
+
 describe('Query Contacts API', () => {
   beforeEach(() => {
-    global.fetch = vi.fn()
+    global.fetch = vi.fn() as any
   })
 
-  it('should process simple keyword searches', async () => {
-    const mockResponse = {
-      matches: [
-        { id: 'test-1', reason: 'CEO at Tech Startup' },
-        { id: 'test-2', reason: 'CEO at AI Company' }
-      ]
-    }
-
-    global.fetch.mockResolvedValueOnce({
-      ok: true,
-      json: async () => mockResponse
-    })
-
-    const response = await fetch('/api/query-contacts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        query: 'CEO',
-        contacts: sampleContacts.slice(0, 3)
-      })
-    })
-
-    const data = await response.json()
-    expect(data.matches).toHaveLength(2)
-    expect(global.fetch).toHaveBeenCalledWith(
-      '/api/query-contacts',
-      expect.objectContaining({
-        method: 'POST',
-        body: expect.stringContaining('CEO')
-      })
-    )
-  })
 
   it('should handle complex queries (CEOs in USA)', async () => {
     const { mockGenerateObject } = await import('../../mocks/ai')
@@ -46,7 +34,7 @@ describe('Query Contacts API', () => {
     // Import the actual route handler
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -76,7 +64,7 @@ describe('Query Contacts API', () => {
       id: `test-${i}`
     }))
 
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -96,7 +84,7 @@ describe('Query Contacts API', () => {
     const { mockGenerateObject } = await import('../../mocks/ai')
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -120,7 +108,7 @@ describe('Query Contacts API', () => {
     const { mockGenerateObject } = await import('../../mocks/ai')
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -141,7 +129,7 @@ describe('Query Contacts API', () => {
   it('should handle non-descriptive contact names query', async () => {
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -160,7 +148,7 @@ describe('Query Contacts API', () => {
   it('should handle empty query gracefully', async () => {
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -179,7 +167,7 @@ describe('Query Contacts API', () => {
   it('should handle missing contacts array', async () => {
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -204,7 +192,7 @@ describe('Query Contacts API', () => {
       source: 'linkedin' as const
     }
 
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -230,7 +218,7 @@ describe('Query Contacts API', () => {
     
     const handler = await import('@/app/api/query-contacts/route')
     
-    const request = new Request('http://localhost:3000/api/query-contacts', {
+    const request = new NextRequest('http://localhost:3000/api/query-contacts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

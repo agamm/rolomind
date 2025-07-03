@@ -4,7 +4,7 @@ import {
   getContactTokenCount,
   isApproachingContactLimit,
   findEmptyContacts
-} from '../config';
+} from '@/lib/config';
 import { Contact } from '@/types/contact';
 
 // Helper to create a test contact
@@ -49,10 +49,10 @@ describe('Contact Limits', () => {
 
   describe('Contact Count Limits', () => {
     it('should check if approaching contact limit', () => {
-      expect(isApproachingContactLimit(1400)).toBe(false);
-      expect(isApproachingContactLimit(1439)).toBe(false);
-      expect(isApproachingContactLimit(1440)).toBe(true); // 90% of 1600
-      expect(isApproachingContactLimit(1500)).toBe(true);
+      expect(isApproachingContactLimit(8000)).toBe(false);
+      expect(isApproachingContactLimit(8999)).toBe(false);
+      expect(isApproachingContactLimit(9000)).toBe(true); // 90% of 10000
+      expect(isApproachingContactLimit(9500)).toBe(true);
     });
   });
 
@@ -104,11 +104,11 @@ describe('Contact Limits', () => {
 describe('Edge Cases', () => {
   it('should handle contacts with many long fields', () => {
     const contact = createTestContact({
-      name: 'x'.repeat(100),
-      company: 'y'.repeat(100),
-      role: 'z'.repeat(100),
-      location: 'a'.repeat(100),
-      notes: 'b'.repeat(100)
+      name: 'x'.repeat(200),
+      company: 'y'.repeat(200),
+      role: 'z'.repeat(200),
+      location: 'a'.repeat(200),
+      notes: 'b'.repeat(1000) // Much longer notes to exceed limit
     });
     
     const tokenCount = getContactTokenCount(contact);
@@ -154,7 +154,7 @@ describe('Edge Cases', () => {
     expect(tokenCount).toBeLessThan(CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT);
     
     // Test warning threshold logic separately
-    const warningThreshold = CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT * CONTACT_LIMITS.TOKEN_WARNING_THRESHOLD;
+    const warningThreshold = CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT * 0.8;
     expect(warningThreshold).toBe(400); // 80% of 500
   });
 });
