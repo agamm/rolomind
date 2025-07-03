@@ -9,7 +9,6 @@ import { usePolarProduct } from "@/hooks/use-polar-product";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/auth-client";
-import { env } from "@/lib/env";
 import { useEffect } from "react";
 
 export default function DebugPage() {
@@ -18,8 +17,6 @@ export default function DebugPage() {
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
   const { productData, loading, error } = usePolarProduct();
 
-  // Product ID from client-side environment variable
-  const configuredProductId = env.NEXT_PUBLIC_POLAR_PRODUCT_ID || null;
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {

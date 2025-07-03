@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "@/lib/auth/auth-client";
+import { usePolarProduct } from "@/hooks/use-polar-product";
 import { DemoImport, DemoSearch, DemoResults, DemoVoiceEdit, DemoProvider, DemoWrapper } from "@/components/landing";
 import { Header } from "@/components/layout/header";
 import { 
@@ -16,7 +17,6 @@ import {
   Globe,
   CheckCircle,
   ArrowRight,
-  Play,
   FileText,
   HeadphonesIcon,
   Server,
@@ -29,6 +29,7 @@ import {
 
 export default function LandingPage() {
   const { data: session } = useSession();
+  const { productData } = usePolarProduct();
   const [expandedFaq, setExpandedFaq] = React.useState<number | null>(null);
 
   const toggleFaq = (index: number) => {
@@ -45,12 +46,12 @@ export default function LandingPage() {
       answer: "Create a sustainable project that self-runs, is privacy-first, helpful, and focused on helping everyone manage their contacts in an AI-enabled way. No venture capital, no growth hacking—just a useful tool that respects your data and actually works."
     },
     {
-      question: "Why usage-based pricing?",
-      answer: "I don't want to charge for usage that isn't used. I'm not trying to be VC-backed—I just want to make sure the AI tokens are paid for and I can host Rolomind without going bankrupt. You pay for what you use, nothing more. It's that simple."
+      question: "Why bring your own keys?",
+      answer: "You get the best pricing directly from AI providers (OpenAI, Anthropic, etc.) without any markup. Plus, you maintain complete control over your AI usage and costs. We focus on the platform, you control the AI."
     },
     {
       question: "Explain the pricing",
-      answer: "We charge a $5/month platform fee that gives you up to 10 free queries, then we charge per query depending on the amount of contacts you have. The more contacts in your search results, the more AI tokens we use, so the cost scales accordingly. This ensures you only pay for the actual AI processing you use."
+      answer: `Just bring your own AI keys (OpenAI, Claude, etc.) and pay ${productData?.price === 0 ? 'nothing' : `$${(productData?.price || 500) / 100}/month`} for hosting. No hidden fees, no profit on AI usage - your keys, your costs, our platform.`
     },
     {
       question: "Can't OpenAI, Gemini, or Claude do the same?",
@@ -107,17 +108,18 @@ export default function LandingPage() {
             Keep everything private and organized in one place.
           </p>
 
-          {/* Mock Video - Moved Up */}
-          <div className="relative max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-8">
-            <div className="aspect-video flex items-center justify-center backdrop-blur-sm">
-              <div className="text-center">
-                <div className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center mx-auto mb-3 shadow-lg">
-                  <Play className="h-8 w-8 text-primary ml-1" />
-                </div>
-                <p className="text-base font-medium">See Rolomind in Action</p>
-                <p className="text-sm text-muted-foreground">2 minute demo</p>
-              </div>
+          {/* Interactive Demo */}
+          <div className="relative max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-8 p-8">
+            <div className="text-center mb-6">
+              <h3 className="text-xl font-semibold mb-2">Try AI Search Live</h3>
+              <p className="text-muted-foreground">Search contacts with natural language</p>
             </div>
+            <DemoProvider>
+              <div className="space-y-6">
+                <DemoSearch />
+                <DemoResults />
+              </div>
+            </DemoProvider>
           </div>
           
           {/* CTA Buttons */}
@@ -488,12 +490,26 @@ export default function LandingPage() {
                 
                 <h3 className="text-xl md:text-2xl font-bold mb-4">Hosted on Rolomind.com</h3>
                 <div className="mb-6 md:mb-8">
-                  <p className="text-3xl md:text-4xl font-bold mb-2">$0.02</p>
-                  <p className="text-muted-foreground">per AI search</p>
-                  <p className="text-sm text-muted-foreground mt-2">+ $5/month platform fee</p>
+                  {productData?.price === 0 ? (
+                    <>
+                      <p className="text-3xl md:text-4xl font-bold mb-2 text-green-600">Free</p>
+                      <p className="text-muted-foreground">per month</p>
+                      <p className="text-sm text-muted-foreground mt-2">+ your own AI keys</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-3xl md:text-4xl font-bold mb-2">${(productData?.price || 500) / 100}</p>
+                      <p className="text-muted-foreground">per month</p>
+                      <p className="text-sm text-muted-foreground mt-2">+ your own AI keys</p>
+                    </>
+                  )}
                 </div>
                 
                 <ul className="text-left space-y-3 mb-6 md:mb-8">
+                  <li className="flex items-center gap-2">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm md:text-base">Bring your own AI keys</span>
+                  </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm md:text-base">No setup required</span>
@@ -501,10 +517,6 @@ export default function LandingPage() {
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
                     <span className="text-sm md:text-base">Automatic updates</span>
-                  </li>
-                  <li className="flex items-center gap-2">
-                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
-                    <span className="text-sm md:text-base">Priority support</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
@@ -518,20 +530,20 @@ export default function LandingPage() {
                   </Link>
                 </Button>
                 <p className="text-sm text-muted-foreground mt-3">
-                  First 100 searches included
+                  Just bring your own AI keys
                 </p>
               </div>
             </div>
 
             <div className="mt-8 md:mt-12 p-6 bg-muted/50 rounded-xl max-w-2xl mx-auto">
-              <h4 className="font-semibold mb-2">Why this pricing?</h4>
+              <h4 className="font-semibold mb-2">Why bring your own keys?</h4>
               <p className="text-sm text-muted-foreground">
-                We only charge for AI-powered searches. Browsing, filtering, and managing 
-                your contacts is always free. The $0.02 covers our AI costs plus a small 
-                margin. The $5/month keeps our servers running and support available.
+                You get direct pricing from AI providers without markup. We only charge for hosting the platform, 
+                not for AI usage. This means you get the best rates and complete control over your AI costs.
               </p>
               <p className="text-sm text-muted-foreground mt-3">
-                Hopefully it could help me pay for tacos here and there—I&apos;ve been freelancing 
+                {productData?.price === 0 ? 'Currently free hosting!' : `The $${(productData?.price || 500) / 100}/month covers servers and support.`} 
+                Hopefully it helps me pay for tacos here and there—I&apos;ve been freelancing 
                 for the past 3 years, so using Rolomind is also a real help. 🌮
               </p>
             </div>

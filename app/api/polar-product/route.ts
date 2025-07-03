@@ -42,9 +42,12 @@ export async function GET() {
         id: env.POLAR_PRODUCT_ID,
       });
 
-      // Get the first price amount
+      // Get the first price amount - handle different price types
       const firstPrice = productResponse?.prices?.[0];
-      const price = firstPrice?.priceAmount || 0;
+      let price = 0;
+      if (firstPrice && 'priceAmount' in firstPrice) {
+        price = firstPrice.priceAmount;
+      }
 
       return NextResponse.json({
         id: productResponse.id,
