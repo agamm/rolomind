@@ -115,10 +115,12 @@ export default function LandingPage() {
               <p className="text-muted-foreground">Search contacts with natural language</p>
             </div>
             <DemoProvider>
-              <div className="space-y-6">
-                <DemoSearch />
-                <DemoResults />
-              </div>
+              <DemoWrapper title="" demoId="search" autoStart>
+                <div className="space-y-6">
+                  <DemoSearch />
+                  <DemoResults />
+                </div>
+              </DemoWrapper>
             </DemoProvider>
           </div>
           

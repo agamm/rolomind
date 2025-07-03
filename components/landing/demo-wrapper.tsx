@@ -9,11 +9,19 @@ interface DemoWrapperProps {
   children: React.ReactNode;
   title?: string;
   demoId: string;
+  autoStart?: boolean;
 }
 
-export function DemoWrapper({ children, demoId }: DemoWrapperProps) {
+export function DemoWrapper({ children, demoId, autoStart = false }: DemoWrapperProps) {
   const { activeDemo, setActiveDemo } = useDemo();
   const isPlaying = activeDemo === demoId;
+
+  React.useEffect(() => {
+    // Auto-start if specified
+    if (autoStart && activeDemo === null) {
+      setActiveDemo(demoId);
+    }
+  }, [autoStart, demoId, setActiveDemo, activeDemo]);
 
   React.useEffect(() => {
     // Reset when activeDemo changes to something else
