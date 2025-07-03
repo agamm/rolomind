@@ -19,8 +19,12 @@ const polarClient = env.POLAR_ACCESS_TOKEN ? new Polar({
 // Create plugins array conditionally
 const plugins = [];
 
-// Add polar plugin only if client is available and product ID is set
-if (polarClient && env.POLAR_PRODUCT_ID) {
+// Add polar plugin only if client is available
+if (polarClient) {
+  if (!env.POLAR_PRODUCT_ID) {
+    throw new Error("POLAR_PRODUCT_ID environment variable is required when POLAR_ACCESS_TOKEN is set");
+  }
+  
   plugins.push(
     polar({
       client: polarClient,

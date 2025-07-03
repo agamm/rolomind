@@ -9,18 +9,20 @@ import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/auth-client";
-import { PolarDebugResponse } from "@/types/polar";
+import { PolarDebugResponse, PolarProduct } from "@/types/polar";
+import { env } from "@/lib/env";
 
 export default function DebugPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
   const [debugData, setDebugData] = useState<PolarDebugResponse | null>(null);
+  const [productData, setProductData] = useState<PolarProduct | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Product ID from environment variable
-  const [configuredProductId, setConfiguredProductId] = useState<string | null>(null);
+  // Product ID from client-side environment variable
+  const configuredProductId = env.NEXT_PUBLIC_POLAR_PRODUCT_ID || null;
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
@@ -28,36 +30,44 @@ export default function DebugPage() {
     }
   }, [authLoading, isAuthenticated, router]);
 
-  const fetchDebugData = async () => {
-    setLoading(true);
-    setError(null);
-    
-    try {
-      // Fetch debug data
-      const response = await fetch("/api/debug/polar-products");
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data: PolarDebugResponse = await response.json();
-      setDebugData(data);
-      // Get the configured product ID from the response
-      if (data.configuredProductId) {
-        setConfiguredProductId(data.configuredProductId);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch debug data");
-      console.error("Error fetching debug data:", err);
-    } finally {
-      setLoading(false);
-    }
+  // Note: Polar client doesn't expose products.get() on client-side
+  // Available methods are: checkout(), customer.portal(), customer.benefits.list(), etc.
+  const fetchProductData = async () => {
+    // Product data is fetched via server-side API, not client-side
+    // The auth client only provides specific methods like checkout and portal
+    console.log("Available auth client methods: checkout(), customer.portal()");
   };
 
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchDebugData();
-    }
+    if (!isAuthenticated) return;
+    
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const [debugRes, productRes] = await Promise.all([
+          fetch("/api/debug/polar-products"),
+          fetch("/api/polar-product")
+        ]);
+        
+        if (debugRes.ok) {
+          const data: PolarDebugResponse = await debugRes.json();
+          setDebugData(data);
+        }
+        
+        if (productRes.ok) {
+          const data = await productRes.json();
+          setProductData(data.product);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to fetch debug data");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
   }, [isAuthenticated]);
 
   // Protect debug page in production
@@ -122,6 +132,79 @@ export default function DebugPage() {
             </CardContent>
           </Card>
 
+          {/* Product Data from POLAR_PRODUCT_ID */}
+          {productData && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Configured Product Data (from POLAR_PRODUCT_ID)</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-sm font-medium mb-1">Product Name:</p>
+                    <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                      {productData.name}
+                    </code>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium mb-1">Product ID:</p>
+                    <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                      {productData.id}
+                    </code>
+                  </div>
+                  {productData.description && (
+                    <div>
+                      <p className="text-sm font-medium mb-1">Description:</p>
+                      <p className="text-sm text-muted-foreground">{productData.description}</p>
+                    </div>
+                  )}
+                  {productData.prices && productData.prices.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-1">Price:</p>
+                      <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                        {productData.prices[0].priceAmount === 0 ? "Free" : `$${(productData.prices[0].priceAmount / 100).toFixed(2)}`}/{productData.prices[0].recurringInterval}
+                      </code>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Available Auth Client Methods */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Auth Client Methods (Polar Integration)</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-sm font-medium mb-1">Product ID (from NEXT_PUBLIC_POLAR_PRODUCT_ID):</p>
+                  <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
+                    {configuredProductId || "Not set"}
+                  </code>
+                </div>
+                <div>
+                  <p className="text-sm font-medium mb-2">Available Client-side Methods:</p>
+                  <div className="bg-muted/50 p-4 rounded text-xs space-y-1">
+                    <div>• <code>authClient.checkout()</code> - Create checkout sessions</div>
+                    <div>• <code>authClient.customer.portal()</code> - Access customer portal</div>
+                    <div>• <code>authClient.customer.benefits.list()</code> - List customer benefits</div>
+                    <div>• <code>authClient.customer.orders.list()</code> - List customer orders</div>
+                    <div>• <code>authClient.customer.subscriptions.list()</code> - List subscriptions</div>
+                    <div>• <code>authClient.usage.ingest()</code> - Track usage events</div>
+                  </div>
+                </div>
+                <div className="bg-amber-50 dark:bg-amber-950 p-3 rounded">
+                  <p className="text-amber-800 dark:text-amber-200 text-sm">
+                    <strong>Note:</strong> The Polar client does NOT expose <code>products.get()</code> on the client-side. 
+                    Product data must be fetched via server-side APIs using the Polar SDK.
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Better Auth Config */}
           <Card>
             <CardHeader>
@@ -151,12 +234,12 @@ export default function DebugPage() {
             </CardContent>
           </Card>
 
-          {/* Polar Products */}
+          {/* Debug Info (All Products) */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Polar Products Data</CardTitle>
+              <CardTitle>Debug Info</CardTitle>
               <Button
-                onClick={fetchDebugData}
+                onClick={() => window.location.reload()}
                 disabled={loading}
                 size="sm"
                 variant="outline"
@@ -197,24 +280,14 @@ export default function DebugPage() {
                     </div>
                   )}
                   
-                  {debugData?.products && debugData.products.length > 0 && configuredProductId && (
-                    <div className="bg-muted/50 p-3 rounded">
-                      <p className="text-sm font-medium mb-2">Product ID Match Status:</p>
-                      {debugData.products.some((p) => p.id === configuredProductId) ? (
-                        <p className="text-green-600 dark:text-green-400 text-sm">
-                          ✓ Configured product ID found in Polar products
-                        </p>
-                      ) : (
-                        <p className="text-red-600 dark:text-red-400 text-sm">
-                          ✗ Configured product ID not found in Polar products
-                        </p>
-                      )}
+                  <div className="bg-muted/50 p-3 rounded">
+                    <p className="text-sm font-medium mb-2">Configuration Status:</p>
+                    <div className="text-sm space-y-1">
+                      <div>Server: <code className="bg-muted px-1 rounded">{debugData.polarServer}</code></div>
+                      <div>Configured Product ID: <code className="bg-muted px-1 rounded">{debugData.configuredProductId || "Not set"}</code></div>
+                      <div>Total Products: {debugData.totalProducts}</div>
                     </div>
-                  )}
-                  
-                  <pre className="bg-muted/50 p-4 rounded overflow-x-auto text-xs">
-                    {JSON.stringify(debugData, null, 2)}
-                  </pre>
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -242,22 +315,17 @@ export default function DebugPage() {
                   size="sm"
                   onClick={async () => {
                     try {
-                      // Try to access portal method if available
-                      const authClientWithPortal = authClient as { portal?: () => Promise<{ data?: { url?: string } }> };
-                      if (authClientWithPortal.portal) {
-                        const response = await authClientWithPortal.portal();
-                        if (response.data?.url) {
-                          window.location.href = response.data.url;
-                        }
-                      } else {
-                        console.log("Portal not available - check Polar configuration");
+                      // Use the correct method from our billing actions
+                      const response = await authClient.customer.portal();
+                      if (response.data?.url) {
+                        window.location.href = response.data.url;
                       }
                     } catch (err) {
                       console.error("Error opening portal:", err);
                     }
                   }}
                 >
-                  Open Billing Portal
+                  Open Customer Portal
                 </Button>
               </div>
             </CardContent>

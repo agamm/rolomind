@@ -10,7 +10,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useIsAuthenticated } from "@/hooks/use-is-authenticated";
 import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
 import Link from "next/link";
-import { PolarProduct, PolarDebugResponse } from "@/types/polar";
+import { PolarProduct } from "@/types/polar";
 
 export default function SubscribePage() {
   const router = useRouter();
@@ -34,19 +34,24 @@ export default function SubscribePage() {
     }
   }, [authLoading, paymentLoading, isAuthenticated, isPayingCustomer, router]);
 
-  // Fetch product data from Polar
+  // Fetch product data from server-side API
   const fetchProductData = async () => {
     try {
       setProductLoading(true);
-      const response = await fetch("/api/debug/polar-products");
+      
+      // Fetch product data from our dedicated polar-product API
+      const response = await fetch("/api/polar-product");
       if (response.ok) {
-        const data: PolarDebugResponse = await response.json();
-        if (data.specificProduct) {
-          setProductData(data.specificProduct);
+        const data = await response.json();
+        if (data.product) {
+          setProductData(data.product);
         }
+      } else {
+        setError("Unable to load product information. Please try again later.");
       }
     } catch (err) {
       console.error("Error fetching product data:", err);
+      setError("Failed to load subscription details. Please contact support.");
     } finally {
       setProductLoading(false);
     }
@@ -106,7 +111,19 @@ export default function SubscribePage() {
         {error && (
           <Card className="mb-6 border-destructive">
             <CardContent className="pt-6">
-              <p className="text-destructive text-center">{error}</p>
+              <p className="text-destructive text-center">
+                {error.includes("help@rolomind.com") ? (
+                  <>
+                    {error.split("help@rolomind.com")[0]}
+                    <a href="mailto:help@rolomind.com" className="underline hover:no-underline">
+                      help@rolomind.com
+                    </a>
+                    {error.split("help@rolomind.com")[1]}
+                  </>
+                ) : (
+                  error
+                )}
+              </p>
             </CardContent>
           </Card>
         )}
@@ -120,12 +137,23 @@ export default function SubscribePage() {
               <div className="text-right">
                 {productData?.prices?.[0] ? (
                   <>
-                    <p className="text-3xl font-bold">
-                      ${(productData.prices[0].priceAmount / 100).toFixed(2)}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      /{productData.prices[0].recurringInterval || productData.recurringInterval || "month"}
-                    </p>
+                    {productData.prices[0].priceAmount === 0 ? (
+                      <>
+                        <p className="text-3xl font-bold text-green-600">Free</p>
+                        <p className="text-sm text-muted-foreground">
+                          /{productData.prices[0].recurringInterval || productData.recurringInterval || "month"}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-3xl font-bold">
+                          ${(productData.prices[0].priceAmount / 100).toFixed(2)}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          /{productData.prices[0].recurringInterval || productData.recurringInterval || "month"}
+                        </p>
+                      </>
+                    )}
                   </>
                 ) : (
                   <>
@@ -195,7 +223,7 @@ export default function SubscribePage() {
             </Button>
 
             <p className="text-xs text-center text-muted-foreground">
-              Cancel anytime. No hidden fees.
+              Cancel anytime. No hidden fees. Pricing may change in the future.
             </p>
           </CardContent>
         </Card>

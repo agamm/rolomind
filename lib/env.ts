@@ -13,7 +13,7 @@ export const env = createEnv({
     RESEND_API_KEY: z.string().min(1),
   },
   client: {
-    // Add client-side env vars here if needed
+    NEXT_PUBLIC_POLAR_PRODUCT_ID: z.string().min(1).optional(),
   },
   runtimeEnv: {
     DATABASE_URL: process.env.DATABASE_URL,
@@ -24,6 +24,7 @@ export const env = createEnv({
     POLAR_SERVER: process.env.POLAR_SERVER,
     POLAR_PRODUCT_ID: process.env.POLAR_PRODUCT_ID,
     RESEND_API_KEY: process.env.RESEND_API_KEY,
+    NEXT_PUBLIC_POLAR_PRODUCT_ID: process.env.NEXT_PUBLIC_POLAR_PRODUCT_ID,
   },
   emptyStringAsUndefined: true,
   skipValidation: process.env.NODE_ENV === 'production' && process.env.VERCEL_ENV === 'preview',
