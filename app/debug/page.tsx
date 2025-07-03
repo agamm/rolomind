@@ -9,12 +9,13 @@ import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authClient } from "@/lib/auth/auth-client";
+import { PolarDebugResponse } from "@/types/polar";
 
 export default function DebugPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
-  const [debugData, setDebugData] = useState<any>(null);
+  const [debugData, setDebugData] = useState<PolarDebugResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,7 +40,7 @@ export default function DebugPage() {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data: PolarDebugResponse = await response.json();
       setDebugData(data);
       // Get the configured product ID from the response
       if (data.configuredProductId) {
@@ -58,6 +59,27 @@ export default function DebugPage() {
       fetchDebugData();
     }
   }, [isAuthenticated]);
+
+  // Protect debug page in production
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-6">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Access Denied</CardTitle>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-muted-foreground mb-4">
+              Debug pages are not available in production.
+            </p>
+            <Link href="/dashboard/app">
+              <Button>Go to Dashboard</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (authLoading) {
     return (
@@ -175,10 +197,10 @@ export default function DebugPage() {
                     </div>
                   )}
                   
-                  {debugData.products && debugData.products.length > 0 && configuredProductId && (
+                  {debugData?.products && debugData.products.length > 0 && configuredProductId && (
                     <div className="bg-muted/50 p-3 rounded">
                       <p className="text-sm font-medium mb-2">Product ID Match Status:</p>
-                      {debugData.products.some((p: any) => p.id === configuredProductId) ? (
+                      {debugData.products.some((p) => p.id === configuredProductId) ? (
                         <p className="text-green-600 dark:text-green-400 text-sm">
                           ✓ Configured product ID found in Polar products
                         </p>
@@ -220,9 +242,15 @@ export default function DebugPage() {
                   size="sm"
                   onClick={async () => {
                     try {
-                      const response = await authClient.portal();
-                      if (response.data?.url) {
-                        window.location.href = response.data.url;
+                      // Try to access portal method if available
+                      const authClientWithPortal = authClient as { portal?: () => Promise<{ data?: { url?: string } }> };
+                      if (authClientWithPortal.portal) {
+                        const response = await authClientWithPortal.portal();
+                        if (response.data?.url) {
+                          window.location.href = response.data.url;
+                        }
+                      } else {
+                        console.log("Portal not available - check Polar configuration");
                       }
                     } catch (err) {
                       console.error("Error opening portal:", err);

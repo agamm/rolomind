@@ -10,6 +10,7 @@ import { authClient } from "@/lib/auth/auth-client";
 import { useIsAuthenticated } from "@/hooks/use-is-authenticated";
 import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
 import Link from "next/link";
+import { PolarProduct, PolarDebugResponse } from "@/types/polar";
 
 export default function SubscribePage() {
   const router = useRouter();
@@ -17,7 +18,7 @@ export default function SubscribePage() {
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [productData, setProductData] = useState<any>(null);
+  const [productData, setProductData] = useState<PolarProduct | null>(null);
   const [productLoading, setProductLoading] = useState(true);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
@@ -39,7 +40,7 @@ export default function SubscribePage() {
       setProductLoading(true);
       const response = await fetch("/api/debug/polar-products");
       if (response.ok) {
-        const data = await response.json();
+        const data: PolarDebugResponse = await response.json();
         if (data.specificProduct) {
           setProductData(data.specificProduct);
         }
@@ -58,11 +59,16 @@ export default function SubscribePage() {
   }, [isAuthenticated]);
 
   const handleCheckout = async () => {
+    if (!productData?.id) {
+      setError("Product not available");
+      return;
+    }
+
     try {
       setCheckoutLoading(true);
       setError(null);
       const response = await authClient.checkout({
-        products: [productData?.id]
+        products: [productData.id]
       });
       if (response.data?.url) {
         window.location.href = response.data.url;
@@ -161,7 +167,7 @@ export default function SubscribePage() {
               <CollapsibleContent className="mt-2">
                 <div className="bg-muted/50 rounded-lg p-4">
                   <p className="text-sm text-muted-foreground">
-                    This is just a platform fee to access the cloud version. You bring your own AI keys (OpenAI, Claude, etc.) which is best for you since we don't take any fee or profit on AI usage.
+                    This is just a platform fee to access the cloud version. You bring your own AI keys (OpenAI, Claude, etc.) which is best for you since we don&apos;t take any fee or profit on AI usage.
                   </p>
                   <p className="text-sm text-muted-foreground mt-1">
                     Your AI costs go directly to the provider at their standard rates.

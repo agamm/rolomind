@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { Polar } from "@polar-sh/sdk";
 import { env } from "@/lib/env";
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
     // Check if user is authenticated
     const session = await auth.api.getSession({
@@ -36,6 +36,12 @@ export async function GET(request: Request) {
         organizationId: undefined, // Will use the default org from the access token
         limit: 100,
       });
+      
+      // Convert iterator to array
+      const products = [];
+      for await (const product of productsResponse) {
+        products.push(product);
+      }
 
       // Also try to fetch the specific product if we can
       let specificProduct = null;
@@ -55,7 +61,9 @@ export async function GET(request: Request) {
       let organization = null;
       try {
         const orgs = await polar.organizations.list({ limit: 1 });
-        organization = orgs.items?.[0] || null;
+        // Handle pagination properly - orgs might be an iterator
+        const orgsList = Array.isArray(orgs) ? orgs : [];
+        organization = orgsList[0] || null;
       } catch (err) {
         console.error("Error fetching organization:", err);
       }
@@ -64,19 +72,19 @@ export async function GET(request: Request) {
         success: true,
         configuredProductId,
         configuredProductIdSource: configuredProductId ? "POLAR_PRODUCT_ID env var" : "Not configured",
-        products: productsResponse.items || [],
+        products: products,
         specificProduct,
         organization,
-        totalProducts: productsResponse.items?.length || 0,
+        totalProducts: products.length,
         polarServer: env.POLAR_SERVER,
         timestamp: new Date().toISOString(),
       });
-    } catch (polarError: any) {
+    } catch (polarError: unknown) {
       console.error("Polar API error:", polarError);
       return NextResponse.json({
         error: "Polar API error",
-        message: polarError.message || "Failed to fetch products from Polar",
-        details: polarError.response?.data || polarError,
+        message: (polarError as Error).message || "Failed to fetch products from Polar",
+        details: (polarError as Record<string, unknown>)?.response || polarError,
         products: []
       }, { status: 200 }); // Return 200 to show error details in UI
     }

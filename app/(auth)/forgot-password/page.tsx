@@ -48,7 +48,7 @@ export default function ForgotPasswordPage() {
           <CardHeader className="space-y-1 pb-6">
             <CardTitle className="text-2xl font-semibold text-center">Check your email</CardTitle>
             <CardDescription className="text-center text-muted-foreground">
-              We've sent a password reset link to {email}
+              We&apos;ve sent a password reset link to {email}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -68,7 +68,7 @@ export default function ForgotPasswordPage() {
               Back to Sign In
             </Button>
             <p className="text-sm text-muted-foreground text-center">
-              Didn't receive the email?{" "}
+              Didn&apos;t receive the email?{" "}
               <button
                 onClick={() => {
                   setSuccess(false);
@@ -91,7 +91,7 @@ export default function ForgotPasswordPage() {
         <CardHeader className="space-y-1 pb-6">
           <CardTitle className="text-2xl font-semibold text-center">Forgot password?</CardTitle>
           <CardDescription className="text-center text-muted-foreground">
-            Enter your email address and we'll send you a reset link
+            Enter your email address and we&apos;ll send you a reset link
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>

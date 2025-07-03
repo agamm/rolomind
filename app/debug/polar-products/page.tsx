@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2, RefreshCw } from "lucide-react";
 import { useIsAuthenticated } from "@/hooks/use-is-authenticated";
 import { useRouter } from "next/navigation";
+import { PolarDebugResponse } from "@/types/polar";
 
 export default function PolarProductsDebugPage() {
   const router = useRouter();
   const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
-  const [productsData, setProductsData] = useState<any>(null);
+  const [productsData, setProductsData] = useState<PolarDebugResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -118,7 +119,7 @@ export default function PolarProductsDebugPage() {
               <div className="space-y-4">
                 <div className="bg-muted/50 p-3 rounded">
                   <p className="text-sm font-medium mb-2">Product ID Match Status:</p>
-                  {productsData.products?.some((p: any) => p.id === configuredProductId) ? (
+                  {productsData?.products?.some((p) => p.id === configuredProductId) ? (
                     <p className="text-green-600 dark:text-green-400 text-sm">
                       ✓ Configured product ID found in Polar products
                     </p>
