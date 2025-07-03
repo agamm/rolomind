@@ -12,20 +12,11 @@ export interface PolarPrice {
 }
 
 export interface PolarProduct {
-  createdAt: string;
-  modifiedAt: string;
   id: string;
   name: string;
   description: string;
+  price: number;
   recurringInterval: string;
-  isRecurring: boolean;
-  isArchived: boolean;
-  organizationId: string;
-  metadata: Record<string, unknown>;
-  prices: PolarPrice[];
-  benefits: unknown[];
-  medias: unknown[];
-  attachedCustomFields: unknown[];
 }
 
 export interface PolarDebugResponse {

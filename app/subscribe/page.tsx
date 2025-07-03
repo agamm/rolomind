@@ -9,17 +9,15 @@ import { Loader2, CheckCircle, Code2, ChevronDown } from "lucide-react";
 import { authClient } from "@/lib/auth/auth-client";
 import { useIsAuthenticated } from "@/hooks/use-is-authenticated";
 import { useIsPayingCustomer } from "@/hooks/use-is-paying-customer";
+import { usePolarProduct } from "@/hooks/use-polar-product";
 import Link from "next/link";
-import { PolarProduct } from "@/types/polar";
 
 export default function SubscribePage() {
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useIsAuthenticated();
+  const { isAuthenticated, isLoading: authLoading, user } = useIsAuthenticated();
   const { isPayingCustomer, isLoading: paymentLoading } = useIsPayingCustomer();
+  const { productData, loading: productLoading, error: productError } = usePolarProduct();
   const [checkoutLoading, setCheckoutLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [productData, setProductData] = useState<PolarProduct | null>(null);
-  const [productLoading, setProductLoading] = useState(true);
   const [isHowItWorksOpen, setIsHowItWorksOpen] = useState(false);
 
   useEffect(() => {
@@ -34,44 +32,12 @@ export default function SubscribePage() {
     }
   }, [authLoading, paymentLoading, isAuthenticated, isPayingCustomer, router]);
 
-  // Fetch product data from server-side API
-  const fetchProductData = async () => {
-    try {
-      setProductLoading(true);
-      
-      // Fetch product data from our dedicated polar-product API
-      const response = await fetch("/api/polar-product");
-      if (response.ok) {
-        const data = await response.json();
-        if (data.product) {
-          setProductData(data.product);
-        }
-      } else {
-        setError("Unable to load product information. Please try again later.");
-      }
-    } catch (err) {
-      console.error("Error fetching product data:", err);
-      setError("Failed to load subscription details. Please contact support.");
-    } finally {
-      setProductLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchProductData();
-    }
-  }, [isAuthenticated]);
 
   const handleCheckout = async () => {
-    if (!productData?.id) {
-      setError("Product not available");
-      return;
-    }
+    if (!productData?.id) return;
 
     try {
       setCheckoutLoading(true);
-      setError(null);
       const response = await authClient.checkout({
         products: [productData.id]
       });
@@ -80,7 +46,6 @@ export default function SubscribePage() {
       }
     } catch (error) {
       console.error("Error creating checkout:", error);
-      setError("Unable to create checkout. Please try again.");
     } finally {
       setCheckoutLoading(false);
     }
@@ -102,27 +67,22 @@ export default function SubscribePage() {
     <div className="min-h-screen bg-background">
       <div className="max-w-4xl mx-auto p-6">
         <div className="text-center mb-12">
+          {user?.name && (
+            <p className="text-lg text-muted-foreground mb-2">
+              Hi {user.name}! 👋
+            </p>
+          )}
           <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
           <p className="text-lg text-muted-foreground">
             Start finding the contacts you need with Rolomind Pro
           </p>
         </div>
 
-        {error && (
+        {productError && (
           <Card className="mb-6 border-destructive">
             <CardContent className="pt-6">
               <p className="text-destructive text-center">
-                {error.includes("help@rolomind.com") ? (
-                  <>
-                    {error.split("help@rolomind.com")[0]}
-                    <a href="mailto:help@rolomind.com" className="underline hover:no-underline">
-                      help@rolomind.com
-                    </a>
-                    {error.split("help@rolomind.com")[1]}
-                  </>
-                ) : (
-                  error
-                )}
+                {productError}
               </p>
             </CardContent>
           </Card>
@@ -135,22 +95,22 @@ export default function SubscribePage() {
                 {productData?.name || "Rolomind Pro"}
               </CardTitle>
               <div className="text-right">
-                {productData?.prices?.[0] ? (
+                {productData ? (
                   <>
-                    {productData.prices[0].priceAmount === 0 ? (
+                    {productData.price === 0 ? (
                       <>
                         <p className="text-3xl font-bold text-green-600">Free</p>
                         <p className="text-sm text-muted-foreground">
-                          /{productData.prices[0].recurringInterval || productData.recurringInterval || "month"}
+                          /{productData.recurringInterval || "month"}
                         </p>
                       </>
                     ) : (
                       <>
                         <p className="text-3xl font-bold">
-                          ${(productData.prices[0].priceAmount / 100).toFixed(2)}
+                          ${(productData.price / 100).toFixed(2)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          /{productData.prices[0].recurringInterval || productData.recurringInterval || "month"}
+                          /{productData.recurringInterval || "month"}
                         </p>
                       </>
                     )}
@@ -206,7 +166,7 @@ export default function SubscribePage() {
 
             <Button
               onClick={handleCheckout}
-              disabled={checkoutLoading || !productData?.id}
+              disabled={checkoutLoading || !productData?.id || !!productError}
               size="lg"
               className="w-full"
             >
@@ -215,7 +175,7 @@ export default function SubscribePage() {
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   Loading...
                 </>
-              ) : !productData?.id ? (
+              ) : productError || !productData?.id ? (
                 "Product Not Available"
               ) : (
                 "Subscribe Now"

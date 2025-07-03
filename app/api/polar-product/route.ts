@@ -42,24 +42,16 @@ export async function GET() {
         id: env.POLAR_PRODUCT_ID,
       });
 
-      // Extract the actual product from the response structure
-      let product = productResponse?.result || productResponse;
-
-      // Convert "free" pricing to 0 for system compatibility
-      if (product?.prices) {
-        product = {
-          ...product,
-          prices: product.prices.map((price) => ({
-            ...price,
-            priceAmount: price.amountType === "free" ? 0 : price.priceAmount
-          }))
-        };
-      }
+      // Get the first price amount
+      const firstPrice = productResponse?.prices?.[0];
+      const price = firstPrice?.priceAmount || 0;
 
       return NextResponse.json({
-        success: true,
-        product,
-        timestamp: new Date().toISOString(),
+        id: productResponse.id,
+        name: productResponse.name,
+        description: productResponse.description,
+        price,
+        recurringInterval: productResponse.recurringInterval,
       });
     } catch (polarError: unknown) {
       console.error("Polar API error:", polarError);
