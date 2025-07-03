@@ -1,13 +1,18 @@
 import Dexie, { type Table } from 'dexie';
-// @ts-ignore - dexie-encrypted types are not fully compatible
 import { applyEncryptionMiddleware } from 'dexie-encrypted';
 import type { Contact } from '@/types/contact';
+
+// Import the utf8 module for patching
+let utf8Module: { encode?: (str: string) => Uint8Array } | null;
+try {
+  utf8Module = require('@stablelib/utf8');
+} catch {
+  utf8Module = null;
+}
 
 // Patch the utf8 encoder used by dexie-encrypted to handle UTF-8 properly
 function patchUtf8Encoding() {
   try {
-    // Try to patch the @stablelib/utf8 encode function if it exists
-    const utf8Module = require('@stablelib/utf8');
     if (utf8Module && utf8Module.encode) {
       const originalEncode = utf8Module.encode;
       utf8Module.encode = function(str: string): Uint8Array {
@@ -18,14 +23,14 @@ function patchUtf8Encoding() {
           // Use TextEncoder for proper UTF-8 encoding including emojis
           const encoder = new TextEncoder();
           return encoder.encode(normalized);
-        } catch (error) {
+        } catch {
           console.warn('UTF-8 encoding fallback for string:', str);
           // Fallback to original function
           return originalEncode(str);
         }
       };
     }
-  } catch (error) {
+  } catch {
     console.log('Could not patch utf8 encoding, using fallback approach');
   }
 }
@@ -46,17 +51,16 @@ class ContactsDatabase extends Dexie {
     this.encryptionKey = deriveEncryptionKey(userId);
     
     // Apply encryption middleware with patched UTF-8 handling
-    // @ts-ignore - dexie-encrypted config types are not fully compatible with Dexie v4
     applyEncryptionMiddleware(
       this, 
       this.encryptionKey, 
       {
         contacts: {
-          // Encrypt sensitive fields while keeping indexable fields unencrypted
+          // Keep indexable fields unencrypted, encrypt everything else
           type: 'unencrypt',
           fields: ['id', 'source', 'createdAt', 'updatedAt']
         }
-      },
+      } as any,
       async () => {
         // onKeyChange callback
         console.warn('Encryption key changed - this should not happen');
