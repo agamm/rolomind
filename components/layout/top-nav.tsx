@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { LogOut, CreditCard, User, ChevronDown, Key } from "lucide-react"
+import { LogOut, CreditCard, User, ChevronDown, Key, Loader2 } from "lucide-react"
 
 interface TopNavProps {
   contactCount: number
@@ -27,7 +27,7 @@ export function TopNav({
   onFileSelect,
   isImporting,
 }: TopNavProps) {
-  const { data: session } = useSession();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
   
   return (
@@ -39,9 +39,16 @@ export function TopNav({
         <ImportButton
           onFileSelect={onFileSelect}
           isImporting={isImporting}
+          disabled={isPending || !session?.user?.email}
         />
         <ThemeToggle />
-        {session?.user && (
+        {isPending ? (
+          <Button variant="outline" className="h-9 px-3" disabled>
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+            <span className="hidden sm:inline">Loading...</span>
+            <span className="sm:hidden">...</span>
+          </Button>
+        ) : session?.user ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" className="h-9 px-3">
@@ -84,6 +91,12 @@ export function TopNav({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+        ) : (
+          <Button variant="outline" className="h-9 px-3" disabled>
+            <User className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Not signed in</span>
+            <span className="sm:hidden">---</span>
+          </Button>
         )}
       </div>
     </div>

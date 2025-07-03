@@ -6,6 +6,7 @@ import { ContactList } from "./list"
 import { AIQuery } from "./ai-query"
 import { useContacts } from "@/hooks/use-local-contacts"
 import { useEnhancedImport } from "@/hooks/use-enhanced-import"
+import { useSession } from "@/lib/auth/auth-client"
 import { Contact } from "@/types/contact"
 import { MergeConfirmationModal } from "@/components/import/merge-confirmation-modal"
 import { ImportProgressModal } from "@/components/import/import-progress-modal"
@@ -14,7 +15,8 @@ import { ImportPreviewDialog } from "@/components/import/import-preview-dialog"
 
 export function ContactManager() {
   const [searchQuery, setSearchQuery] = React.useState('')
-  const { data: contacts = [], isLoading, error } = useContacts(searchQuery)
+  const { isPending: sessionLoading } = useSession()
+  const { data: contacts = [], isLoading } = useContacts(searchQuery)
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)
   const [isProcessing, setIsProcessing] = React.useState(false)
@@ -41,12 +43,25 @@ export function ContactManager() {
     importFile(file)
   }
 
-  if (error) {
+
+  // Show loading state while session is loading
+  if (sessionLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600 mb-2">Error loading contacts</h1>
-          <p className="text-gray-600">{error instanceof Error ? error.message : "Unknown error"}</p>
+      <div className="min-h-screen bg-background">
+        <div className="max-w-7xl mx-auto p-6">
+          <div className="flex flex-col gap-6">
+            <TopNav
+              contactCount={0}
+              onFileSelect={handleFileSelect}
+              isImporting={false}
+              disabled={true}
+            />
+            <div className="text-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+              <div className="text-lg font-medium mb-2">Loading your account...</div>
+              <p className="text-gray-600">Please wait while we initialize your session</p>
+            </div>
+          </div>
         </div>
       </div>
     )

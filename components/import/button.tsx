@@ -45,6 +45,7 @@ export function ImportButton({
         onClick={handleClick}
         disabled={disabled || isImporting}
         className="h-9 px-3 cursor-pointer"
+        title={disabled && !isImporting ? "Please wait for your session to load" : undefined}
       >
         {isImporting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 mr-1.5" />}
         {isImporting ? "Importing..." : "Import CSV"}

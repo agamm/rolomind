@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
-import { getAllContacts, createContactsBatch, updateContact } from '@/db/indexdb/contacts'
+import { saveContacts, updateContact, getContactsCount } from '@/hooks/use-local-contacts'
+import { getCurrentUserDatabase } from '@/db/indexdb'
 import { CONTACT_LIMITS } from '@/lib/config'
 import { useSession } from '@/lib/auth/auth-client'
 import { initializeUserDatabase } from '@/db/indexdb'
@@ -48,7 +48,6 @@ export interface ImportProgress {
 }
 
 export function useEnhancedImport(onComplete?: () => void) {
-  const queryClient = useQueryClient()
   const { data: session } = useSession()
   const [duplicates, setDuplicates] = useState<DuplicateMatch[]>([])
   const [currentDuplicate, setCurrentDuplicate] = useState<DuplicateMatch | null>(null)
@@ -66,16 +65,14 @@ export function useEnhancedImport(onComplete?: () => void) {
     }
   }, [session?.user?.email, session?.user?.id])
   
-  // Import mutation
-  const importMutation = useMutation({
-    mutationFn: async (file: File): Promise<ImportResponse> => {
+  // Import function
+  const importFile = async (file: File): Promise<ImportResponse> => {
       if (!session?.user?.email) {
         throw new Error('User not authenticated')
       }
       
       // Check current contact count before starting
-      const existingContacts = await getAllContacts()
-      const currentCount = existingContacts.length
+      const currentCount = await getContactsCount()
       
       if (currentCount >= CONTACT_LIMITS.MAX_CONTACTS) {
         throw new Error(`Cannot import contacts. You have reached the maximum limit of ${CONTACT_LIMITS.MAX_CONTACTS.toLocaleString()} contacts. Please contact support at <a href="mailto:help@rolomind.com" class="underline">help@rolomind.com</a> for assistance.`)
@@ -224,8 +221,9 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         return processData
       }
-    },
-    onSuccess: async (data) => {
+  }
+
+  const handleImportSuccess = async (data: ImportResponse) => {
       // If we're in detection phase, don't process contacts yet
       if (data.phase === 'detection') {
         return
@@ -260,20 +258,20 @@ export function useEnhancedImport(onComplete?: () => void) {
 
       // No oversized contacts, proceed with duplicate check
       await checkDuplicatesAndSave(data.contacts)
-    },
-    onError: (error) => {
-      setImportProgress(prev => ({
-        ...prev,
-        status: 'error',
-        error: error instanceof Error ? error.message : 'Import failed'
-      }))
-      
-      // Show appropriate toast for contact limit errors
-      if (error instanceof Error && error.message.includes('maximum limit')) {
-        toast.error('Contact limit reached. Please delete some contacts before importing new ones.')
-      }
+  }
+
+  const handleImportError = (error: Error) => {
+    setImportProgress(prev => ({
+      ...prev,
+      status: 'error',
+      error: error.message || 'Import failed'
+    }))
+    
+    // Show appropriate toast for contact limit errors
+    if (error.message.includes('maximum limit')) {
+      toast.error('Contact limit reached. Please delete some contacts before importing new ones.')
     }
-  })
+  }
 
   const checkDuplicatesAndSave = async (contacts: Contact[]) => {
       // Show checking duplicates status
@@ -288,7 +286,8 @@ export function useEnhancedImport(onComplete?: () => void) {
       })
       
       // Get existing contacts from local database
-      const existingContacts = await getAllContacts()
+      const db = await getCurrentUserDatabase()
+      const existingContacts = await db.contacts.toArray()
       
       // Check if importing would exceed the contact limit
       const currentCount = existingContacts.length
@@ -352,16 +351,16 @@ export function useEnhancedImport(onComplete?: () => void) {
           setCurrentDuplicate(meaningfulDuplicates[0])
         } else {
           // No meaningful duplicates, save unique contacts
-          await saveContacts(uniqueContacts)
+          await saveContactsToDatabase(uniqueContacts)
         }
       } else {
         // No duplicates, save immediately
-        await saveContacts(uniqueContacts)
+        await saveContactsToDatabase(uniqueContacts)
       }
   }
   
-  // Save contacts to local database
-  const saveContacts = async (contacts: Contact[]) => {
+  // Save contacts to local database with import completion UI
+  const saveContactsToDatabase = async (contacts: Contact[], showSuccessToast: boolean = true) => {
     setImportProgress({
       status: 'saving',
       parserType: importProgress.parserType,
@@ -373,7 +372,7 @@ export function useEnhancedImport(onComplete?: () => void) {
     })
     
     try {
-      await createContactsBatch(contacts)
+      await saveContacts(contacts)
       
       setImportProgress({
         status: 'complete',
@@ -385,8 +384,14 @@ export function useEnhancedImport(onComplete?: () => void) {
         }
       })
       
-      queryClient.invalidateQueries({ queryKey: ['contacts'] })
-      toast.success(`Successfully imported ${contacts.length} contacts`)
+      if (showSuccessToast) {
+        toast.success(`Successfully imported ${contacts.length} contacts`)
+      }
+      
+      // Force refresh the contacts list
+      if (typeof window !== 'undefined' && (window as any).refreshContacts) {
+        (window as any).refreshContacts();
+      }
       
       // Reset after delay
       setTimeout(() => {
@@ -514,16 +519,15 @@ export function useEnhancedImport(onComplete?: () => void) {
           }
           
           toast.success(`Successfully merged ${allMergedContacts.length} contacts`)
-          queryClient.invalidateQueries({ queryKey: ['contacts'] })
         }
         
         // Clear duplicates and finish
         setDuplicates([])
         setCurrentDuplicate(null)
         
-        // Save any remaining unique contacts
+        // Save any remaining unique contacts (suppress toast, merge-all handles completion)
         if (resolvedContacts.length > 0) {
-          await saveContacts(resolvedContacts)
+          await saveContactsToDatabase(resolvedContacts, false)
         } else {
           setImportProgress({
             status: 'complete',
@@ -535,9 +539,15 @@ export function useEnhancedImport(onComplete?: () => void) {
             }
           })
           
+          toast.success('Import completed!')
+          
+          // Force refresh the contacts list
+          if (typeof window !== 'undefined' && (window as any).refreshContacts) {
+            (window as any).refreshContacts();
+          }
+          
           setTimeout(() => {
             setImportProgress({ status: 'idle' })
-            queryClient.invalidateQueries({ queryKey: ['contacts'] })
             onComplete?.()
           }, 2000)
         }
@@ -591,11 +601,10 @@ export function useEnhancedImport(onComplete?: () => void) {
         if (action === 'merge') {
           await updateContact(contactToSave)
         } else {
-          await createContactsBatch([contactToSave])
+          await saveContacts([contactToSave])
         }
         
-        // Refresh contacts list
-        queryClient.invalidateQueries({ queryKey: ['contacts'] })
+        // Database will auto-refresh via useLiveQuery
         
         // Show feedback
         if (action === 'merge') {
@@ -620,7 +629,7 @@ export function useEnhancedImport(onComplete?: () => void) {
       // All duplicates handled, now save any remaining unique contacts
       setCurrentDuplicate(null)
       if (resolvedContacts.length > 0) {
-        await saveContacts(resolvedContacts)
+        await saveContactsToDatabase(resolvedContacts)
       } else {
         // No more contacts to save, we're done
         setImportProgress({
@@ -635,9 +644,13 @@ export function useEnhancedImport(onComplete?: () => void) {
         
         toast.success('Import completed!')
         
+        // Force refresh the contacts list
+        if (typeof window !== 'undefined' && (window as any).refreshContacts) {
+          (window as any).refreshContacts();
+        }
+        
         setTimeout(() => {
           setImportProgress({ status: 'idle' })
-          queryClient.invalidateQueries({ queryKey: ['contacts'] })
           onComplete?.()
         }, 2000)
       }
@@ -645,7 +658,6 @@ export function useEnhancedImport(onComplete?: () => void) {
   }
   
   const resetImport = () => {
-    importMutation.reset()
     setImportProgress({ status: 'idle' })
     setDuplicates([])
     setCurrentDuplicate(null)
@@ -777,55 +789,23 @@ export function useEnhancedImport(onComplete?: () => void) {
       // Don't show toast - error is shown in modal
     }
   }
-  
-  const handleImportSuccess = async (data: ImportResponse) => {
-    if (!data.contacts || data.contacts.length === 0) {
-      // Show error in modal instead of toast
-      setImportProgress(prev => ({
-        ...prev,
-        status: 'error',
-        error: 'No contacts found in the import file. The AI was unable to extract contact information from your CSV.'
-      }))
-      return
-    }
-
-    // First check for oversized contacts
-    const oversized = data.contacts
-      .map((contact, index) => ({
-        contact,
-        tokenCount: getContactTokenCount(contact),
-        index
-      }))
-      .filter(item => item.tokenCount > CONTACT_LIMITS.MAX_TOKENS_PER_CONTACT)
-
-    if (oversized.length > 0) {
-      // Store oversized contacts for modal
-      setOversizedContacts(oversized)
-      setPendingImportContacts(data.contacts)
-      
-      // Show warning toast
-      toast.warning(`${oversized.length} oversized contact${oversized.length > 1 ? 's' : ''} detected`)
-      
-      // Don't proceed until user decides
-      return
-    }
-
-    // No oversized contacts, proceed with duplicate check
-    await checkDuplicatesAndSave(data.contacts)
-  }
 
   return {
-    importFile: (file: File) => {
-      // Set detecting status immediately before mutation
+    importFile: async (file: File) => {
+      // Set detecting status immediately
       setImportProgress({ status: 'detecting' })
-      importMutation.mutate(file)
+      try {
+        const result = await importFile(file)
+        await handleImportSuccess(result)
+      } catch (error) {
+        handleImportError(error instanceof Error ? error : new Error('Import failed'))
+      }
     },
-    isImporting: importMutation.isPending || importProgress.status === 'normalizing' || importProgress.status === 'processing',
-    isSaving: false,
+    isImporting: importProgress.status === 'detecting' || importProgress.status === 'normalizing' || importProgress.status === 'processing',
+    isSaving: importProgress.status === 'saving',
     currentDuplicate,
     duplicatesCount: duplicates.length,
     handleDuplicateDecision,
-    error: importMutation.error,
     importProgress,
     resetImport,
     cancelImport,

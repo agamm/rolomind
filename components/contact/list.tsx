@@ -13,9 +13,8 @@ import { Upload, Edit3, CheckSquare, Trash2, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePagination } from "@/hooks/use-pagination"
 import { toast } from "sonner"
-import { useUpdateContact, useDeleteContact } from "@/hooks/use-local-contacts"
+import { updateContact, deleteContact, deleteContacts } from "@/hooks/use-local-contacts"
 import { ExportQueryButton } from "@/components/export/export-query-button"
-import { deleteContactsBatch } from "@/db/indexdb/contacts"
 
 interface ContactListProps {
   contacts: Contact[]
@@ -35,13 +34,10 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
-  
-  const updateContactMutation = useUpdateContact()
-  const deleteContactMutation = useDeleteContact()
 
   const handleUpdateContact = async (updatedContact: Contact) => {
     try {
-      await updateContactMutation.mutateAsync(updatedContact)
+      await updateContact(updatedContact)
       toast.success('Contact updated successfully')
       setEditingContact(null)
     } catch (error) {
@@ -52,7 +48,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
 
   const handleDeleteContact = async (contactId: string) => {
     try {
-      await deleteContactMutation.mutateAsync(contactId)
+      await deleteContact(contactId)
       toast.success('Contact deleted successfully')
       setDeletingContact(null)
     } catch (error) {
@@ -64,7 +60,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
   const handleBulkDelete = async (contactIds: string[]) => {
     setIsBulkDeleting(true)
     try {
-      await deleteContactsBatch(contactIds)
+      await deleteContacts(contactIds)
       toast.success(`Deleted ${contactIds.length} contacts`)
       setSelectedContacts(new Set())
       setShowCheckboxes(false)
