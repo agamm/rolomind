@@ -20,6 +20,8 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { getContactTokenCount, CONTACT_LIMITS } from '@/lib/config'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { useApiKeysStatus } from '@/hooks/use-api-keys-status'
+import Link from 'next/link'
 
 interface EditContactModalProps {
   contact: Contact | null
@@ -35,6 +37,7 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
   const [isProcessingVoice, setIsProcessingVoice] = useState(false)
   const [updatedFields, setUpdatedFields] = useState<Set<string>>(new Set())
   const [tokenCount, setTokenCount] = useState(0)
+  const { hasOpenaiKey, isLoading: isLoadingApiKeys } = useApiKeysStatus()
   
   const {
     isRecording,
@@ -302,18 +305,34 @@ export function EditContactModal({ contact, isOpen, onClose, onSave, onDelete }:
           )}
           
           {/* Voice Recording Section */}
-          <VoiceRecorder
-            isRecording={isRecording}
-            isPaused={isPaused}
-            recordingTime={recordingTime}
-            audioLevel={audioLevel}
-            onStart={startRecording}
-            onStop={handleVoiceRecording}
-            onPause={pauseRecording}
-            onResume={resumeRecording}
-            isProcessing={isProcessingVoice}
-            error={recordingError}
-          />
+          {!hasOpenaiKey && !isLoadingApiKeys ? (
+            <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                <div className="flex items-center justify-between">
+                  <span>Voice editing requires an OpenAI API key.</span>
+                  <Button asChild variant="link" size="sm" className="text-amber-700 dark:text-amber-300">
+                    <Link href="/dashboard/ai-keys">
+                      Configure AI Keys →
+                    </Link>
+                  </Button>
+                </div>
+              </AlertDescription>
+            </Alert>
+          ) : (
+            <VoiceRecorder
+              isRecording={isRecording}
+              isPaused={isPaused}
+              recordingTime={recordingTime}
+              audioLevel={audioLevel}
+              onStart={startRecording}
+              onStop={handleVoiceRecording}
+              onPause={pauseRecording}
+              onResume={resumeRecording}
+              isProcessing={isProcessingVoice}
+              error={recordingError}
+            />
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="name">Name</Label>

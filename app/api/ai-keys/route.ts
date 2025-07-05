@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession, getUserApiKeys, updateUserApiKeys } from '@/lib/auth/server';
-import { validateApiKeys } from '@/lib/ai-client';
+import { getServerSession, getUserApiKeys } from '@/lib/auth/server';
+import { db } from '@/db/sqlite';
+import { user } from '@/db/sqlite/schema';
+import { eq } from 'drizzle-orm';
+import { z } from 'zod';
 
 export async function GET() {
   try {
@@ -30,42 +33,45 @@ export async function GET() {
   }
 }
 
+const apiKeySchema = z.object({
+  openrouterApiKey: z.string().optional(),
+  openaiApiKey: z.string().optional(),
+});
+
 export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession();
     
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
 
-    const { openrouterApiKey, openaiApiKey } = await request.json();
-
-    // Validate the keys
-    const validation = validateApiKeys({ openrouterApiKey, openaiApiKey });
-    if (!validation.isValid) {
-      return NextResponse.json({ 
-        error: 'Invalid API keys',
-        details: validation.errors 
-      }, { status: 400 });
-    }
-
-    // Only update non-masked values (actual keys, not display values)
-    const updates: { openrouterApiKey?: string; openaiApiKey?: string } = {};
+    const body = await request.json();
+    const validatedData = apiKeySchema.parse(body);
     
-    if (openrouterApiKey && !openrouterApiKey.includes('*')) {
-      updates.openrouterApiKey = openrouterApiKey;
+    const updates: { openrouterApiKey?: string | null; openaiApiKey?: string | null } = {};
+    
+    if (validatedData.openrouterApiKey !== undefined && !validatedData.openrouterApiKey.includes('*')) {
+      updates.openrouterApiKey = validatedData.openrouterApiKey.trim() || null;
     }
     
-    if (openaiApiKey && !openaiApiKey.includes('*')) {
-      updates.openaiApiKey = openaiApiKey;
+    if (validatedData.openaiApiKey !== undefined && !validatedData.openaiApiKey.includes('*')) {
+      updates.openaiApiKey = validatedData.openaiApiKey.trim() || null;
     }
 
-    if (Object.keys(updates).length > 0) {
-      await updateUserApiKeys(updates.openrouterApiKey, updates.openaiApiKey);
+    if (Object.keys(updates).length === 0) {
+      return NextResponse.json({ error: 'No updates provided' }, { status: 400 });
     }
+
+    await db.update(user)
+      .set(updates)
+      .where(eq(user.id, session.user.id));
 
     return NextResponse.json({ success: true });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: 'Invalid input', details: error.errors }, { status: 400 });
+    }
     console.error('Error updating API keys:', error);
     return NextResponse.json({ error: 'Failed to update API keys' }, { status: 500 });
   }

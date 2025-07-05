@@ -60,16 +60,3 @@ export async function getAIClient(useOpenAI: boolean = false) {
     });
   }
 }
-
-export function validateApiKeys(apiKeys: { openrouterApiKey?: string; openaiApiKey?: string }) {
-  const errors: string[] = [];
-  
-  if (!apiKeys.openrouterApiKey) {
-    errors.push('OpenRouter API key is required');
-  }
-  
-  return {
-    isValid: errors.length === 0,
-    errors
-  };
-}

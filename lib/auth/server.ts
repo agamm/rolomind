@@ -142,32 +142,4 @@ export async function getUserApiKeys() {
   }
 }
 
-export async function updateUserApiKeys(openrouterApiKey?: string, openaiApiKey?: string) {
-  const session = await getServerSession();
-  
-  if (!session?.user?.id) {
-    throw new Error("User not authenticated");
-  }
-
-  try {
-    const updateData: { openrouterApiKey?: string; openaiApiKey?: string } = {};
-    
-    if (openrouterApiKey !== undefined) {
-      updateData.openrouterApiKey = openrouterApiKey;
-    }
-    
-    if (openaiApiKey !== undefined) {
-      updateData.openaiApiKey = openaiApiKey;
-    }
-
-    await db.update(user)
-      .set(updateData)
-      .where(eq(user.id, session.user.id));
-    
-    return true;
-  } catch (error) {
-    console.error("Error updating user API keys:", error);
-    throw error;
-  }
-}
 
