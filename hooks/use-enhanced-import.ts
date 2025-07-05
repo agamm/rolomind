@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { DuplicateMatch, areContactsIdentical, findDuplicates } from '@/lib/contact-merger'
+import { DuplicateMatch, areContactsIdentical, hasLessOrEqualInformation, findDuplicates } from '@/lib/contact-merger'
 import { Contact } from '@/types/contact'
 import { saveContacts, updateContact, getContactsCount } from '@/hooks/use-local-contacts'
 import { getCurrentUserDatabase } from '@/db/indexdb'
@@ -241,10 +241,11 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // If there are duplicates, start resolution
       if (duplicatesFound.length > 0) {
-        // Filter out duplicates that are identical
+        // Filter out duplicates that are identical or have less/equal information
         const meaningfulDuplicates = duplicatesFound.filter((dup: DuplicateMatch) => {
-          // Skip if contacts are identical
-          return !areContactsIdentical(dup.existing, dup.incoming)
+          // Skip if contacts are identical or incoming has less/equal info
+          return !areContactsIdentical(dup.existing, dup.incoming) && 
+                 !hasLessOrEqualInformation(dup.existing, dup.incoming)
         })
         
         const skippedCount = duplicatesFound.length - meaningfulDuplicates.length

@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { 
   findDuplicates, 
   mergeContacts, 
-  areContactsIdentical 
+  areContactsIdentical,
+  hasLessOrEqualInformation 
 } from '@/lib/contact-merger'
 import { createTestContact } from '../../fixtures/contacts'
 
@@ -231,6 +232,216 @@ describe('Contact Merger', () => {
       }
       
       expect(areContactsIdentical(contact1, contact2)).toBe(true)
+    })
+
+    it('should ignore LinkedIn connection dates in notes', () => {
+      const contact1 = createTestContact({
+        name: 'Jerry Lesnik',
+        company: 'Community',
+        role: 'Povio',
+        location: 'San Francisco',
+        notes: 'LinkedIn connected: 9-May-25',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://linkedin.com/in/jerrylesnik',
+          otherUrls: []
+        }
+      })
+      
+      const contact2 = createTestContact({
+        name: 'Jerry Lesnik',
+        company: 'Community',
+        role: 'Povio',
+        location: 'San Francisco',
+        notes: 'LinkedIn connected: 09 May 2025',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://linkedin.com/in/jerrylesnik',
+          otherUrls: []
+        }
+      })
+      
+      expect(areContactsIdentical(contact1, contact2)).toBe(true)
+    })
+
+    it('should ignore LinkedIn connection dates but still compare other notes', () => {
+      const contact1 = createTestContact({
+        name: 'Jerry Lesnik',
+        notes: 'LinkedIn connected: 9-May-25\nImportant client'
+      })
+      
+      const contact2 = createTestContact({
+        name: 'Jerry Lesnik',
+        notes: 'LinkedIn connected: 09 May 2025\nImportant client'
+      })
+      
+      expect(areContactsIdentical(contact1, contact2)).toBe(true)
+      
+      // But should still detect differences in other notes
+      const contact3 = createTestContact({
+        name: 'Jerry Lesnik',
+        notes: 'LinkedIn connected: 09 May 2025\nDifferent note'
+      })
+      
+      expect(areContactsIdentical(contact1, contact3)).toBe(false)
+    })
+
+    it('should allow auto-merge when existing contact has no LinkedIn URL but incoming does', () => {
+      const contact1 = createTestContact({
+        name: 'Hanan Gelbendorf',
+        company: 'Umbrella',
+        role: 'VP of Marketing',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: undefined, // No LinkedIn URL
+          otherUrls: []
+        }
+      })
+      
+      const contact2 = createTestContact({
+        name: 'Hanan Gelbendorf',
+        company: 'Umbrella',
+        role: 'VP of Marketing',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://www.linkedin.com/in/gelbendorf', // Has LinkedIn URL
+          otherUrls: []
+        }
+      })
+      
+      expect(areContactsIdentical(contact1, contact2)).toBe(true)
+    })
+
+    it('should not be identical if both have different LinkedIn URLs', () => {
+      const contact1 = createTestContact({
+        name: 'John Doe',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://linkedin.com/in/johndoe1',
+          otherUrls: []
+        }
+      })
+      
+      const contact2 = createTestContact({
+        name: 'John Doe',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://linkedin.com/in/johndoe2',
+          otherUrls: []
+        }
+      })
+      
+      expect(areContactsIdentical(contact1, contact2)).toBe(false)
+    })
+  })
+
+  describe('hasLessOrEqualInformation', () => {
+    it('should return true when incoming contact has identical information', () => {
+      const contact1 = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        location: 'Israel',
+        notes: '- Birthday: 6/18/2023\n- LinkedIn connected: 21 May 2025'
+      })
+      
+      const contact2 = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        location: 'Israel',
+        notes: 'LinkedIn connected: 21 May 2025'
+      })
+      
+      expect(hasLessOrEqualInformation(contact1, contact2)).toBe(true)
+    })
+
+    it('should return true when incoming contact has less information', () => {
+      const existing = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        location: 'Israel',
+        notes: '- Birthday: 6/18/2023\n- LinkedIn connected: 21 May 2025',
+        contactInfo: {
+          emails: ['noam@crowdstrike.com'],
+          phones: ['123-456-7890'],
+          linkedinUrl: 'https://linkedin.com/in/noam',
+          otherUrls: []
+        }
+      })
+      
+      const incoming = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        location: 'Israel',
+        notes: 'LinkedIn connected: 21 May 2025',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: undefined,
+          otherUrls: []
+        }
+      })
+      
+      expect(hasLessOrEqualInformation(existing, incoming)).toBe(true)
+    })
+
+    it('should return false when incoming contact has additional information', () => {
+      const existing = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        notes: 'LinkedIn connected: 21 May 2025'
+      })
+      
+      const incoming = createTestContact({
+        name: 'Noam Nissan',
+        company: 'CrowdStrike',
+        role: 'Software Engineer',
+        notes: '- Birthday: 6/18/2023\n- LinkedIn connected: 21 May 2025'
+      })
+      
+      expect(hasLessOrEqualInformation(existing, incoming)).toBe(false)
+    })
+
+    it('should return false when incoming has different company', () => {
+      const existing = createTestContact({
+        name: 'John Doe',
+        company: 'Company A',
+        role: 'Engineer'
+      })
+      
+      const incoming = createTestContact({
+        name: 'John Doe',
+        company: 'Company B',
+        role: 'Engineer'
+      })
+      
+      expect(hasLessOrEqualInformation(existing, incoming)).toBe(false)
+    })
+
+    it('should return true when incoming has no company but existing does', () => {
+      const existing = createTestContact({
+        name: 'John Doe',
+        company: 'Company A',
+        role: 'Engineer'
+      })
+      
+      const incoming = createTestContact({
+        name: 'John Doe',
+        company: undefined,
+        role: 'Engineer'
+      })
+      
+      expect(hasLessOrEqualInformation(existing, incoming)).toBe(true)
     })
   })
 

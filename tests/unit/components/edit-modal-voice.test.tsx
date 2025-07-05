@@ -41,6 +41,7 @@ const mockContact: Contact = {
     linkedinUrl: 'https://linkedin.com/in/test',
     otherUrls: []
   },
+  source: 'manual',
   createdAt: new Date(),
   updatedAt: new Date()
 };

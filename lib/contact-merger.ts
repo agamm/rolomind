@@ -31,19 +31,66 @@ export function areContactsIdentical(
   const incomingEmails = (incoming.contactInfo?.emails || []).map(e => e.toLowerCase()).sort()
   if (JSON.stringify(existingEmails) !== JSON.stringify(incomingEmails)) return false
   
+  // LinkedIn URL comparison: allow auto-merge if existing is empty and incoming has URL
   const existingLinkedIn = existing.contactInfo.linkedinUrl
   const incomingLinkedIn = incoming.contactInfo?.linkedinUrl
-  if (existingLinkedIn !== incomingLinkedIn) return false
+  if (existingLinkedIn && incomingLinkedIn && existingLinkedIn !== incomingLinkedIn) {
+    // Both have LinkedIn URLs but they're different - not identical
+    return false
+  }
   
   // Check other URLs
   const existingOtherUrls = existing.contactInfo.otherUrls.map(u => `${u.platform}:${u.url}`).sort()
   const incomingOtherUrls = (incoming.contactInfo?.otherUrls || []).map(u => `${u.platform}:${u.url}`).sort()
   if (JSON.stringify(existingOtherUrls) !== JSON.stringify(incomingOtherUrls)) return false
   
-  // Check notes (normalize whitespace)
-  const existingNotes = (existing.notes || '').replace(/\s+/g, ' ').trim()
-  const incomingNotes = (incoming.notes || '').replace(/\s+/g, ' ').trim()
+  // Check notes (normalize whitespace and dates)
+  const existingNotes = normalizeNotesForComparison(existing.notes || '')
+  const incomingNotes = normalizeNotesForComparison(incoming.notes || '')
   if (existingNotes !== incomingNotes) return false
+  
+  return true
+}
+
+export function hasLessOrEqualInformation(
+  existing: Contact,
+  incoming: Partial<Contact>
+): boolean {
+  // If they're identical, incoming has equal information
+  if (areContactsIdentical(existing, incoming)) return true
+  
+  // Check if incoming has subset of existing information
+  // Name must match (we already know this from duplicate detection)
+  if (normalizeString(existing.name) !== normalizeString(incoming.name || '')) return false
+  
+  // Core fields: incoming should not have more detailed info than existing
+  if (incoming.company && existing.company && incoming.company !== existing.company) return false
+  if (incoming.role && existing.role && incoming.role !== existing.role) return false 
+  if (incoming.location && existing.location && incoming.location !== existing.location) return false
+  
+  // Contact info: incoming should be subset of existing
+  const existingPhones = new Set(existing.contactInfo.phones.map(p => normalizePhone(p)))
+  const incomingPhones = (incoming.contactInfo?.phones || []).map(p => normalizePhone(p))
+  for (const phone of incomingPhones) {
+    if (!existingPhones.has(phone)) return false
+  }
+  
+  const existingEmails = new Set(existing.contactInfo.emails.map(e => e.toLowerCase()))
+  const incomingEmails = (incoming.contactInfo?.emails || []).map(e => e.toLowerCase())
+  for (const email of incomingEmails) {
+    if (!existingEmails.has(email)) return false
+  }
+  
+  // LinkedIn URL: if incoming has URL, existing should have same URL
+  if (incoming.contactInfo?.linkedinUrl && 
+      existing.contactInfo.linkedinUrl !== incoming.contactInfo.linkedinUrl) {
+    return false
+  }
+  
+  // Notes: incoming notes should be subset (after normalization)
+  const existingNotes = normalizeNotesForComparison(existing.notes || '')
+  const incomingNotes = normalizeNotesForComparison(incoming.notes || '')
+  if (incomingNotes && !existingNotes.includes(incomingNotes)) return false
   
   return true
 }
@@ -55,6 +102,21 @@ function normalizeString(str: string): string {
 function normalizePhone(phone: string): string {
   // Remove all non-numeric characters
   return phone.replace(/\D/g, '')
+}
+
+function normalizeNotesForComparison(notes: string): string {
+  // Remove LinkedIn connection dates entirely for comparison
+  // Handle various date formats: "9-May-25", "09 May 2025", "May 9, 2025", etc.
+  // Match the entire line that starts with "LinkedIn connected:"
+  let normalized = notes.replace(/^LinkedIn connected:.*$/gmi, '')
+  
+  // Also handle cases where it's not at the start of a line
+  normalized = normalized.replace(/LinkedIn connected:[^\n\r]*/gi, '')
+  
+  // Normalize whitespace after removing LinkedIn dates
+  normalized = normalized.replace(/\s+/g, ' ').trim()
+  
+  return normalized
 }
 
 export function findDuplicates(
