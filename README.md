@@ -1,5 +1,8 @@
 # Rolomind
 
+<img width="975" alt="image" src="https://github.com/user-attachments/assets/a823f5c2-6715-438f-8b28-50c37a45cecc" />
+
+
 AI-powered contact management system (Rolodex) with natural language search and intelligent import capabilities.
 Note: most of this project was "vibe-coded" so expect some rough edges.
 
