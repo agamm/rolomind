@@ -51,7 +51,7 @@ export default function LandingPage() {
     },
     {
       question: "Explain the pricing",
-      answer: `Just bring your own AI keys (OpenAI, Claude, etc.) and pay ${productData?.price === 0 ? 'nothing' : `$${(productData?.price || 500) / 100}/month`} for hosting. No hidden fees, no profit on AI usage - your keys, your costs, our platform.`
+      answer: `Just bring your own AI keys (OpenAI, Claude, etc.) and pay ${productData?.price === 0 ? 'nothing for now' : `$${(productData?.price || 500) / 100}/month`} for hosting. No hidden fees, no profit on AI usage - your keys, your costs, our platform.${productData?.price === 0 ? ' This may change in the future as we grow.' : ''}`
     },
     {
       question: "Can't OpenAI, Gemini, or Claude do the same?",
@@ -91,32 +91,32 @@ export default function LandingPage() {
       <Header />
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="text-center max-w-5xl mx-auto">
+      <div className="container mx-auto px-4 py-16 md:py-20">
+        <div className="text-center max-w-4xl mx-auto">
           {/* Animated Logo */}
-          <div className="mb-4">
-            <h1 className="display-text text-primary inline-block text-5xl md:text-7xl">
+          <div className="mb-8">
+            <h1 className="display-text text-primary inline-block text-4xl md:text-6xl lg:text-7xl font-bold">
               Rolomind
             </h1>
           </div>
           
-          <p className="text-xl md:text-3xl font-semibold mb-3 bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent">
+          <h2 className="text-lg md:text-2xl lg:text-3xl font-semibold mb-6 text-foreground">
             Your AI-Powered Contact Intelligence
-          </p>
-          <p className="text-base md:text-xl text-muted-foreground mb-6 max-w-3xl mx-auto">
+          </h2>
+          <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
             Search contacts with natural language. Import from anywhere. 
             Keep everything private and organized in one place.
           </p>
 
           {/* Interactive Demo */}
-          <div className="relative max-w-5xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-8 p-8">
+          <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-8 p-4 md:p-6">
             <div className="text-center mb-6">
-              <h3 className="text-xl font-semibold mb-2">Try AI Search Live</h3>
-              <p className="text-muted-foreground">Search contacts with natural language</p>
+              <h3 className="text-lg md:text-xl font-semibold mb-3">Try AI Search Live</h3>
+              <p className="text-sm md:text-base text-muted-foreground">Search contacts with natural language</p>
             </div>
             <DemoProvider>
               <DemoWrapper title="" demoId="search" autoStart>
-                <div className="space-y-6">
+                <div className="space-y-4">
                   <DemoSearch />
                   <DemoResults />
                 </div>
@@ -125,7 +125,7 @@ export default function LandingPage() {
           </div>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
             {session ? (
               <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg">
                 <Link href="/dashboard/app">
@@ -497,6 +497,7 @@ export default function LandingPage() {
                       <p className="text-3xl md:text-4xl font-bold mb-2 text-green-600">Free</p>
                       <p className="text-muted-foreground">per month</p>
                       <p className="text-sm text-muted-foreground mt-2">+ your own AI keys</p>
+                      <p className="text-xs text-muted-foreground mt-1 opacity-75">* This may change in the future</p>
                     </>
                   ) : (
                     <>
@@ -544,7 +545,7 @@ export default function LandingPage() {
                 not for AI usage. This means you get the best rates and complete control over your AI costs.
               </p>
               <p className="text-sm text-muted-foreground mt-3">
-                {productData?.price === 0 ? 'Currently free hosting!' : `The $${(productData?.price || 500) / 100}/month covers servers and support.`} 
+                {productData?.price === 0 ? 'Currently free hosting (this may change as we grow)!' : `The $${(productData?.price || 500) / 100}/month covers servers and support.`} 
                 Hopefully it helps me pay for tacos here and there—I&apos;ve been freelancing 
                 for the past 3 years, so using Rolomind is also a real help. 🌮
               </p>

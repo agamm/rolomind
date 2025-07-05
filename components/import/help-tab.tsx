@@ -23,13 +23,13 @@ interface Platform {
 const steps: Platform[] = [
   {
     platform: "LinkedIn",
-    color: "bg-blue-100 text-blue-800",
+    color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
     url: "https://www.linkedin.com/mypreferences/d/download-my-data",
     steps: [
       {
         title: "Visit LinkedIn Data Download",
         description: (
-          <>Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">LinkedIn&apos;s data download page</a></>
+          <>Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">LinkedIn&apos;s data download page</a></>
         ),
         icon: <ExternalLink className="w-4 h-4" />,
         action: "Click the link above to open LinkedIn"
@@ -62,13 +62,13 @@ const steps: Platform[] = [
   },
   {
     platform: "Google",
-    color: "bg-green-100 text-green-800",
+    color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
     url: "https://takeout.google.com/",
     steps: [
       {
         title: "Visit Google Takeout",
         description: (
-          <>Go to <a href="https://takeout.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">Google Takeout</a> to export your data</>
+          <>Go to <a href="https://takeout.google.com/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline">Google Takeout</a> to export your data</>
         ),
         icon: <ExternalLink className="w-4 h-4" />,
         action: "Click the link above to open Google Takeout"
@@ -111,8 +111,8 @@ export function ImportHelpTab() {
   return (
     <div className="space-y-6">
       <div className="text-center space-y-2">
-        <h2 className="text-2xl font-bold">Import Your Contacts</h2>
-        <p className="text-gray-600">
+        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Import Your Contacts</h2>
+        <p className="text-gray-600 dark:text-gray-300">
           Follow these step-by-step guides to export your contacts from LinkedIn and Google
         </p>
       </div>
@@ -138,16 +138,16 @@ export function ImportHelpTab() {
             <CardContent className="space-y-4">
               {platform.steps.map((step, index) => (
                 <div key={index} className="flex gap-3">
-                  <div className="flex-shrink-0 w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600">
+                  <div className="flex-shrink-0 w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center text-sm font-semibold text-gray-600 dark:text-gray-300">
                     {index + 1}
                   </div>
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2">
-                      {step.icon}
-                      <h4 className="font-medium text-sm">{step.title}</h4>
+                      <span className="text-gray-600 dark:text-gray-400">{step.icon}</span>
+                      <h4 className="font-medium text-sm text-gray-900 dark:text-white">{step.title}</h4>
                     </div>
-                    <p className="text-sm text-gray-600">{step.description}</p>
-                    <p className="text-xs text-gray-500 italic">{step.action}</p>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">{step.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">{step.action}</p>
                   </div>
                 </div>
               ))}
@@ -156,13 +156,13 @@ export function ImportHelpTab() {
         ))}
       </div>
 
-      <Card className="bg-blue-50 border-blue-200">
+      <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
         <CardContent className="pt-6">
           <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-blue-600 mt-0.5" />
+            <FileText className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
             <div>
-              <h3 className="font-medium text-blue-900 mb-1">Tips for Success</h3>
-              <ul className="text-sm text-blue-800 space-y-1">
+              <h3 className="font-medium text-blue-900 dark:text-blue-100 mb-1">Tips for Success</h3>
+              <ul className="text-sm text-blue-800 dark:text-blue-200 space-y-1">
                 <li>• Both platforms may take several hours to prepare your data</li>
                 <li>• Check your email for download links from LinkedIn/Google</li>
                 <li>• The CSV files should contain contact names, emails, and other details</li>
