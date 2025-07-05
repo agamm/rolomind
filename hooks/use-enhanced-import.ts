@@ -101,17 +101,9 @@ export function useEnhancedImport(onComplete?: () => void) {
                          detectData.parserUsed === 'google' ? 'google' :
                          detectData.parserUsed === 'custom' ? 'custom' : 'llm-normalizer'
       
-      // Parse CSV to get headers and sample row for mapping dialog
-      const Papa = (await import('papaparse')).default
-      const csvContent = await file.text()
-      const parseResult = Papa.parse<Record<string, string>>(csvContent, {
-        header: true,
-        skipEmptyLines: true,
-        preview: 2 // Only need headers and one sample row
-      })
-      
-      const csvHeaders = parseResult.meta.fields || []
-      const sampleRow = parseResult.data[0] || {}
+      // Get headers and first row from the API response
+      const csvHeaders = detectData.headers || []
+      const sampleRow = detectData.firstRow || {}
       
       // Show format detection animation
       setImportProgress({
@@ -139,88 +131,6 @@ export function useEnhancedImport(onComplete?: () => void) {
       
       // Return early - the actual processing will happen when user confirms preview
       return { success: true, phase: 'detection', parserUsed: parserType }
-      
-      // Phase 2: Full processing
-      // First update status to processing/normalizing
-      setImportProgress({
-        status: (parserType === 'linkedin' || parserType === 'rolodex' || parserType === 'google') ? 'processing' : 'normalizing',
-        parserType,
-        progress: {
-          current: 0,
-          total: detectData.rowCount || 0,
-          message: parserType === 'linkedin' 
-            ? 'Processing LinkedIn contacts...' 
-            : parserType === 'rolodex'
-            ? 'Processing Rolomind export...'
-            : parserType === 'google'
-            ? 'Processing Google contacts...'
-            : 'AI is analyzing your contacts...'
-        }
-      })
-      
-      // Use streaming for custom parser (AI)
-      if (parserType === 'custom' || parserType === 'llm-normalizer') {
-        const processResponse = await fetch('/api/import-ai-stream?phase=process', {
-          method: 'POST',
-          body: formData
-        })
-        
-        if (!processResponse.ok) {
-          const errorData = await processResponse.json()
-          if (processResponse.status === 402) {
-            throw new Error(errorData.details || errorData.error || 'AI service not configured. Please configure your API keys in Settings > AI Keys.')
-          }
-          throw new Error(errorData.error || 'Processing failed')
-        }
-        
-        const { readJsonStream } = await import('@/lib/stream-utils')
-        let finalData: ImportResponse | null = null
-        
-        for await (const data of readJsonStream(processResponse)) {
-          if (data.type === 'progress') {
-            setImportProgress({
-              status: 'normalizing',
-              parserType,
-              progress: {
-                current: data.current,
-                total: data.total,
-                message: `AI is analyzing contact ${data.current} of ${data.total}...`
-              }
-            })
-          } else if (data.type === 'complete') {
-            finalData = {
-              success: true,
-              phase: 'complete',
-              ...data
-            }
-          } else if (data.type === 'error') {
-            throw new Error(data.message || 'AI normalization failed')
-          }
-        }
-        
-        if (!finalData) {
-          throw new Error('No data received from stream')
-        }
-        
-        return finalData as ImportResponse
-      } else {
-        // Use regular endpoint for other parsers
-        const processResponse = await fetch('/api/import?phase=process', {
-          method: 'POST',
-          body: formData
-        })
-        
-        const processData = await processResponse.json()
-        
-        if (!processResponse.ok) {
-          if (processResponse.status === 402) {
-            throw new Error(processData.error || 'Insufficient credits for AI normalization')
-          }
-          throw new Error(processData.error || 'Processing failed')
-        }
-        
-        return processData
-      }
   }
 
   const handleImportSuccess = async (data: ImportResponse) => {

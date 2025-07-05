@@ -36,6 +36,34 @@ describe('Google Parser', () => {
     })
   })
 
+  describe('getFirstDataRow', () => {
+    it('should return headers and first row for Google CSV', () => {
+      const csvContent = `First Name,Last Name,E-mail 1 - Value,Phone 1 - Value,Organization 1 - Name
+John,Doe,john@example.com,555-1234,Acme Corp
+Jane,Smith,jane@example.com,555-5678,Tech Co`
+
+      const result = googleParser.getFirstDataRow(csvContent)
+      
+      expect(result.headers).toEqual(['First Name', 'Last Name', 'E-mail 1 - Value', 'Phone 1 - Value', 'Organization 1 - Name'])
+      expect(result.firstRow).toEqual({
+        'First Name': 'John',
+        'Last Name': 'Doe',
+        'E-mail 1 - Value': 'john@example.com',
+        'Phone 1 - Value': '555-1234',
+        'Organization 1 - Name': 'Acme Corp'
+      })
+    })
+
+    it('should return null firstRow for empty CSV', () => {
+      const csvContent = `First Name,Last Name,E-mail 1 - Value`
+      
+      const result = googleParser.getFirstDataRow(csvContent)
+      
+      expect(result.headers).toEqual(['First Name', 'Last Name', 'E-mail 1 - Value'])
+      expect(result.firstRow).toBeNull()
+    })
+  })
+
   describe('parse', () => {
     it('should parse Google CSV correctly', () => {
       const contacts = googleParser.parse(googleCsv)

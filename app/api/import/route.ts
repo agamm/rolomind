@@ -109,12 +109,9 @@ export async function POST(request: NextRequest) {
       transformHeader: (header) => header.trim()
     })
 
+    // Don't immediately fail on parsing errors - some formats (like LinkedIn Notes) expect errors during header detection
     if (parseResult.errors.length > 0) {
-      console.error("CSV parsing errors:", parseResult.errors)
-      return NextResponse.json({ 
-        success: false, 
-        error: "Failed to parse CSV: " + parseResult.errors[0].message 
-      }, { status: 400 })
+      console.warn("CSV parsing warnings during header detection:", parseResult.errors.slice(0, 3))
     }
 
     const headers = parseResult.meta.fields || []
@@ -127,11 +124,31 @@ export async function POST(request: NextRequest) {
       // Quick detection phase - just determine the parser type
       const parserType = detectParserType(headers)
       
+      // Get proper headers and first row using parser-specific logic
+      let actualHeaders: string[] = headers
+      let firstRow: Record<string, string> | null = rows[0] || null
+      
+      if (parserType === 'linkedin') {
+        const result = linkedinParser.getFirstDataRow(content)
+        actualHeaders = result.headers
+        firstRow = result.firstRow
+      } else if (parserType === 'google') {
+        const result = googleParser.getFirstDataRow(content)
+        actualHeaders = result.headers
+        firstRow = result.firstRow
+      } else if (parserType === 'rolodex') {
+        const result = rolodexParser.getFirstDataRow(content)
+        actualHeaders = result.headers
+        firstRow = result.firstRow
+      }
+      
       return NextResponse.json({ 
         success: true,
         phase: 'detection',
         parserUsed: parserType,
-        rowCount: rows.length
+        rowCount: rows.length,
+        headers: actualHeaders,
+        firstRow: firstRow
       })
     }
     
@@ -168,6 +185,15 @@ export async function POST(request: NextRequest) {
         console.log('Custom parser returned', normalizedContacts.length, 'contacts')
       } catch (error) {
         console.error('Custom parser error:', error)
+        
+        // If custom parser fails and we had initial parsing errors, provide a helpful error
+        if (parseResult.errors.length > 0) {
+          return NextResponse.json({ 
+            success: false, 
+            error: "Failed to parse CSV: " + parseResult.errors[0].message + ". Please check your CSV format." 
+          }, { status: 400 })
+        }
+        
         throw error
       }
     }

@@ -2,6 +2,11 @@ import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
 
 export function isApplicableParser(headers: string[]): boolean {
+  // Check for LinkedIn Notes format (when CSV starts with "Notes:")
+  if (headers.length === 1 && headers[0].trim() === 'Notes:') {
+    return true
+  }
+  
   // LinkedIn CSV typically has these required headers
   const requiredHeaders = ['First Name', 'Last Name', 'URL']
   const optionalHeaders = ['Email Address', 'Company', 'Position', 'Connected On']
@@ -19,8 +24,66 @@ export function isApplicableParser(headers: string[]): boolean {
   return hasRequiredHeaders && hasOptionalHeaders
 }
 
+export function getFirstDataRow(csvContent: string): { headers: string[], firstRow: Record<string, string> | null } {
+  // LinkedIn exports start with "Notes:" followed by explanatory text
+  // We need to find the actual CSV data starting with headers
+  let cleanContent = csvContent
+  
+  if (csvContent.trim().startsWith('Notes:')) {
+    const lines = csvContent.split('\n')
+    let csvStartIndex = 0
+    
+    // Find the line that starts with "First Name" (the actual CSV headers)
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('First Name')) {
+        csvStartIndex = i
+        break
+      }
+    }
+    
+    // If we found headers, extract just the CSV portion
+    if (csvStartIndex > 0) {
+      cleanContent = lines.slice(csvStartIndex).join('\n')
+    }
+  }
+
+  const parseResult = Papa.parse<Record<string, string>>(cleanContent, {
+    header: true,
+    skipEmptyLines: true,
+    preview: 2, // Just headers + first row
+    transform: (value: string) => value.trim()
+  })
+
+  return {
+    headers: parseResult.meta.fields || [],
+    firstRow: parseResult.data[0] || null
+  }
+}
+
 export function parse(csvContent: string): Contact[] {
-  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+  // LinkedIn exports start with "Notes:" followed by explanatory text
+  // We need to find the actual CSV data starting with headers
+  let cleanContent = csvContent
+  
+  if (csvContent.trim().startsWith('Notes:')) {
+    const lines = csvContent.split('\n')
+    let csvStartIndex = 0
+    
+    // Find the line that starts with "First Name" (the actual CSV headers)
+    for (let i = 0; i < lines.length; i++) {
+      if (lines[i].trim().startsWith('First Name')) {
+        csvStartIndex = i
+        break
+      }
+    }
+    
+    // If we found headers, extract just the CSV portion
+    if (csvStartIndex > 0) {
+      cleanContent = lines.slice(csvStartIndex).join('\n')
+    }
+  }
+
+  const parseResult = Papa.parse<Record<string, string>>(cleanContent, {
     header: true,
     skipEmptyLines: true,
     transform: (value: string) => value.trim()

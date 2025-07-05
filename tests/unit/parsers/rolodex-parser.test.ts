@@ -44,6 +44,37 @@ describe('Rolodex Parser', () => {
     })
   })
 
+  describe('getFirstDataRow', () => {
+    it('should return headers and first row for Rolodex CSV', () => {
+      const csvContent = `Name,Company,Title,Email,Phone,LinkedIn,Location,Notes
+John Doe,Acme Corp,CEO,john@example.com,555-1234,https://linkedin.com/in/john,San Francisco,Met at conference
+Jane Smith,Tech Co,CTO,jane@example.com,555-5678,https://linkedin.com/in/jane,New York,Friend referral`
+
+      const result = rolodexParser.getFirstDataRow(csvContent)
+      
+      expect(result.headers).toEqual(['Name', 'Company', 'Title', 'Email', 'Phone', 'LinkedIn', 'Location', 'Notes'])
+      expect(result.firstRow).toEqual({
+        'Name': 'John Doe',
+        'Company': 'Acme Corp',
+        'Title': 'CEO',
+        'Email': 'john@example.com',
+        'Phone': '555-1234',
+        'LinkedIn': 'https://linkedin.com/in/john',
+        'Location': 'San Francisco',
+        'Notes': 'Met at conference'
+      })
+    })
+
+    it('should return null firstRow for empty CSV', () => {
+      const csvContent = `Name,Company,Email`
+      
+      const result = rolodexParser.getFirstDataRow(csvContent)
+      
+      expect(result.headers).toEqual(['Name', 'Company', 'Email'])
+      expect(result.firstRow).toBeNull()
+    })
+  })
+
   describe('parse', () => {
     it('should parse Rolodex CSV correctly', () => {
       const contacts = rolodexParser.parse(rolodexCsv)

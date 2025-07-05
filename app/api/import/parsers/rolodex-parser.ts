@@ -29,6 +29,20 @@ export function isApplicableParser(headers: string[]): boolean {
   return hasCompany && hasOptionalHeaders
 }
 
+export function getFirstDataRow(csvContent: string): { headers: string[], firstRow: Record<string, string> | null } {
+  const parseResult = Papa.parse<Record<string, string>>(csvContent, {
+    header: true,
+    skipEmptyLines: true,
+    preview: 2, // Just headers + first row
+    transform: (value: string) => value.trim()
+  })
+
+  return {
+    headers: parseResult.meta.fields || [],
+    firstRow: parseResult.data[0] || null
+  }
+}
+
 export function parse(csvContent: string): Contact[] {
   const parseResult = Papa.parse<Record<string, string>>(csvContent, {
     header: true,

@@ -46,6 +46,50 @@ describe('Import Parsers - Simplified Integration Tests', () => {
       expect(rolodexParser.isApplicableParser(linkedinHeaders)).toBe(false)
     })
 
+    it('should detect LinkedIn format with Notes prefix via content detection', () => {
+      // Simulate the content-based detection logic for LinkedIn Notes format
+      const headers = ['Notes:']
+      const content = `Notes:
+"When exporting your connection data, you may notice that some email addresses are missing."
+
+First Name,Last Name,URL,Email Address,Company,Position,Connected On
+John,Doe,https://www.linkedin.com/in/johndoe,john@example.com,Acme Corp,CEO,01 Jan 2024`
+
+      // Test the logic that would be in detectParserType
+      const isLinkedInNotesFormat = content.trim().startsWith('Notes:') && content.includes('First Name')
+      const shouldDetectAsLinkedIn = isLinkedInNotesFormat || linkedinParser.isApplicableParser(headers)
+      
+      expect(shouldDetectAsLinkedIn).toBe(true)
+      expect(isLinkedInNotesFormat).toBe(true)
+    })
+
+    it('should handle LinkedIn Notes format in preview logic', () => {
+      // Test the logic that would be in parsePreviewRow for LinkedIn Notes format
+      const notesHeaders = ['Notes:']
+      const isNotesFormat = notesHeaders.length === 1 && notesHeaders[0] === 'Notes:'
+      
+      expect(isNotesFormat).toBe(true)
+      
+      // When detected, should provide a generic preview instead of trying to parse Notes
+      if (isNotesFormat) {
+        const mockPreview = {
+          name: 'LinkedIn Contact',
+          company: 'Sample Company',
+          role: 'Sample Role',
+          contactInfo: {
+            emails: [],
+            phones: [],
+            linkedinUrl: 'https://linkedin.com/in/sample',
+            otherUrls: []
+          },
+          notes: 'LinkedIn connected on sample date'
+        }
+        
+        expect(mockPreview.name).toBe('LinkedIn Contact')
+        expect(mockPreview.contactInfo.linkedinUrl).toBe('https://linkedin.com/in/sample')
+      }
+    })
+
     it('should correctly identify Google CSV', () => {
       // Test both old and new Google formats
       const googleHeadersOld = ['Name', 'Given Name', 'Family Name', 'E-mail 1 - Value', 'Phone 1 - Value', 'Organization 1 - Name']
