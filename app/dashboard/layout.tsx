@@ -7,14 +7,20 @@ interface DashboardLayoutProps {
 }
 
 export default async function DashboardLayout({ children }: DashboardLayoutProps) {
-  // Check authentication server-side
-  const isAuth = await isAuthenticated();
-  
-  if (!isAuth) {
-    redirect("/sign-in");
+  // Check authentication server-side with error handling
+  try {
+    const isAuth = await isAuthenticated();
+    
+    if (!isAuth) {
+      redirect("/sign-in");
+    }
+  } catch (error) {
+    console.error('Server-side auth check failed:', error);
+    // Continue to render and let client-side handle authentication
+    // This prevents server errors from blocking the layout
   }
 
-  // The dashboard content with TopNav will be shown for all authenticated users
-  // This allows access to billing page even for non-paying customers
+  // The dashboard content with TopNav will be shown
+  // Client-side authentication will handle redirects if needed
   return <DashboardContent>{children}</DashboardContent>;
 }

@@ -34,7 +34,8 @@ describe('Database Contact Functions - Logic Testing', () => {
     
     // Mock the db import
     vi.doMock('@/db/indexdb/index', () => ({
-      db: mockDb
+      db: mockDb,
+      getCurrentUserDatabase: vi.fn().mockResolvedValue(mockDb)
     }))
   })
 

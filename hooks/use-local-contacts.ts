@@ -9,24 +9,33 @@ import {
 } from '@/lib/config';
 import { useSession } from '@/lib/auth/auth-client';
 
+type DatabaseState = 'initializing' | 'unencrypting' | 'ready';
+
 // Hook to get all contacts with real-time updates
 export function useContacts(searchQuery?: string) {
   const { data: session } = useSession();
   const [dbInstance, setDbInstance] = useState<any>(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [databaseState, setDatabaseState] = useState<DatabaseState>('initializing');
   
   // Initialize user database when session changes
   useEffect(() => {
     if (session?.user?.email && session?.user?.id) {
+      setDatabaseState('unencrypting');
       initializeUserDatabase(session.user.email, session.user.id)
         .then(() => getCurrentUserDatabase())
         .then(db => {
           console.log('Database initialized:', db);
           setDbInstance(db);
+          setDatabaseState('ready');
         })
         .catch(error => {
           console.error('Failed to initialize user database:', error);
+          setDatabaseState('initializing'); // Reset to initializing on error
         });
+    } else {
+      setDatabaseState('initializing');
+      setDbInstance(null);
     }
   }, [session?.user?.email, session?.user?.id]);
 
@@ -42,8 +51,8 @@ export function useContacts(searchQuery?: string) {
   
   const contacts = useLiveQuery(
     async () => {
-      if (!session?.user?.email || !dbInstance) {
-        return [];
+      if (!session?.user?.email || !dbInstance || databaseState !== 'ready') {
+        return undefined; // Return undefined during initialization
       }
       
       try {
@@ -70,12 +79,17 @@ export function useContacts(searchQuery?: string) {
         return [];
       }
     },
-    [searchQuery, session?.user?.email, dbInstance, refreshTrigger]
+    [searchQuery, session?.user?.email, dbInstance, refreshTrigger, databaseState]
   );
 
+  // Add a flag to indicate if this is the initial load
+  const isInitialLoad = databaseState !== 'ready' || contacts === undefined;
+  
   return {
     data: contacts || [],
-    isLoading: contacts === undefined,
+    isLoading: isInitialLoad,
+    state: databaseState,
+    isInitialLoad,
   };
 }
 

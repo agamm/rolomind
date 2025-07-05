@@ -12,7 +12,7 @@ import { toast } from "sonner"
 
 export function ContactManagerContent() {
   const [searchQuery, setSearchQuery] = React.useState('')
-  const { data: contacts = [], isLoading } = useContacts(searchQuery)
+  const { data: contacts = [] } = useContacts(searchQuery)
   const [aiResults, setAiResults] = React.useState<Array<{ contact: Contact; reason: string }> | undefined>()
   const [isAISearching, setIsAISearching] = React.useState(false)
   const [isProcessing, setIsProcessing] = React.useState(false)
@@ -62,14 +62,6 @@ export function ContactManagerContent() {
     }
   }, [aiResults]);
 
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-lg text-gray-600">Loading contacts...</div>
-      </div>
-    )
-  }
 
   return (
     <>

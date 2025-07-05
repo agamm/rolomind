@@ -14,7 +14,7 @@ interface DashboardContentProps {
 }
 
 export function DashboardContent({ children }: DashboardContentProps) {
-  const { data: contacts = [], isLoading } = useContacts("");
+  const { data: contacts = [], state: databaseState, isInitialLoad } = useContacts("");
   
   const {
     importFile,
@@ -32,6 +32,27 @@ export function DashboardContent({ children }: DashboardContentProps) {
     importFile(file);
   };
 
+  // Show loading message during initial load
+  const getLoadingContent = () => {
+    if (isInitialLoad) {
+      const loadingMessage = databaseState === 'initializing' 
+        ? { title: 'Loading your account...', subtitle: 'Please wait while we initialize your session' }
+        : databaseState === 'unencrypting'
+        ? { title: 'Initializing encrypted database...', subtitle: 'Setting up your secure contact storage' }
+        : { title: 'Loading contacts...', subtitle: 'Retrieving your contacts' };
+        
+      return (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <div className="text-lg font-medium mb-2">{loadingMessage.title}</div>
+          <p className="text-gray-600">{loadingMessage.subtitle}</p>
+        </div>
+      );
+    }
+    
+    return children; // Show normal content when fully loaded
+  };
+
   return (
     <>
       <div className="min-h-screen bg-background">
@@ -41,10 +62,10 @@ export function DashboardContent({ children }: DashboardContentProps) {
               contactCount={contacts.length}
               onFileSelect={handleFileSelect}
               isImporting={isImporting || isSaving}
-              disabled={isLoading}
+              disabled={isInitialLoad}
             />
             <ApiKeysWarning />
-            {children}
+            {getLoadingContent()}
           </div>
         </div>
       </div>

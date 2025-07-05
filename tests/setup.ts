@@ -1,4 +1,5 @@
-import { beforeEach, afterEach, vi } from 'vitest'
+import { beforeEach, afterEach, vi, expect } from 'vitest'
+import '@testing-library/jest-dom/vitest'
 
 // Mock environment variables
 vi.mock('@/lib/env', () => ({

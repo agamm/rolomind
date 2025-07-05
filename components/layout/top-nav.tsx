@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { ImportButton } from "@/components/import"
 import { ThemeToggle } from "./theme-toggle"
 import { useSession, signOut } from "@/lib/auth/auth-client"
+import { useOpenRouterCredits } from "@/hooks/use-openrouter-credits"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -28,6 +29,7 @@ export function TopNav({
   isImporting,
 }: TopNavProps) {
   const { data: session, isPending } = useSession();
+  const { data: credits } = useOpenRouterCredits();
   const router = useRouter();
   
   return (
@@ -70,6 +72,11 @@ export function TopNav({
               >
                 <CreditCard className="h-4 w-4 mr-2" />
                 <span>Billing</span>
+                {credits && (
+                  <span className="ml-auto text-xs text-muted-foreground">
+                    ${(credits.data.total_credits - credits.data.total_usage).toFixed(0)}
+                  </span>
+                )}
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="cursor-pointer"
