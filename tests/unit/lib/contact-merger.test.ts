@@ -347,4 +347,239 @@ describe('Contact Merger', () => {
       expect(merged.updatedAt.getTime()).toBeGreaterThanOrEqual(beforeMerge.getTime())
     })
   })
+
+  describe('Edge Cases and Performance', () => {
+    it('should handle empty contact lists', () => {
+      const incoming = createTestContact({ name: 'John Doe' })
+      const duplicates = findDuplicates([], incoming)
+      
+      expect(duplicates).toHaveLength(0)
+    })
+
+    it('should handle contacts with no identifying information', () => {
+      const existing = [
+        createTestContact({ 
+          id: '1',
+          name: '',
+          contactInfo: {
+            emails: [],
+            phones: [],
+            linkedinUrl: undefined,
+            otherUrls: []
+          }
+        })
+      ]
+      
+      const incoming = createTestContact({ 
+        name: '',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: undefined,
+          otherUrls: []
+        }
+      })
+      
+      const duplicates = findDuplicates(existing, incoming)
+      expect(duplicates).toHaveLength(0) // Should not match empty names
+    })
+
+    it('should handle exact phone number matches', () => {
+      const existing = [
+        createTestContact({ 
+          id: '1',
+          contactInfo: {
+            emails: [],
+            phones: ['555-123-4567'],
+            linkedinUrl: undefined,
+            otherUrls: []
+          }
+        })
+      ]
+      
+      const incoming = createTestContact({ 
+        name: 'Different Name',
+        contactInfo: {
+          emails: [],
+          phones: ['555-123-4567'], // Exact match
+          linkedinUrl: undefined,
+          otherUrls: []
+        }
+      })
+      
+      const duplicates = findDuplicates(existing, incoming)
+      expect(duplicates).toHaveLength(1)
+      expect(duplicates[0].matchType).toBe('phone')
+    })
+
+    it('should handle exact LinkedIn URL matches', () => {
+      const existing = [
+        createTestContact({ 
+          id: '1',
+          name: 'John Doe',
+          contactInfo: {
+            emails: [],
+            phones: [],
+            linkedinUrl: 'https://linkedin.com/in/johndoe',
+            otherUrls: []
+          }
+        })
+      ]
+      
+      const incoming = createTestContact({ 
+        name: 'Different Name',
+        contactInfo: {
+          emails: [],
+          phones: [],
+          linkedinUrl: 'https://linkedin.com/in/johndoe', // Exact match
+          otherUrls: []
+        }
+      })
+      
+      const duplicates = findDuplicates(existing, incoming)
+      expect(duplicates).toHaveLength(1)
+      expect(duplicates[0].matchType).toBe('linkedin')
+    })
+
+    it('should handle multiple duplicates across different contacts', () => {
+      const existing = [
+        createTestContact({ 
+          id: '1', 
+          name: 'John Doe',
+          contactInfo: {
+            emails: ['john@example.com'],
+            phones: [],
+            linkedinUrl: undefined,
+            otherUrls: []
+          }
+        }),
+        createTestContact({ 
+          id: '2', 
+          name: 'Jane Smith',
+          contactInfo: {
+            emails: ['jane@example.com'],
+            phones: ['555-1234'],
+            linkedinUrl: undefined,
+            otherUrls: []
+          }
+        })
+      ]
+      
+      // Incoming contact that matches both existing contacts by different criteria
+      const incoming = createTestContact({ 
+        name: 'John Doe', // Matches contact 1 by name
+        contactInfo: {
+          emails: ['different@example.com'],
+          phones: ['555-1234'], // Matches contact 2 by phone
+          linkedinUrl: undefined,
+          otherUrls: []
+        }
+      })
+      
+      const duplicates = findDuplicates(existing, incoming)
+      expect(duplicates).toHaveLength(2) // Should find both duplicates
+      
+      const matchTypes = duplicates.map(d => d.matchType)
+      expect(matchTypes).toContain('name')
+      expect(matchTypes).toContain('phone')
+    })
+
+    it('should handle very large contact lists efficiently', () => {
+      // Create 1000 existing contacts
+      const existing = Array.from({ length: 1000 }, (_, i) => 
+        createTestContact({ 
+          id: `contact-${i}`,
+          name: `Contact ${i}`,
+          contactInfo: {
+            emails: [`contact${i}@example.com`],
+            phones: [],
+            linkedinUrl: undefined,
+            otherUrls: []
+          }
+        })
+      )
+      
+      const incoming = createTestContact({ 
+        name: 'Contact 500', // Should match existing contact 500
+        contactInfo: {
+          emails: ['different@example.com'],
+          phones: [],
+          linkedinUrl: undefined,
+          otherUrls: []
+        }
+      })
+      
+      const startTime = Date.now()
+      const duplicates = findDuplicates(existing, incoming)
+      const duration = Date.now() - startTime
+      
+      expect(duplicates).toHaveLength(1)
+      expect(duplicates[0].existing.id).toBe('contact-500')
+      expect(duration).toBeLessThan(100) // Should complete in under 100ms
+    })
+
+    it('should merge contacts with unicode characters correctly', () => {
+      const existing = createTestContact({
+        id: '1',
+        name: 'José García',
+        company: 'Compañía Española',
+        notes: 'Nötes with ümlauts and åccents'
+      })
+      
+      const incoming = {
+        name: 'José García',
+        company: 'Compañía Española S.A.',
+        notes: 'Additional notes with émojis 🚀'
+      }
+      
+      const merged = mergeContacts(existing, incoming)
+      
+      expect(merged.name).toBe('José García')
+      expect(merged.company).toBe('Compañía Española S.A.')
+      expect(merged.notes).toContain('ümlauts')
+      expect(merged.notes).toContain('🚀')
+    })
+
+    it('should handle merging contacts with null/undefined values', () => {
+      const existing = createTestContact({
+        id: '1',
+        name: 'John Doe',
+        company: 'Acme Corp',
+        role: undefined,
+        location: undefined
+      })
+      
+      const incoming = {
+        name: 'John Doe',
+        company: undefined,
+        role: 'CEO',
+        location: 'San Francisco'
+      }
+      
+      const merged = mergeContacts(existing, incoming)
+      
+      expect(merged.name).toBe('John Doe')
+      expect(merged.company).toBe('Acme Corp') // Keep existing when incoming is undefined
+      expect(merged.role).toBe('CEO') // Take incoming when existing is undefined
+      expect(merged.location).toBe('San Francisco') // Take incoming when existing is undefined
+    })
+
+    it('should preserve source information correctly during merge', () => {
+      const existing = createTestContact({
+        id: '1',
+        name: 'John Doe',
+        source: 'linkedin'
+      })
+      
+      const incoming = {
+        name: 'John Doe',
+        source: 'google' as const
+      }
+      
+      const merged = mergeContacts(existing, incoming)
+      
+      // Should keep the original source
+      expect(merged.source).toBe('linkedin')
+    })
+  })
 })
