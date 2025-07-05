@@ -3,7 +3,7 @@
 import React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ImportButton } from "@/components/import"
+import { ImportButton, ImportHelpButton } from "@/components/import"
 import { ThemeToggle } from "./theme-toggle"
 import { useSession, signOut } from "@/lib/auth/auth-client"
 import { useOpenRouterCredits } from "@/hooks/use-openrouter-credits"
@@ -38,11 +38,15 @@ export function TopNav({
         <h1 className="display-text text-primary">Rolomind</h1>
       </Link>
       <div className="flex items-center gap-2">
-        <ImportButton
-          onFileSelect={onFileSelect}
-          isImporting={isImporting}
-          disabled={isPending || !session?.user?.email}
-        />
+        <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden bg-white">
+          <ImportButton
+            onFileSelect={onFileSelect}
+            isImporting={isImporting}
+            disabled={isPending || !session?.user?.email}
+          />
+          <div className="w-px h-6 bg-gray-200" />
+          <ImportHelpButton />
+        </div>
         <ThemeToggle />
         {isPending ? (
           <Button variant="outline" className="h-9 px-3" disabled>

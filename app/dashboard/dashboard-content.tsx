@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { TopNav } from "@/components/layout";
 import { ApiKeysWarning } from "@/components/layout/api-keys-warning";
 import { useContacts } from "@/hooks/use-local-contacts";
@@ -50,7 +50,7 @@ export function DashboardContent({ children }: DashboardContentProps) {
       );
     }
     
-    return children; // Show normal content when fully loaded
+    return children;
   };
 
   return (

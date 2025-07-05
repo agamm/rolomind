@@ -41,10 +41,10 @@ export function ImportButton({
         disabled={disabled || isImporting}
       />
       <Button
-        variant="outline"
+        variant="ghost"
         onClick={handleClick}
         disabled={disabled || isImporting}
-        className="h-9 px-3 cursor-pointer"
+        className="h-9 px-3 cursor-pointer rounded-none hover:bg-gray-50"
         title={disabled && !isImporting ? "Please wait for your session to load" : undefined}
       >
         {isImporting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 mr-1.5" />}
