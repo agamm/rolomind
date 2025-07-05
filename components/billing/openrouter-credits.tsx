@@ -99,11 +99,11 @@ export function OpenRouterCredits() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="text-sm text-muted-foreground">Remaining Credits</p>
-                <p className="text-2xl font-bold text-green-600">${(credits.data.total_credits - credits.data.total_usage).toFixed(2)}</p>
+                <p className="text-2xl font-bold text-purple-600">${(credits.data.total_credits - credits.data.total_usage).toFixed(2)}</p>
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total Usage</p>
-                <p className="text-2xl font-bold text-blue-600">${credits.data.total_usage?.toFixed(2) || '0.00'}</p>
+                <p className="text-2xl font-bold text-purple-600">${credits.data.total_usage?.toFixed(2) || '0.00'}</p>
               </div>
             </div>
             

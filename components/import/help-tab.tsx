@@ -29,7 +29,7 @@ const steps: Platform[] = [
       {
         title: "Visit LinkedIn Data Download",
         description: (
-          <>Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">LinkedIn's data download page</a></>
+          <>Go to <a href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">LinkedIn&apos;s data download page</a></>
         ),
         icon: <ExternalLink className="w-4 h-4" />,
         action: "Click the link above to open LinkedIn"
@@ -166,7 +166,7 @@ export function ImportHelpTab() {
                 <li>• Both platforms may take several hours to prepare your data</li>
                 <li>• Check your email for download links from LinkedIn/Google</li>
                 <li>• The CSV files should contain contact names, emails, and other details</li>
-                <li>• After downloading, use the "Import CSV" button on your contacts page</li>
+                <li>• After downloading, use the &quot;Import CSV&quot; button on your contacts page</li>
                 <li>• Rolomind will automatically detect and format the contact data</li>
               </ul>
             </div>

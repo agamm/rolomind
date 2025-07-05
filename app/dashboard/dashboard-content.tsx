@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { TopNav } from "@/components/layout";
 import { ApiKeysWarning } from "@/components/layout/api-keys-warning";
 import { useContacts } from "@/hooks/use-local-contacts";

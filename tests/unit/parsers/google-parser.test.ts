@@ -18,6 +18,16 @@ describe('Google Parser', () => {
       // New format (actual production export)
       const headers2 = ['First Name', 'Middle Name', 'Last Name', 'E-mail 1 - Value', 'Phone 1 - Value', 'Organization Name']
       expect(googleParser.isApplicableParser(headers2)).toBe(true)
+      
+      // Real Google Takeout format (full header set)
+      const takeoutHeaders = [
+        'First Name', 'Middle Name', 'Last Name', 'Phonetic First Name',
+        'Phonetic Middle Name', 'Phonetic Last Name', 'Name Prefix', 'Name Suffix',
+        'Nickname', 'File As', 'Organization Name', 'Organization Title',
+        'Organization Department', 'Birthday', 'Notes', 'Photo', 'Labels',
+        'E-mail 1 - Label', 'E-mail 1 - Value', 'E-mail 2 - Label', 'E-mail 2 - Value'
+      ]
+      expect(googleParser.isApplicableParser(takeoutHeaders)).toBe(true)
     })
 
     it('should identify with Phone header pattern', () => {
@@ -165,6 +175,41 @@ John,Michael,Doe,Acme Corp,CEO,Work,555-0123,john@acme.com`
       expect(contacts[2].company).toBe('Acme Corp')
       expect(contacts[2].role).toBe('CEO')
       expect(contacts[2].contactInfo.emails).toEqual(['john@acme.com'])
+    })
+
+    it('should detect and parse real Google Takeout CSV format', () => {
+      // This is the exact format from Google Takeout exports
+      const takeoutHeaders = [
+        'First Name', 'Middle Name', 'Last Name', 'Phonetic First Name', 
+        'Phonetic Middle Name', 'Phonetic Last Name', 'Name Prefix', 'Name Suffix', 
+        'Nickname', 'File As', 'Organization Name', 'Organization Title', 
+        'Organization Department', 'Birthday', 'Notes', 'Photo', 'Labels',
+        'E-mail 1 - Label', 'E-mail 1 - Value', 'E-mail 2 - Label', 'E-mail 2 - Value'
+      ]
+      
+      expect(googleParser.isApplicableParser(takeoutHeaders)).toBe(true)
+      
+      const takeoutCsv = `${takeoutHeaders.join(',')}
+,,,,,,,,,,,,,,,,* Other Contacts,* ,2143990445@vzwpix.com,,
+Aaron,,Tijerina,,,,,,,,,,,,,,* Other Contacts,* ,atijerina@texasbank.com,,
+Agam,,More,,,,,,,,,,,,,,* Other Contacts,* ,agam@agam.me,,`
+      
+      const contacts = googleParser.parse(takeoutCsv)
+      expect(contacts).toHaveLength(3) // All rows have contact info (emails)
+      
+      // Check first contact (no name but has email, gets fallback name)
+      expect(contacts[0].name).toBe('Contact 1')
+      expect(contacts[0].contactInfo.emails).toEqual(['2143990445@vzwpix.com'])
+      expect(contacts[0].source).toBe('google')
+      
+      // Check second contact
+      expect(contacts[1].name).toBe('Aaron Tijerina')
+      expect(contacts[1].contactInfo.emails).toEqual(['atijerina@texasbank.com'])
+      expect(contacts[1].source).toBe('google')
+      
+      // Check third contact
+      expect(contacts[2].name).toBe('Agam More')
+      expect(contacts[2].contactInfo.emails).toEqual(['agam@agam.me'])
     })
   })
 })

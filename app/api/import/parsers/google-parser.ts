@@ -2,34 +2,33 @@ import Papa from 'papaparse'
 import type { Contact } from "@/types/contact"
 
 export function isApplicableParser(headers: string[]): boolean {
-  // Google Contacts CSV has very specific headers with numbered patterns
-  const googlePatterns = [
-    'E-mail \\d+ - Value',
-    'Phone \\d+ - Value',
-    'Organization \\d+ - Name',
-    'Address \\d+ - Formatted',
-    'Website \\d+ - Value',
-    'Relation \\d+ - Value'
+  // Google has distinctive numbered patterns that LinkedIn doesn't have
+  
+  // Core Google patterns (numbered format is unique to Google)
+  const hasEmailValuePattern = headers.some(h => h.match(/^E-mail \d+ - Value$/))
+  const hasPhoneValuePattern = headers.some(h => h.match(/^Phone \d+ - Value$/))
+  const hasOrganizationPattern = headers.some(h => h.match(/^Organization \d+ - Name$/))
+  const hasAddressPattern = headers.some(h => h.match(/^Address \d+ - Formatted$/))
+  
+  // Google Takeout specific headers (very distinctive)
+  const googleTakeoutHeaders = [
+    'Given Name', 'Family Name', 'Additional Name', 'Name Prefix', 'Name Suffix',
+    'Phonetic First Name', 'Phonetic Last Name', 'File As', 'Labels',
+    'Organization Department', 'Birthday', 'Photo'
   ]
+  const takeoutHeaderCount = googleTakeoutHeaders.filter(h => headers.includes(h)).length
   
-  // Also check for name fields (either old or new format)
-  const hasNameFields = (
-    headers.includes('First Name') && headers.includes('Last Name')
-  ) || (
-    headers.includes('Given Name') && headers.includes('Family Name')
-  )
+  // Anti-patterns: LinkedIn-specific headers that Google doesn't have
+  const hasLinkedInPatterns = headers.includes('Email Address') || 
+                              headers.includes('Connected On') || 
+                              headers.includes('Position')
   
-  // Count how many Google-specific patterns we match
-  let matchCount = 0
-  for (const pattern of googlePatterns) {
-    const regex = new RegExp(pattern)
-    if (headers.some(h => regex.test(h))) {
-      matchCount++
-    }
-  }
+  // Must have at least one Google pattern AND not be LinkedIn
+  const hasGooglePatterns = hasEmailValuePattern || hasPhoneValuePattern || 
+                           hasOrganizationPattern || hasAddressPattern || 
+                           takeoutHeaderCount >= 2
   
-  // If we have name fields and match at least 2 Google patterns, it's likely a Google CSV
-  return hasNameFields && matchCount >= 2
+  return hasGooglePatterns && !hasLinkedInPatterns
 }
 
 export function getFirstDataRow(csvContent: string): { headers: string[], firstRow: Record<string, string> | null } {
@@ -58,6 +57,48 @@ export function parse(csvContent: string): Contact[] {
   }
 
   return parseResult.data.map((row, index) => {
+      // Extract emails - handle multiple possible formats
+      const emails: string[] = []
+      
+      // Try numbered Google format first
+      for (let i = 1; i <= 5; i++) {
+        if (row[`E-mail ${i} - Value`]) emails.push(row[`E-mail ${i} - Value`])
+      }
+      
+      // Also check for other common email field names
+      const emailFields = [
+        'Email Address', 'Email', 'Primary Email', 'E-mail Address', 
+        'E-mail 1 - Value', 'E-mail Address - Value'
+      ]
+      for (const field of emailFields) {
+        if (row[field] && !emails.includes(row[field])) {
+          emails.push(row[field])
+        }
+      }
+
+      // Extract phones - handle multiple possible formats  
+      const phones: string[] = []
+      
+      // Try numbered Google format first
+      for (let i = 1; i <= 5; i++) {
+        if (row[`Phone ${i} - Value`]) phones.push(row[`Phone ${i} - Value`])
+      }
+      
+      // Also check for other common phone field names
+      const phoneFields = [
+        'Phone Number', 'Phone', 'Primary Phone', 'Mobile Phone',
+        'Phone 1 - Value', 'Phone Number - Value'
+      ]
+      for (const field of phoneFields) {
+        if (row[field] && !phones.includes(row[field])) {
+          phones.push(row[field])
+        }
+      }
+
+      // Extract company and role
+      const company = row["Organization Name"] || row["Organization 1 - Name"] || undefined
+      const role = row["Organization Title"] || row["Organization 1 - Title"] || undefined
+      
       // Build full name from parts or use Name field directly
       const nameParts = [
         row["Name Prefix"],
@@ -67,23 +108,10 @@ export function parse(csvContent: string): Contact[] {
         row["Name Suffix"]
       ].filter(Boolean).join(' ').trim()
       
-      const fullName = row["Name"] || nameParts || row["Nickname"] || `Contact ${index + 1}`
-
-      // Extract emails
-      const emails: string[] = []
-      for (let i = 1; i <= 5; i++) {
-        if (row[`E-mail ${i} - Value`]) emails.push(row[`E-mail ${i} - Value`])
-      }
-
-      // Extract phones
-      const phones: string[] = []
-      for (let i = 1; i <= 5; i++) {
-        if (row[`Phone ${i} - Value`]) phones.push(row[`Phone ${i} - Value`])
-      }
-
-      // Extract company and role
-      const company = row["Organization Name"] || row["Organization 1 - Name"] || undefined
-      const role = row["Organization Title"] || row["Organization 1 - Title"] || undefined
+      // Only use fallback name if we have some contact info (email, phone, etc.)
+      const hasContactInfo = emails.length > 0 || phones.length > 0 || company
+      const fallbackName = hasContactInfo ? `Contact ${index + 1}` : ''
+      const fullName = row["Name"] || nameParts || row["Nickname"] || fallbackName
       const department = row["Organization Department"] || row["Organization 1 - Department"]
       
       // Extract location from address

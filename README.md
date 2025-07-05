@@ -1,6 +1,7 @@
 # Rolomind
 
 AI-powered contact management system (Rolodex) with natural language search and intelligent import capabilities.
+Note: most of this project was "vibe-coded" so expect some rough edges.
 
 ## Production
 
