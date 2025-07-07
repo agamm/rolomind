@@ -215,7 +215,6 @@ export function AddContactDialog({ isOpen, onClose, onSuccess }: AddContactDialo
                   onChange={(e) => handleArrayChange("phones", index, e.target.value)}
                   placeholder="+1-555-123-4567"
                   disabled={isLoading}
-                  type="tel"
                 />
                 {formData.phones.length > 1 && (
                   <Button

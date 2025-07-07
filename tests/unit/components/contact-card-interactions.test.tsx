@@ -39,7 +39,8 @@ describe('Contact Card User Interactions', () => {
   })
 
   describe('Basic Information Display', () => {
-    it('should display all contact information correctly', () => {
+    it('should display all contact information correctly', async () => {
+      const user = userEvent.setup()
       const contact = createTestContact()
       
       render(
@@ -53,11 +54,16 @@ describe('Contact Card User Interactions', () => {
         />
       )
 
-      // Check basic info
+      // Check basic info (always visible)
       expect(screen.getByText('John Doe')).toBeInTheDocument()
       expect(screen.getByText('CEO')).toBeInTheDocument()
       expect(screen.getByText('Acme Corp')).toBeInTheDocument()
       expect(screen.getByText('San Francisco, CA')).toBeInTheDocument()
+      expect(screen.getByText('linkedin')).toBeInTheDocument()
+
+      // Click "Show details" to expand contact info
+      const showDetailsButton = screen.getByText('Show details')
+      await user.click(showDetailsButton)
 
       // Check contact info - only first email and phone are shown
       expect(screen.getByText('john@acme.com')).toBeInTheDocument()
@@ -66,9 +72,6 @@ describe('Contact Card User Interactions', () => {
       // Check notes
       expect(screen.getByText(/Important client contact/)).toBeInTheDocument()
       expect(screen.getByText(/Met at tech conference/)).toBeInTheDocument()
-
-      // Check source badge
-      expect(screen.getByText('linkedin')).toBeInTheDocument()
     })
 
     it('should handle contacts with minimal information', () => {
@@ -210,7 +213,8 @@ describe('Contact Card User Interactions', () => {
   })
 
   describe('Link Interactions', () => {
-    it('should make email addresses clickable via button', () => {
+    it('should make email icons clickable with selectable text', async () => {
+      const user = userEvent.setup()
       const contact = createTestContact()
       
       render(
@@ -224,12 +228,22 @@ describe('Contact Card User Interactions', () => {
         />
       )
 
-      // Email is displayed as a button, not a link
-      const emailButton = screen.getByRole('button', { name: /john@acme.com/i })
+      // Click "Show details" to expand contact info
+      const showDetailsButton = screen.getByText('Show details')
+      await user.click(showDetailsButton)
+
+      // Email text should be present and selectable
+      const emailElement = screen.getByText(/john@acme.com/i)
+      expect(emailElement).toBeInTheDocument()
+      expect(emailElement).toHaveClass('select-text')
+      
+      // Email icon should be clickable
+      const emailButton = screen.getByRole('button', { name: /send email/i })
       expect(emailButton).toBeInTheDocument()
     })
 
-    it('should make phone numbers clickable via button', () => {
+    it('should make phone icons clickable with selectable text', async () => {
+      const user = userEvent.setup()
       const contact = createTestContact()
       
       render(
@@ -243,8 +257,17 @@ describe('Contact Card User Interactions', () => {
         />
       )
 
-      // Phone is displayed as a button, not a link
-      const phoneButton = screen.getByRole('button', { name: /\+1-555-123-4567/i })
+      // Click "Show details" to expand contact info
+      const showDetailsButton = screen.getByText('Show details')
+      await user.click(showDetailsButton)
+
+      // Phone text should be present and selectable
+      const phoneElement = screen.getByText(/\+1-555-123-4567/i)
+      expect(phoneElement).toBeInTheDocument()
+      expect(phoneElement).toHaveClass('select-text')
+      
+      // Phone icon should be clickable
+      const phoneButton = screen.getByRole('button', { name: /call phone/i })
       expect(phoneButton).toBeInTheDocument()
     })
 
@@ -262,7 +285,7 @@ describe('Contact Card User Interactions', () => {
         />
       )
 
-      // LinkedIn is a button with title
+      // LinkedIn is a button with title (always visible in header)
       const linkedinButton = screen.getByRole('button', { name: /open linkedin profile/i })
       expect(linkedinButton).toBeInTheDocument()
     })

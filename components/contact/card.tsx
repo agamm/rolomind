@@ -3,7 +3,7 @@
 import React, { useState } from "react"
 import type { Contact } from "@/types/contact"
 import { Button } from "@/components/ui/button"
-import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin, Edit2, Trash2 } from "lucide-react"
+import { Mail, Phone, ExternalLink, Sparkles, ChevronDown, ChevronUp, Building2, Briefcase, MapPin, Edit2, Trash2, Globe } from "lucide-react"
 
 interface ContactCardProps {
   contact: Contact
@@ -17,6 +17,7 @@ interface ContactCardProps {
 
 export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, onSelectToggle, showCheckbox }: ContactCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isContactInfoExpanded, setIsContactInfoExpanded] = useState(false)
   const handleLinkedInClick = React.useCallback(() => {
     if (contact.contactInfo.linkedinUrl) {
       const url = contact.contactInfo.linkedinUrl
@@ -28,7 +29,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
 
   const handleEmailClick = React.useCallback(() => {
     if (contact.contactInfo.emails.length > 0) {
-      window.open(`mailto:${contact.contactInfo.emails[0]}`, "_blank")
+      window.location.href = `mailto:${contact.contactInfo.emails[0]}`
     }
   }, [contact.contactInfo.emails])
 
@@ -37,6 +38,11 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
       window.open(`tel:${contact.contactInfo.phones[0]}`, "_blank")
     }
   }, [contact.contactInfo.phones])
+
+  const handleWebsiteClick = React.useCallback((url: string) => {
+    const websiteUrl = url.startsWith("http") ? url : `https://${url}`
+    window.open(websiteUrl, "_blank", "noopener,noreferrer")
+  }, [])
 
 
   return (
@@ -105,56 +111,108 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
         </div>
 
         {/* Secondary section - Professional Info */}
-        <div className="mb-3 space-y-1.5 pl-1">
+        <div className="mb-3 space-y-1.5">
           {contact.role && (
             <div className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4 text-gray-400" />
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{contact.role}</span>
+              <div className="flex items-center justify-center w-4 h-4">
+                <Briefcase className="w-3.5 h-3.5 text-gray-400" />
+              </div>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100 leading-4">{contact.role}</span>
             </div>
           )}
           {contact.company && (
             <div className="flex items-center gap-2">
-              <Building2 className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{contact.company}</span>
+              <div className="flex items-center justify-center w-4 h-4">
+                <Building2 className="w-3.5 h-3.5 text-gray-400" />
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-400 leading-4">{contact.company}</span>
             </div>
           )}
           {contact.location && (
             <div className="flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-gray-400" />
-              <span className="text-sm text-gray-600 dark:text-gray-400">{contact.location}</span>
+              <div className="flex items-center justify-center w-4 h-4">
+                <MapPin className="w-3.5 h-3.5 text-gray-400" />
+              </div>
+              <span className="text-sm text-gray-600 dark:text-gray-400 leading-4">{contact.location}</span>
             </div>
           )}
         </div>
 
+        {/* Contact info toggle button */}
+        {(contact.contactInfo.emails.length > 0 || contact.contactInfo.phones.length > 0 || 
+          contact.contactInfo.otherUrls.some(item => item.platform && item.url) || contact.notes) && (
+          <div className="mb-3">
+            <button
+              onClick={() => setIsContactInfoExpanded(!isContactInfoExpanded)}
+              className="flex items-center gap-1 px-2 py-1 text-xs text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 transition-all cursor-pointer rounded-md"
+            >
+              {isContactInfoExpanded ? (
+                <>
+                  <ChevronUp className="h-3 w-3" />
+                  Hide details
+                </>
+              ) : (
+                <>
+                  <ChevronDown className="h-3 w-3" />
+                  Show details
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
         {/* Show contact info and notes if they exist */}
-        {(contact.contactInfo.emails.length > 0 || contact.contactInfo.phones.length > 0) && (
+        {isContactInfoExpanded && (contact.contactInfo.emails.length > 0 || contact.contactInfo.phones.length > 0 || 
+          contact.contactInfo.otherUrls.some(item => item.platform && item.url)) && (
           <div className="mb-3 pt-3 border-t border-gray-100 dark:border-gray-800">
             <div className="space-y-1.5">
               {contact.contactInfo.emails.length > 0 && (
-                <button
-                  onClick={handleEmailClick}
-                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full text-left group"
-                >
-                  <Mail className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                  <span className="text-sm truncate">{contact.contactInfo.emails[0]}</span>
-                </button>
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 w-full">
+                  <button
+                    onClick={handleEmailClick}
+                    className="flex items-center justify-center w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                    title="Send email"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-sm truncate select-text leading-4">{contact.contactInfo.emails[0]}</span>
+                </div>
               )}
 
               {contact.contactInfo.phones.length > 0 && (
-                <button
-                  onClick={handlePhoneClick}
-                  className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors w-full text-left group"
-                >
-                  <Phone className="w-3.5 h-3.5 text-gray-400 dark:text-gray-500 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-                  <span className="text-sm">{contact.contactInfo.phones[0]}</span>
-                </button>
+                <div className="flex items-center gap-2 text-gray-600 dark:text-gray-300 w-full">
+                  <button
+                    onClick={handlePhoneClick}
+                    className="flex items-center justify-center w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                    title="Call phone"
+                  >
+                    <Phone className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-sm select-text leading-4">{contact.contactInfo.phones[0]}</span>
+                </div>
               )}
+
+              {/* Other social links and websites from otherUrls */}
+              {contact.contactInfo.otherUrls.filter(item => 
+                item.platform && item.url
+              ).map((item, index) => (
+                <div key={index} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 w-full">
+                  <button
+                    onClick={() => handleWebsiteClick(item.url)}
+                    className="flex items-center justify-center w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer"
+                    title={`Open ${item.platform}`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                  </button>
+                  <span className="text-sm truncate select-text leading-4">{item.url}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* Notes section - Expandable */}
-        {contact.notes && (
+        {isContactInfoExpanded && contact.notes && (
           <div className="space-y-2 mb-4">
             <div className="bg-zinc-50 dark:bg-zinc-900/30 p-3 rounded-lg border border-gray-100 dark:border-zinc-700">
               <div className="text-sm text-gray-900 dark:text-zinc-100">
@@ -201,7 +259,7 @@ export function ContactCard({ contact, aiReason, onEdit, onDelete, isSelected, o
           </div>
         )}
 
-        {aiReason && (
+        {isContactInfoExpanded && aiReason && (
           <div className="ai-glow mb-4">
             <div className="flex items-start gap-2 relative z-10">
               <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400 flex-shrink-0 mt-0.5" />
