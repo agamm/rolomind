@@ -293,19 +293,17 @@ export function AIQuery({ contacts, onResults, onSearchingChange, onProcessingCh
                 ? `✓ Found ${results.length} matches`
                 : '✗ No contacts found matching your search criteria'}
             </p>
-            {results.length > 0 && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setQuery('')
-                  setHasSearched(false)
-                  onReset?.()
-                }}
-              >
-                Reset
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setQuery('')
+                setHasSearched(false)
+                onReset?.()
+              }}
+            >
+              Reset
+            </Button>
           </div>
         </div>
       )}

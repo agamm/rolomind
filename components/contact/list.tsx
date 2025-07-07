@@ -6,10 +6,11 @@ import { ContactCard } from "./card"
 import { SearchInput } from "./search-input"
 import { EditContactModal } from "./edit-modal"
 import { BulkEditModal } from "./bulk-edit-modal"
+import { AddContactDialog } from "./add-contact-dialog"
 import { PaginationControls } from "@/components/pagination-controls"
 import { DeleteConfirmationDialog } from "@/components/delete/delete-confirmation-dialog"
 import { BulkDeleteDialog } from "@/components/delete/bulk-delete-dialog"
-import { Upload, Edit3, CheckSquare, Trash2, X } from "lucide-react"
+import { Upload, Edit3, CheckSquare, Trash2, X, Plus } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePagination } from "@/hooks/use-pagination"
 import { toast } from "sonner"
@@ -34,6 +35,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
   const [showBulkEdit, setShowBulkEdit] = useState(false)
   const [showBulkDelete, setShowBulkDelete] = useState(false)
   const [isBulkDeleting, setIsBulkDeleting] = useState(false)
+  const [showAddDialog, setShowAddDialog] = useState(false)
 
   const handleUpdateContact = async (updatedContact: Contact) => {
     try {
@@ -102,6 +104,8 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
     const query = searchQuery.toLowerCase()
     return baseContacts.filter(contact =>
       contact.name.toLowerCase().includes(query) ||
+      contact.company?.toLowerCase().includes(query) ||
+      contact.role?.toLowerCase().includes(query) ||
       contact.contactInfo.emails.some(email => email.toLowerCase().includes(query)) ||
       contact.notes.toLowerCase().includes(query)
     )
@@ -181,6 +185,14 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
                     >
                       <CheckSquare className="h-4 w-4 mr-2" />
                       Select to Edit
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setShowAddDialog(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Contact
                     </Button>
                   </div>
                 )}
@@ -381,6 +393,17 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
         onConfirm={() => handleBulkDelete(Array.from(selectedContacts))}
         onCancel={() => setShowBulkDelete(false)}
         isDeleting={isBulkDeleting}
+      />
+      
+      <AddContactDialog
+        isOpen={showAddDialog}
+        onClose={() => setShowAddDialog(false)}
+        onSuccess={() => {
+          // Force a refresh of the contact list
+          if (typeof window !== 'undefined' && 'refreshContacts' in window) {
+            (window as { refreshContacts: () => void }).refreshContacts()
+          }
+        }}
       />
     </div>
   )
