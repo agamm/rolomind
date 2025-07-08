@@ -124,11 +124,11 @@ export default function SignInPage() {
               </p>
               <p className="text-xs text-muted-foreground text-center pt-2">
               By signing in, you agree to our{" "}
-              <Link href="/terms" className="text-primary hover:underline" target="_blank">
+              <Link href="/terms" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="text-primary hover:underline" target="_blank">
+              <Link href="/privacy" className="text-primary hover:underline" target="_blank" rel="noopener noreferrer">
                 Privacy Policy
               </Link>
               </p>

@@ -124,14 +124,24 @@ export default function AIKeysPage() {
             </CardTitle>
             <CardDescription>
               Used for AI-powered contact search, merging, and processing features.
-              <Link 
-                href="https://openrouter.ai/settings/keys" 
-                target="_blank" 
-                className="inline-flex items-center gap-1 ml-2 text-primary hover:underline"
-              >
-                Get your key from OpenRouter <ExternalLink className="h-3 w-3" />
-              </Link>
             </CardDescription>
+            <div className="mt-3 sm:mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                asChild 
+                className="w-full sm:w-auto"
+              >
+                <Link 
+                  href="https://openrouter.ai/settings/keys" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  Get your key from OpenRouter <ExternalLink className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -164,16 +174,16 @@ export default function AIKeysPage() {
             <div className="text-sm text-muted-foreground space-y-1">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="p-0 h-auto font-normal text-muted-foreground hover:text-foreground"
+                className="w-full sm:w-auto justify-start"
                 onClick={() => setInstructionsCollapsed(prev => ({ ...prev, openrouter: !prev.openrouter }))}
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   {instructionsCollapsed.openrouter ? (
-                    <ChevronRight className="h-3 w-3" />
+                    <ChevronRight className="h-4 w-4" />
                   ) : (
-                    <ChevronDown className="h-3 w-3" />
+                    <ChevronDown className="h-4 w-4" />
                   )}
                   <strong>Setup instructions</strong>
                 </div>
@@ -181,7 +191,7 @@ export default function AIKeysPage() {
               {!instructionsCollapsed.openrouter && (
                 <div className="ml-4 mt-2 space-y-2">
                   <ol className="list-decimal list-inside space-y-1">
-                    <li>Visit <Link href="https://openrouter.ai/settings/keys" target="_blank" className="text-primary hover:underline">OpenRouter API Keys</Link></li>
+                    <li>Visit <Link href="https://openrouter.ai/settings/keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenRouter API Keys</Link></li>
                     <li>Sign up or log in to your account</li>
                     <li>Create a new API key</li>
                     <li>Copy and paste it above</li>
@@ -205,14 +215,24 @@ export default function AIKeysPage() {
             </CardTitle>
             <CardDescription>
               Used for voice transcription features. Required only if you plan to use voice notes.
-              <Link 
-                href="https://platform.openai.com/settings/organization/api-keys" 
-                target="_blank" 
-                className="inline-flex items-center gap-1 ml-2 text-primary hover:underline"
-              >
-                Get your key from OpenAI <ExternalLink className="h-3 w-3" />
-              </Link>
             </CardDescription>
+            <div className="mt-3 sm:mt-2">
+              <Button 
+                variant="outline" 
+                size="sm" 
+                asChild 
+                className="w-full sm:w-auto"
+              >
+                <Link 
+                  href="https://platform.openai.com/settings/organization/api-keys" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2"
+                >
+                  Get your key from OpenAI <ExternalLink className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -245,16 +265,16 @@ export default function AIKeysPage() {
             <div className="text-sm text-muted-foreground space-y-1">
               <Button
                 type="button"
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="p-0 h-auto font-normal text-muted-foreground hover:text-foreground"
+                className="w-full sm:w-auto justify-start"
                 onClick={() => setInstructionsCollapsed(prev => ({ ...prev, openai: !prev.openai }))}
               >
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-2">
                   {instructionsCollapsed.openai ? (
-                    <ChevronRight className="h-3 w-3" />
+                    <ChevronRight className="h-4 w-4" />
                   ) : (
-                    <ChevronDown className="h-3 w-3" />
+                    <ChevronDown className="h-4 w-4" />
                   )}
                   <strong>Setup instructions</strong>
                 </div>
@@ -262,14 +282,14 @@ export default function AIKeysPage() {
               {!instructionsCollapsed.openai && (
                 <div className="ml-4 mt-2 space-y-2">
                   <ol className="list-decimal list-inside space-y-1">
-                    <li>Visit <Link href="https://platform.openai.com/settings/organization/api-keys" target="_blank" className="text-primary hover:underline">OpenAI API Keys</Link></li>
+                    <li>Visit <Link href="https://platform.openai.com/settings/organization/api-keys" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">OpenAI API Keys</Link></li>
                     <li>Sign up or log in to your account</li>
                     <li>Navigate to the &quot;API Keys&quot; section</li>
                     <li>Create a new API key</li>
                     <li>Copy and paste it above</li>
                   </ol>
                   <p className="text-amber-600 dark:text-amber-400 text-xs mt-2">
-                    💡 <strong>Recommended:</strong> Set <Link href="https://platform.openai.com/settings/organization/limits" target="_blank" className="text-primary hover:underline">usage limits</Link> to control spending.
+                    💡 <strong>Recommended:</strong> Set <Link href="https://platform.openai.com/settings/organization/limits" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">usage limits</Link> to control spending.
                   </p>
                 </div>
               )}

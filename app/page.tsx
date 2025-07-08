@@ -91,32 +91,32 @@ export default function LandingPage() {
       <Header />
       <div className="min-h-screen bg-gradient-to-b from-background via-background to-primary/5">
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16 md:py-20">
+      <div className="container mx-auto px-4 py-12 sm:py-16 md:py-20">
         <div className="text-center max-w-4xl mx-auto">
           {/* Animated Logo */}
-          <div className="mb-8">
-            <h1 className="display-text text-primary inline-block text-4xl md:text-6xl lg:text-7xl font-bold">
+          <div className="mb-6 sm:mb-8">
+            <h1 className="display-text text-primary inline-block text-3xl sm:text-4xl md:text-6xl lg:text-7xl font-bold">
               Rolomind
             </h1>
           </div>
           
-          <h2 className="text-lg md:text-2xl lg:text-3xl font-semibold mb-6 text-foreground">
+          <h2 className="text-xl sm:text-lg md:text-2xl lg:text-3xl font-semibold mb-4 sm:mb-6 text-foreground px-2">
             Your AI-Powered Contact Intelligence
           </h2>
-          <p className="text-base md:text-lg text-muted-foreground mb-10 max-w-2xl mx-auto leading-relaxed">
+          <p className="text-base md:text-lg text-muted-foreground mb-8 sm:mb-10 max-w-2xl mx-auto leading-relaxed px-2">
             Search contacts with natural language. Import from anywhere. 
             Keep everything private and organized in one place.
           </p>
 
           {/* Interactive Demo */}
-          <div className="relative max-w-4xl mx-auto rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-8 p-4 md:p-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg md:text-xl font-semibold mb-3">Try AI Search Live</h3>
+          <div className="relative max-w-4xl mx-auto rounded-xl sm:rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-primary/10 to-primary/5 border mb-6 sm:mb-8 p-3 sm:p-4 md:p-6">
+            <div className="text-center mb-4 sm:mb-6">
+              <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-2 sm:mb-3">Try AI Search Live</h3>
               <p className="text-sm md:text-base text-muted-foreground">Search contacts with natural language</p>
             </div>
             <DemoProvider>
               <DemoWrapper title="" demoId="search" autoStart>
-                <div className="space-y-4">
+                <div className="space-y-3 sm:space-y-4">
                   <DemoSearch />
                   <DemoResults />
                 </div>
@@ -125,9 +125,9 @@ export default function LandingPage() {
           </div>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mt-8">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-6 sm:mt-8 px-4 sm:px-0">
             {session ? (
-              <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg">
+              <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg w-full sm:w-auto">
                 <Link href="/dashboard/app">
                   <Sparkles className="mr-2 h-5 w-5" />
                   Go to App
@@ -135,13 +135,13 @@ export default function LandingPage() {
               </Button>
             ) : (
               <>
-                <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg">
+                <Button size="lg" asChild className="text-base md:text-lg px-6 md:px-8 shadow-lg w-full sm:w-auto">
                   <Link href="/sign-up">
                     Start Using Rolomind
                     <ArrowRight className="ml-2 h-5 w-5" />
                   </Link>
                 </Button>
-                <Button size="lg" variant="outline" asChild className="text-base md:text-lg px-6 md:px-8">
+                <Button size="lg" variant="outline" asChild className="text-base md:text-lg px-6 md:px-8 w-full sm:w-auto">
                   <Link href="#pricing">View Pricing</Link>
                 </Button>
               </>
@@ -151,27 +151,27 @@ export default function LandingPage() {
       </div>
 
       {/* How It Works - With Interactive Demos */}
-      <div className="py-12 md:py-16 bg-muted/30">
+      <div className="py-10 sm:py-12 md:py-16 bg-muted/30">
         <div className="container mx-auto px-4">
           <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-10 md:mb-16">
-              <h2 className="text-2xl md:text-4xl font-bold mb-3">
+            <div className="text-center mb-8 sm:mb-10 md:mb-16">
+              <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-2 sm:mb-3 px-2">
                 Simple, Yet Powerful
               </h2>
-              <p className="text-base md:text-lg text-muted-foreground">
+              <p className="text-sm sm:text-base md:text-lg text-muted-foreground px-2">
                 Get started in seconds, find anyone in milliseconds
               </p>
             </div>
 
             <DemoProvider>
-              <div className="grid md:grid-cols-3 gap-6 md:gap-8">
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 text-xl md:text-2xl font-bold text-primary">
+              <div className="grid sm:grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 md:gap-8">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-bold text-primary">
                       1
                     </div>
-                    <h3 className="text-lg md:text-xl font-semibold mb-2">Import Your Contacts</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1 sm:mb-2 px-2">Import Your Contacts</h3>
+                    <p className="text-xs sm:text-sm md:text-base text-muted-foreground px-2">
                       Upload CSV files or import from your favorite platforms
                     </p>
                   </div>
@@ -180,31 +180,31 @@ export default function LandingPage() {
                   </DemoWrapper>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 text-xl md:text-2xl font-bold text-primary">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-bold text-primary">
                       2
                     </div>
-                    <h3 className="text-lg md:text-xl font-semibold mb-2">Search & Get Insights</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1 sm:mb-2 px-2">Search & Get Insights</h3>
+                    <p className="text-xs sm:text-sm md:text-base text-muted-foreground px-2">
                       Ask questions in plain English and get AI summaries
                     </p>
                   </div>
                   <DemoWrapper title="Try Search" demoId="search">
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       <DemoSearch />
                       <DemoResults />
                     </div>
                   </DemoWrapper>
                 </div>
                 
-                <div className="space-y-4">
-                  <div className="text-center mb-4">
-                    <div className="w-14 h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-3 text-xl md:text-2xl font-bold text-primary">
+                <div className="space-y-3 sm:space-y-4">
+                  <div className="text-center mb-3 sm:mb-4">
+                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-2 sm:mb-3 text-lg sm:text-xl md:text-2xl font-bold text-primary">
                       3
                     </div>
-                    <h3 className="text-lg md:text-xl font-semibold mb-2">Enrich with Voice</h3>
-                    <p className="text-sm md:text-base text-muted-foreground">
+                    <h3 className="text-base sm:text-lg md:text-xl font-semibold mb-1 sm:mb-2 px-2">Enrich with Voice</h3>
+                    <p className="text-xs sm:text-sm md:text-base text-muted-foreground px-2">
                       Update contact details naturally by speaking
                     </p>
                   </div>
@@ -219,55 +219,55 @@ export default function LandingPage() {
       </div>
 
       {/* Values Section */}
-      <div className="py-12 md:py-16 relative">
+      <div className="py-8 sm:py-12 md:py-16 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent"></div>
         <div className="container mx-auto px-4 relative">
-          <div className="text-center mb-10 md:mb-16">
-            <h2 className="text-2xl md:text-4xl font-bold mb-3">
+          <div className="text-center mb-6 sm:mb-10 md:mb-16">
+            <h2 className="text-xl sm:text-2xl md:text-4xl font-bold mb-2 sm:mb-3 px-2">
               Our Values
             </h2>
-            <p className="text-base md:text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-sm sm:text-base md:text-lg text-muted-foreground max-w-2xl mx-auto px-2">
               Built on principles that put you first
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 max-w-5xl mx-auto">
-            <div className="bg-background rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <Shield className="h-6 w-6 text-primary" />
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 md:gap-6 max-w-5xl mx-auto">
+            <div className="bg-background rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="bg-primary/10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 md:mb-4 mx-auto">
+                <Shield className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-center">Privacy-First</h3>
-              <p className="text-sm text-muted-foreground text-center">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2 text-center">Privacy-First</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center leading-tight">
                 Your contacts never leave your browser. No cloud sync, no tracking.
               </p>
             </div>
 
-            <div className="bg-background rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <DollarSign className="h-6 w-6 text-primary" />
+            <div className="bg-background rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="bg-primary/10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 md:mb-4 mx-auto">
+                <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-center">Fair Pricing</h3>
-              <p className="text-sm text-muted-foreground text-center">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2 text-center">Fair Pricing</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center leading-tight">
                 Pay only for AI queries, not for storage or basic features.
               </p>
             </div>
 
-            <div className="bg-background rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <Brain className="h-6 w-6 text-primary" />
+            <div className="bg-background rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="bg-primary/10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 md:mb-4 mx-auto">
+                <Brain className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-center">Real AI Use Case</h3>
-              <p className="text-sm text-muted-foreground text-center">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2 text-center">Real AI Use Case</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center leading-tight">
                 Unlike unhelpful chatbots, this AI actually helps you find and manage contacts.
               </p>
             </div>
 
-            <div className="bg-background rounded-2xl p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
-              <div className="bg-primary/10 w-12 h-12 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-                <Globe className="h-6 w-6 text-primary" />
+            <div className="bg-background rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 border shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
+              <div className="bg-primary/10 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center mb-2 sm:mb-3 md:mb-4 mx-auto">
+                <Globe className="h-4 w-4 sm:h-5 sm:w-5 md:h-6 md:w-6 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold mb-2 text-center">Open Source</h3>
-              <p className="text-sm text-muted-foreground text-center">
+              <h3 className="text-sm sm:text-base md:text-lg font-semibold mb-1 sm:mb-2 text-center">Open Source</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground text-center leading-tight">
                 AGPL licensed. Audit the code, contribute features, or self-host.
               </p>
             </div>
@@ -331,7 +331,7 @@ export default function LandingPage() {
                     databases, SSL certificates, and handle updates yourself.
                   </p>
                   <Button variant="outline" asChild className="w-full">
-                    <Link href="https://github.com/agamm/rolomind#self-hosting">
+                    <Link href="https://github.com/agamm/rolomind#self-hosting" target="_blank" rel="noopener noreferrer">
                       View Installation Guide
                     </Link>
                   </Button>
@@ -479,7 +479,7 @@ export default function LandingPage() {
                 </ul>
 
                 <Button variant="outline" asChild className="w-full">
-                  <Link href="https://github.com/agamm/rolomind">
+                  <Link href="https://github.com/agamm/rolomind" target="_blank" rel="noopener noreferrer">
                     View on GitHub
                   </Link>
                 </Button>
@@ -572,13 +572,13 @@ export default function LandingPage() {
                 <div key={index} className="bg-background rounded-xl border overflow-hidden">
                   <button
                     onClick={() => toggleFaq(index)}
-                    className="w-full p-4 md:p-6 text-left flex items-center justify-between hover:bg-muted/50 transition-colors"
+                    className="w-full p-6 md:p-6 text-left flex items-center justify-between hover:bg-muted/50 transition-colors touch-manipulation min-h-[56px]"
                   >
-                    <h3 className="text-base md:text-lg font-semibold">{faq.question}</h3>
+                    <h3 className="text-base md:text-lg font-semibold pr-4">{faq.question}</h3>
                     {expandedFaq === index ? (
-                      <ChevronUp className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <ChevronUp className="h-6 w-6 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                     ) : (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                      <ChevronDown className="h-6 w-6 md:h-5 md:w-5 text-muted-foreground flex-shrink-0" />
                     )}
                   </button>
                   {expandedFaq === index && (
@@ -612,7 +612,7 @@ export default function LandingPage() {
               </Link>
             </Button>
             <Button size="lg" variant="outline" asChild className="text-base md:text-lg px-6 md:px-8">
-              <Link href="https://github.com/agamm/rolomind">
+              <Link href="https://github.com/agamm/rolomind" target="_blank" rel="noopener noreferrer">
                 View Source Code
               </Link>
             </Button>
@@ -637,14 +637,14 @@ export default function LandingPage() {
               <h3 className="font-semibold mb-4">Developers</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="https://github.com/agamm/rolomind" className="hover:text-foreground flex items-center gap-1">
+                  <Link href="https://github.com/agamm/rolomind" target="_blank" rel="noopener noreferrer" className="hover:text-foreground flex items-center gap-1">
                     <GithubIcon className="h-4 w-4" />
                     GitHub
                   </Link>
                 </li>
-                <li><Link href="https://github.com/agamm/rolomind#api" className="hover:text-foreground">API Docs</Link></li>
-                <li><Link href="https://github.com/agamm/rolomind#self-hosting" className="hover:text-foreground">Self-Host Guide</Link></li>
-                <li><Link href="https://github.com/agamm/rolomind#commercial-license" className="hover:text-foreground">Commercial License</Link></li>
+                <li><Link href="https://github.com/agamm/rolomind#api" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">API Docs</Link></li>
+                <li><Link href="https://github.com/agamm/rolomind#self-hosting" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Self-Host Guide</Link></li>
+                <li><Link href="https://github.com/agamm/rolomind#commercial-license" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Commercial License</Link></li>
               </ul>
             </div>
             
@@ -652,16 +652,16 @@ export default function LandingPage() {
               <h3 className="font-semibold mb-4">Support</h3>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li>
-                  <Link href="https://github.com/agamm/rolomind/wiki" className="hover:text-foreground flex items-center gap-1">
+                  <Link href="https://github.com/agamm/rolomind/wiki" target="_blank" rel="noopener noreferrer" className="hover:text-foreground flex items-center gap-1">
                     <FileText className="h-4 w-4" />
                     Documentation
                   </Link>
                 </li>
                 <li>
-                  <Link href="https://github.com/agamm/rolomind/issues" className="hover:text-foreground">Report Issue</Link>
+                  <Link href="https://github.com/agamm/rolomind/issues" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">Report Issue</Link>
                 </li>
                 <li>
-                  <Link href="https://discord.gg/rolomind" className="hover:text-foreground flex items-center gap-1">
+                  <Link href="https://discord.gg/rolomind" target="_blank" rel="noopener noreferrer" className="hover:text-foreground flex items-center gap-1">
                     <HeadphonesIcon className="h-4 w-4" />
                     Discord Community
                   </Link>
@@ -674,7 +674,7 @@ export default function LandingPage() {
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/privacy" className="hover:text-foreground">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-foreground">Terms of Service</Link></li>
-                <li><Link href="https://github.com/agamm/rolomind/blob/main/LICENSE" className="hover:text-foreground">AGPL License</Link></li>
+                <li><Link href="https://github.com/agamm/rolomind/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" className="hover:text-foreground">AGPL License</Link></li>
               </ul>
             </div>
           </div>

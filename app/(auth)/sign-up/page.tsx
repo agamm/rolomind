@@ -133,11 +133,11 @@ export default function SignUpPage() {
                 className="text-sm text-muted-foreground cursor-pointer leading-relaxed flex-1"
               >
                 I agree to the{" "}
-                <Link href="/terms" className="text-primary hover:underline font-medium" target="_blank">
+                <Link href="/terms" className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">
                   Terms of Service
                 </Link>{" "}
                 and{" "}
-                <Link href="/privacy" className="text-primary hover:underline font-medium" target="_blank">
+                <Link href="/privacy" className="text-primary hover:underline font-medium" target="_blank" rel="noopener noreferrer">
                   Privacy Policy
                 </Link>
                     </Label>

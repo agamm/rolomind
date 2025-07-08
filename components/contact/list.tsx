@@ -169,9 +169,9 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
                 )}
               </h3>
               
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 {filteredContacts.length > 0 && !showCheckboxes && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-2">
                     <ExportQueryButton contacts={filteredContacts} />
                     <Button
                       variant="outline"
@@ -198,7 +198,7 @@ export function ContactList({ contacts, onSearch, aiResults, isAISearching, onRe
                 )}
                 
                 {showCheckboxes && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 sm:gap-2">
                     <Button
                       variant="ghost"
                       size="sm"

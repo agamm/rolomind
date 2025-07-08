@@ -19,7 +19,7 @@ export function ImportHelpButton() {
     <Button 
       variant="ghost" 
       size="sm"
-      className="h-9 w-9 p-0 rounded-none hover:bg-gray-50"
+      className="h-11 w-11 sm:h-9 sm:w-9 p-0 hover:bg-gray-50 touch-manipulation"
       title="Import Help"
       onClick={handleClick}
       disabled={isPending}

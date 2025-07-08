@@ -113,7 +113,7 @@ export function OpenRouterCredits() {
             
             <div className="pt-4 border-t">
               <Button asChild variant="outline" size="sm">
-                <Link href="https://openrouter.ai/credits" target="_blank" className="inline-flex items-center gap-2">
+                <Link href="https://openrouter.ai/credits" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2">
                   Manage Credits
                   <ExternalLink className="h-3 w-3" />
                 </Link>

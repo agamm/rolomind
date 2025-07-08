@@ -129,7 +129,7 @@ export function ImportHelpTab() {
                 variant="outline" 
                 size="sm"
                 className="w-fit"
-                onClick={() => window.open(platform.url, '_blank')}
+                onClick={() => window.open(platform.url, '_blank', 'noopener,noreferrer')}
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Open {platform.platform}

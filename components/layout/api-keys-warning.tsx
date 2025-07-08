@@ -21,18 +21,22 @@ export function ApiKeysWarning() {
 
   return (
     <Alert className="border-amber-200 bg-amber-50 dark:border-amber-800 dark:bg-amber-950/20">
-      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5" />
+      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 sm:mt-0.5" />
       <AlertDescription>
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
           <div className="flex-1">
-            <span className="font-medium text-amber-800 dark:text-amber-200">
-              AI features disabled
-            </span>
-            <span className="text-amber-700 dark:text-amber-300 ml-2">
-              Configure your OpenRouter API key to enable AI-powered contact search, merging, and processing.
-            </span>
+            <div className="block sm:inline">
+              <span className="font-medium text-amber-800 dark:text-amber-200">
+                AI features disabled
+              </span>
+            </div>
+            <div className="block sm:inline sm:ml-2 text-sm sm:text-inherit">
+              <span className="text-amber-700 dark:text-amber-300">
+                Configure your OpenRouter API key to enable AI-powered contact search, merging, and processing.
+              </span>
+            </div>
           </div>
-          <Button asChild variant="outline" size="sm" className="shrink-0">
+          <Button asChild variant="outline" size="sm" className="shrink-0 h-9 sm:h-8 touch-manipulation w-full sm:w-auto">
             <Link href="/dashboard/ai-keys">
               <Settings className="h-4 w-4 mr-2" />
               Configure Keys

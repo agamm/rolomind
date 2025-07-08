@@ -44,10 +44,10 @@ export function ImportButton({
         variant="ghost"
         onClick={handleClick}
         disabled={disabled || isImporting}
-        className="h-9 px-3 cursor-pointer rounded-none hover:bg-gray-50"
+        className="h-11 px-4 sm:h-9 sm:px-3 cursor-pointer hover:bg-gray-50 touch-manipulation"
         title={disabled && !isImporting ? "Please wait for your session to load" : undefined}
       >
-        {isImporting ? <Loader2 className="w-4 h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 mr-1.5" />}
+        {isImporting ? <Loader2 className="w-4 h-4 sm:w-4 sm:h-4 animate-spin mr-1.5" /> : <Upload className="w-4 h-4 sm:w-4 sm:h-4 mr-1.5" />}
         {isImporting ? "Importing..." : "Import CSV"}
       </Button>
     </>
